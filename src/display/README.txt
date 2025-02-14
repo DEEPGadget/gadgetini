@@ -1,0 +1,1 @@
+About gadgetini display module
