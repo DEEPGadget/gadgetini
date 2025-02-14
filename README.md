@@ -34,25 +34,25 @@ gagetini network configuration
 Clone the project
 
 ```bash
-git clone https://github.com/DEEPGadget/DG5_gagetini.git
+TBD
 ```
 
 Go to the project directory
 
 ```bash
-cd sensors
+TBD
 ```
 
 Install dependencies
 
 ```bash
-pip install -r requirements.txt
+TBD
 ```
 
 Start the server
 
 ```bash
-python3 sensor_exporter.py
+TBD
 ```
 
 
