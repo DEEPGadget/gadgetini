@@ -6,4 +6,4 @@ All about gadgetini documents
 -API
 
 
-test
+git + jira 연동테스트
