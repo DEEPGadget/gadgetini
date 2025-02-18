@@ -1,4 +1,4 @@
-All about gadgetini documents
+All about gadgetini document
 
 -Quick start guide
 -Architecture
@@ -7,3 +7,4 @@ All about gadgetini documents
 
 
 test
+test 0218
