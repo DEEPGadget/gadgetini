@@ -13,7 +13,7 @@ export default function Home() {
         </h1>
       </header>
       <div className="flex flex-1">
-        <aside className="flex-[1] p-3 bg-gray-100">
+        <aside className=" p-3 bg-gray-100">
           <ul>
             <li className="cursor-pointer p-4 bg-gray-300">
               <CogIcon className="inline-block w-5 h-5 mr-2" />
@@ -21,7 +21,7 @@ export default function Home() {
             </li>
           </ul>
         </aside>
-        <main className="flex-[9] p-2 overflow-y-auto">
+        <main className="flex-[1] p-2 overflow-y-auto">
           <Settings />
         </main>
       </div>
