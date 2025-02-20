@@ -1,5 +1,4 @@
 import mysql from "mysql2/promise";
-import { Client } from "ssh2";
 import dbConfig from "../../utils/dbConfig";
 
 // Define a map for database error codes and their corresponding messages
@@ -20,29 +19,6 @@ const jsonResponse = (data, status = 200) =>
     status,
     headers: { "Content-Type": "application/json" },
   });
-
-// SSH connection utility function
-const sshConnect = (host, username, password) => {
-  return new Promise((resolve, reject) => {
-    const conn = new Client();
-    conn
-      .on("ready", () => {
-        console.log(`SSH Connection Successful to ${host}`);
-        resolve(true);
-        conn.end();
-      })
-      .on("error", (err) => {
-        console.error(`SSH Connection Failed to ${host}:`, err);
-        reject(err);
-      })
-      .connect({
-        host,
-        port: 22,
-        username,
-        password,
-      });
-  });
-};
 
 // GET: Fetch all IP list entries
 export async function GET() {
