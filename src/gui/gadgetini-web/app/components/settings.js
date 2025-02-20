@@ -58,6 +58,9 @@ export default function Settings() {
     fetchLocalIP().then(setLocalIP);
   }, []);
 
+  {
+    /*디스플레이 모드 설정 api 점검*/
+  }
   const handleApply = async () => {
     setLoadingApply(true);
     const payload = { status, rotationTime };
