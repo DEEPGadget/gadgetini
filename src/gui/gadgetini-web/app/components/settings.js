@@ -102,7 +102,7 @@ export default function Settings() {
 
   return (
     <div className="p-4">
-      {/* System Configuration Section */}
+      {/* 그라파나 접속 버튼, IP 설정 */}
       <div className="mb-6">
         <h2 className="text-xl font-bold">System Configuration</h2>
         <div className="flex gap-2 flex-row items-center mt-4">
@@ -123,7 +123,6 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Set IP Section */}
         <div className="flex gap-2 flex-row items-center mt-4">
           <span>Set IP :</span>
           <input
@@ -162,7 +161,7 @@ export default function Settings() {
             </tr>
           </thead>
           <tbody>
-            {/* Display Orientation (기존 Display direction 통합) */}
+            {/* 디스플레이 설정화면 재구성 */}
             <tr className="border-b border-gray-300">
               <td className="py-2 px-4 border border-gray-300">Orientation</td>
               <td className="py-2 px-4 border border-gray-300">
@@ -204,7 +203,6 @@ export default function Settings() {
               </td>
             </tr>
 
-            {/* 기존 Control Info 유지 */}
             {Object.entries({
               CPU: "Monitors CPU usage, clock speed, and temperature.",
               GPU: "Monitors GPU memory usage, load, and temperature.",
