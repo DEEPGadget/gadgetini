@@ -259,8 +259,10 @@ export default function Settings() {
           <tbody>
             {/* 디스플레이 설정화면 재구성 */}
             <tr className="border-b border-gray-300">
-              <td className="py-2 px-4 border border-gray-300">Orientation</td>
-              <td className="py-2 px-4 border border-gray-300">
+              <td className="py-2 px-4 border border-gray-300 text-center">
+                Orientation
+              </td>
+              <td className="py-2 px-4 border border-gray-300 ">
                 Determines the display output orientation.
               </td>
               <td className="py-2 px-4 border border-gray-300 flex justify-center gap-2">
@@ -307,35 +309,39 @@ export default function Settings() {
               sensors:
                 "Monitors internal temperature and humidity, water leakage detection, and coolant level",
             }).map(([key, description]) => (
-              <tr key={key} className="border-b border-gray-300">
-                <td className="py-2 px-4 border border-gray-300">
-                  {key.charAt(0).toUpperCase() + key.slice(1)}
+              <tr key={key} className="border-b border-gray-300 ">
+                <td className="py-2 px-4 border border-gray-300 text-center">
+                  {key}
                 </td>
                 <td className="py-2 px-4 border border-gray-300">
                   {description}
                 </td>
-                <td className="py-2 px-4 border border-gray-300 flex justify-center">
-                  <button
-                    onClick={() => toggleStatus(key)}
-                    className={`relative flex items-center w-20 h-8 rounded-full border-2 border-gray-400 transition-colors duration-300 ${
-                      status[key.toLowerCase()] ? "bg-green-500" : "bg-red-500"
-                    }`}
-                  >
-                    <span
-                      className={`absolute left-1 transition-transform duration-300 transform ${
+                <td className="py-2 px-4 border border-gray-300">
+                  <div className="flex flex-col items-center justify-center ">
+                    <button
+                      onClick={() => toggleStatus(key)}
+                      className={`relative flex items-center w-20 h-8 rounded-full border-2 border-gray-400 transition-colors duration-300 ${
                         status[key.toLowerCase()]
-                          ? "translate-x-11"
-                          : "translate-x-0"
-                      } bg-white rounded-full w-6 h-6`}
-                    />
-                    <span
-                      className={`text-white font-bold transition-all duration-300 ${
-                        status[key.toLowerCase()] ? "ml-2" : "ml-10"
+                          ? "bg-green-500"
+                          : "bg-red-500"
                       }`}
                     >
-                      {status[key.toLowerCase()] ? "On" : "Off"}
-                    </span>
-                  </button>
+                      <span
+                        className={`absolute left-1 transition-transform duration-300 transform ${
+                          status[key.toLowerCase()]
+                            ? "translate-x-11"
+                            : "translate-x-0"
+                        } bg-white rounded-full w-6 h-6`}
+                      />
+                      <span
+                        className={`text-white font-bold transition-all duration-300 ${
+                          status[key.toLowerCase()] ? "ml-2" : "ml-10"
+                        }`}
+                      >
+                        {status[key.toLowerCase()] ? "On" : "Off"}
+                      </span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
