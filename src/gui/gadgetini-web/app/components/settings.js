@@ -16,8 +16,16 @@ export default function Settings() {
   const [rotationTime, setRotationTime] = useState(5);
   const [newIP, setNewIP] = useState("");
   const [loadingIP, setLoadingIP] = useState(false);
+  const [staticConfig, setStaticConfig] = useState({
+    ip: "",
+    gateway: "",
+    dns1: "",
+    dns2: "",
+  });
+
   const [localIP, setLocalIP] = useState("localhost");
   const [loadingConfig, setLoadingConfig] = useState(true);
+  const [ipMode, setIpMode] = useState("dhcp");
   const [status, setStatus] = useState({
     orientation: "vertical",
     cpu: false,
@@ -36,7 +44,6 @@ export default function Settings() {
         }
         const configData = await response.json();
         console.log(configData);
-        // 상태 업데이트
         setStatus({
           orientation: configData.orientation,
           cpu: configData.cpu,
@@ -95,12 +102,36 @@ export default function Settings() {
 
   const handleIPChange = async () => {
     setLoadingIP(true);
-    const updatedIP = await setIP(newIP);
-    if (updatedIP) {
-      setCurrentIP(updatedIP);
-      setNewIP("");
+    const payload =
+      ipMode === "static"
+        ? {
+            mode: "static",
+            ip: staticConfig.ip,
+            gateway: staticConfig.gateway,
+            dns1: staticConfig.dns1,
+            dns2: staticConfig.dns2,
+          }
+        : { mode: "dhcp" };
+
+    try {
+      const response = await fetch("/api/setip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`IP updated: ${data.ip}`);
+      } else {
+        alert("Failed to update IP");
+      }
+    } catch (error) {
+      console.error("Error updating IP:", error);
+      alert("Error updating IP");
+    } finally {
+      setLoadingIP(false);
     }
-    setLoadingIP(false);
   };
 
   return (
@@ -126,15 +157,77 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="flex gap-2 flex-row items-center mt-4">
-          <span>Set IP :</span>
-          <input
-            type="text"
-            placeholder="Enter new IP"
-            value={newIP}
-            onChange={(e) => setNewIP(e.target.value)}
-            className="border p-2 rounded w-48"
-          />
+        <div className="flex items-center gap-4 mt-4">
+          <span className="whitespace-nowrap">Set IP :</span>
+
+          {/* DHCP / Static 선택 라디오 버튼 */}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                value="dhcp"
+                checked={ipMode === "dhcp"}
+                onChange={() => setIpMode("dhcp")}
+                className="w-4 h-4 text-blue-500"
+              />
+              <span>DHCP</span>
+            </label>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                value="static"
+                checked={ipMode === "static"}
+                onChange={() => setIpMode("static")}
+                className="w-4 h-4 text-blue-500"
+              />
+              <span>Static</span>
+            </label>
+          </div>
+
+          {/* Static 선택 시 IP / Gateway / DNS 입력 필드 표시 */}
+          {ipMode === "static" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="IP Address"
+                value={staticConfig.ip}
+                onChange={(e) =>
+                  setStaticConfig({ ...staticConfig, ip: e.target.value })
+                }
+                className="border p-2 rounded w-36 text-left"
+              />
+              <input
+                type="text"
+                placeholder="Gateway"
+                value={staticConfig.gateway}
+                onChange={(e) =>
+                  setStaticConfig({ ...staticConfig, gateway: e.target.value })
+                }
+                className="border p-2 rounded w-36 text-left"
+              />
+              <input
+                type="text"
+                placeholder="DNS 1"
+                value={staticConfig.dns1}
+                onChange={(e) =>
+                  setStaticConfig({ ...staticConfig, dns1: e.target.value })
+                }
+                className="border p-2 rounded w-36 text-left"
+              />
+              <input
+                type="text"
+                placeholder="DNS 2"
+                value={staticConfig.dns2}
+                onChange={(e) =>
+                  setStaticConfig({ ...staticConfig, dns2: e.target.value })
+                }
+                className="border p-2 rounded w-36 text-left"
+              />
+            </div>
+          )}
+
+          {/* Update 버튼 */}
           <button
             onClick={() => console.log("Update IP")}
             className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
