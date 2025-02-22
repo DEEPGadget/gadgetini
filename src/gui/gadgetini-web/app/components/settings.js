@@ -18,6 +18,7 @@ export default function Settings() {
   const [loadingIP, setLoadingIP] = useState(false);
   const [staticConfig, setStaticConfig] = useState({
     ip: "",
+    netmask: "",
     gateway: "",
     dns1: "",
     dns2: "",
@@ -107,6 +108,7 @@ export default function Settings() {
         ? {
             mode: "static",
             ip: staticConfig.ip,
+            netmask: staticConfig.netmask,
             gateway: staticConfig.gateway,
             dns1: staticConfig.dns1,
             dns2: staticConfig.dns2,
@@ -122,12 +124,16 @@ export default function Settings() {
 
       if (response.ok) {
         const data = await response.json();
-        alert(`IP updated: ${data.ip}`);
+        alert(
+          `IP updated: ${staticConfig.ip}/${staticConfig.netmask}
+          gateway: ${staticConfig.gateway}
+          dns1: ${staticConfig.dns1} 
+          dns2: ${staticConfig.dns2} `
+        );
       } else {
         alert("Failed to update IP");
       }
     } catch (error) {
-      console.error("Error updating IP:", error);
       alert("Error updating IP");
     } finally {
       setLoadingIP(false);
@@ -199,6 +205,15 @@ export default function Settings() {
               />
               <input
                 type="text"
+                placeholder="Netmask"
+                value={staticConfig.netmask}
+                onChange={(e) =>
+                  setStaticConfig({ ...staticConfig, netmask: e.target.value })
+                }
+                className="border p-2 rounded w-36 text-left"
+              />
+              <input
+                type="text"
                 placeholder="Gateway"
                 value={staticConfig.gateway}
                 onChange={(e) =>
@@ -208,7 +223,7 @@ export default function Settings() {
               />
               <input
                 type="text"
-                placeholder="DNS 1"
+                placeholder="DNS 1 (Option)"
                 value={staticConfig.dns1}
                 onChange={(e) =>
                   setStaticConfig({ ...staticConfig, dns1: e.target.value })
@@ -217,7 +232,7 @@ export default function Settings() {
               />
               <input
                 type="text"
-                placeholder="DNS 2"
+                placeholder="DNS 2 (Option)"
                 value={staticConfig.dns2}
                 onChange={(e) =>
                   setStaticConfig({ ...staticConfig, dns2: e.target.value })
@@ -229,7 +244,7 @@ export default function Settings() {
 
           {/* Update 버튼 */}
           <button
-            onClick={() => console.log("Update IP")}
+            onClick={handleIPChange}
             className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
             disabled={loadingIP}
           >

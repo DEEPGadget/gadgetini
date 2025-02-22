@@ -1,12 +1,21 @@
+import { NextResponse } from "next/server";
+
 export async function POST(req) {
   try {
-    const { ipv4 } = await req.json();
-    if (ipv4) {
-      currentIP = ipv4; // 현재 IP 값 업데이트
-      return NextResponse.json({ success: true, ipv4 });
-    }
-    return NextResponse.json({ success: false, error: "Invalid IP" });
+    const payload = await req.json();
+
+    console.log("Received IP Configuration Payload:", payload);
+
+    return NextResponse.json({
+      success: true,
+      message: "Payload received successfully",
+      receivedData: payload,
+    });
   } catch (error) {
-    return NextResponse.json({ success: false, error: "Failed to update IP" });
+    console.error("Error processing IP payload:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to process request" },
+      { status: 500 }
+    );
   }
 }

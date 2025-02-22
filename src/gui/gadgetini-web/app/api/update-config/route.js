@@ -6,9 +6,9 @@ export async function POST(request) {
     const { status, rotationTime } = await request.json();
 
     const updateLocalConfig = async (status, rotationTime) => {
-      const homeDir = "/home/gadgetini"; // Get home directory
+      const homeDir = "/home/gadgetini/gadgetini/src/display"; // Get home directory
       const configPath = path.join(homeDir, "config.ini"); // Path to config.ini in home directory
-      console.log(status.orientation)
+      console.log(status.orientation);
       // Read the existing config file
       let config = await fs.promises.readFile(configPath, "utf-8");
 
@@ -35,13 +35,10 @@ export async function POST(request) {
     // Update the local config file first
     await updateLocalConfig(status, rotationTime);
 
-    return new Response(
-      JSON.stringify({ message: "Modes updated" }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ message: "Modes updated" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Error updating modes:", error);
     return new Response(JSON.stringify({ error: "Failed to update modes." }), {
@@ -53,15 +50,15 @@ export async function POST(request) {
 
 export async function GET() {
   try {
-    const homeDir = "/home/gadgetini"; // config 파일 경로
+    const homeDir = "/home/gadgetini/gadgetini/src/display"; // config 파일 경로
     const configPath = path.join(homeDir, "config.ini");
 
     // 파일 존재 여부 확인
     if (!fs.existsSync(configPath)) {
-      return new Response(
-        JSON.stringify({ error: "Config file not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Config file not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // 파일 읽기
@@ -69,7 +66,9 @@ export async function GET() {
 
     // 정규식을 이용해 각 설정 값을 추출
     const getConfigValue = (key) => {
-      const match = configContent.match(new RegExp(`^${key}\\s*=\\s*(.*)`, "m"));
+      const match = configContent.match(
+        new RegExp(`^${key}\\s*=\\s*(.*)`, "m")
+      );
       return match ? match[1].trim() : null;
     };
 
@@ -84,15 +83,15 @@ export async function GET() {
       rotationTime: parseInt(getConfigValue("time") || "5", 10),
     };
 
-    return new Response(
-      JSON.stringify(configData),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify(configData), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Error reading config:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to read config." }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Failed to read config." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
