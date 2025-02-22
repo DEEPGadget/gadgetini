@@ -76,7 +76,7 @@ draw = ImageDraw.Draw(image)
 draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
 disp.image(image)
 
-image = Image.open("/home/gadgetini/gadgetini_monitoring_tool/service_scripts/logo_horizontal.jpg")
+image = Image.open("/home/gadgetini/gadgetini/src/display/logo_horizontal.jpg")
 
 # Scale the image to the smaller screen dimension
 image_ratio = image.width / image.height
