@@ -1,4 +1,3 @@
-1. sensor exporter.py : Raspberry pi 에서 동작하는(물온도, 누수, gyro, 온/습도, 수위센서) exporter - 부팅 시 데몬드으로 동작 
-2. CPU-exporter.py    : HOST 서버에서 동작하는 exporter, CPU 온도값 출력 - 부팅 시 데몬드으로 동작 
-3. tt-exporter.py     : HOST 서버에서 동작하는 exporter, n300 칩셋온도 출력 - 부팅 시 데몬드으로 동작 :ㅈㅂ
+1. host_exporter.py: 호스트서버 에서 동작하는 익스포터 데몬 스크립트: CPU, n300 온도값을 localhost:9005로 송출
+2. sensor_exporter.py: 라즈베리파이 에서 동작하는 익스포터 데몬 스크립트: 센서값을 localhost:9000 포트로 송출
 

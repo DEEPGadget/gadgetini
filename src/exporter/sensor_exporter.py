@@ -1,11 +1,15 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
+import sys
+sys.path.append('/home/gadgetini/High-Precision-AD-DA-Board-Code/RaspberryPI/ADS1256/python3')
+import ADS1256
 import math
 
 import numpy as np
 import adafruit_dht
 import time
-import ADS1256
+#import ADS1256
+#ADS1256
 import RPi.GPIO as GPIO
 import board
 from prometheus_client import start_http_server, CollectorRegistry
@@ -16,7 +20,7 @@ import requests
 import adafruit_dht
 import mpu6050 as gyro
 import subprocess 
-from dlc_alert import leak_detection_beep, leak_detection_beep_off, coolant_overheat_beep, coolant_empty_beep, coolant_slow_beep
+#from dlc_alert import leak_detection_beep, leak_detection_beep_off, coolant_overheat_beep, coolant_empty_beep, coolant_slow_beep
 
 ADC = ADS1256.ADS1256()
 ADC.ADS1256_init()
@@ -102,13 +106,13 @@ class DLC_sensor_Collector(object):
                 self.leak_alert_count = self.leak_alert_count + 1
         # if temperature exceeds accumulate above 4 times, coolant overheat beep alert will start.
             else:
-                leak_detection_beep()
+             #   leak_detection_beep()
                 self.leak_alert_count = self.leak_alert_count - 1
 
                 #subprocess.run(["sudo", "systemctl", "restart", "display_pannel.service"], check=True)
         else:
             self.leak_alert_count = self.leak_alert_count - 1
-            leak_detection_beep_off()
+            #leak_detection_beep_off()
             if self.leak_alert_count < 0:  self.leak_alert_count = 0
         return curr_leak
 
@@ -120,7 +124,7 @@ class DLC_sensor_Collector(object):
             if self.level_alert_count < 3:
                 self.level_alert_count = self.level_alert_count + 1
             else:
-                level_detection_beep()
+            #    level_detection_beep()
                 self.level_alert_count = self.level_alert_count - 1
         else:
             self.level_alert_count = self.level_alert_count - 1
