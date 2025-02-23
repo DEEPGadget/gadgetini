@@ -20,6 +20,8 @@ import struct
 
 from PIL import Image, ImageDraw, ImageFont
 
+DEBUG = 0
+
 
 ##Sensors
 import sys 
@@ -104,9 +106,10 @@ def draw_aligned_text(draw, text, font_size, fill, box, align="left", halign="to
     else:
         ty = y + (height - text_height) + ascent
 
-    draw.rectangle((x,y,x+width,y+height), outline=(255,0,0), width=1)
-    bbox = draw.textbbox((tx, ty), text, font=font)
-    draw.rectangle(bbox, outline=(0,255,0), width=1)
+    if DEBUG != 0:
+        draw.rectangle((x,y,x+width,y+height), outline=(255,0,0), width=1)
+        bbox = draw.textbbox((tx, ty), text, font=font)
+        draw.rectangle(bbox, outline=(0,255,0), width=1)
 
     draw.text((tx, ty), text, font=font, fill=fill)
 
