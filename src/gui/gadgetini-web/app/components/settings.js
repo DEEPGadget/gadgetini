@@ -29,11 +29,10 @@ export default function Settings() {
   const [ipMode, setIpMode] = useState("dhcp");
   const [status, setStatus] = useState({
     orientation: "vertical",
+    chassis: false,
     cpu: false,
     gpu: false,
-    psu: false,
-    network: false,
-    sensors: false,
+    memory: false,
   });
 
   useEffect(() => {
@@ -47,14 +46,12 @@ export default function Settings() {
         console.log(configData);
         setStatus({
           orientation: configData.orientation,
+          chassis: configData.chassis,
           cpu: configData.cpu,
           gpu: configData.gpu,
-          psu: configData.psu,
-          network: configData.network,
-          sensors: configData.sensors,
+          memory: configData.memory,
         });
         setRotationTime(configData.rotationTime);
-        setOrientation(configData.orientation);
       } catch (error) {
         console.error("Error loading config:", error);
       } finally {
@@ -317,12 +314,11 @@ export default function Settings() {
             </tr>
 
             {Object.entries({
-              CPU: "Monitors CPU usage, clock speed, and temperature.",
-              GPU: "Monitors GPU memory usage, load, and temperature.",
-              PSU: "Monitors power supply health and voltage levels.",
-              network: "Monitors network bandwidth, latency, and packet loss.",
-              sensors:
+              Chassis:
                 "Monitors internal temperature and humidity, water leakage detection, and coolant level",
+              CPU: "Monitors CPU memory usage and temperature.",
+              GPU: "Monitors GPU memory usage and temperature.",
+              Memory: "",
             }).map(([key, description]) => (
               <tr key={key} className="border-b border-gray-300 ">
                 <td className="py-2 px-4 border border-gray-300 text-center">
