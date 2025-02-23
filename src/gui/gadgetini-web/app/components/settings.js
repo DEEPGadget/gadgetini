@@ -318,7 +318,7 @@ export default function Settings() {
                 "Monitors internal temperature and humidity, water leakage detection, and coolant level",
               CPU: "Monitors CPU memory usage and temperature.",
               GPU: "Monitors GPU memory usage and temperature.",
-              Memory: "",
+              Memory: "Monitors memory usage.",
             }).map(([key, description]) => (
               <tr key={key} className="border-b border-gray-300 ">
                 <td className="py-2 px-4 border border-gray-300 text-center">
