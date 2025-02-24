@@ -6,26 +6,23 @@ export async function POST(request) {
     const { status, rotationTime } = await request.json();
 
     const updateLocalConfig = async (status, rotationTime) => {
-      const homeDir = "/home/gadgetini/gadgetini/src/display"; // Get home directory
+      const homeDir = "/home/gadgetini/gadgetini/src/display";
       const configPath = path.join(homeDir, "config.ini"); // Path to config.ini in home directory
-      console.log(status.orientation);
+      console.log(status);
       // Read the existing config file
       let config = await fs.promises.readFile(configPath, "utf-8");
 
       // Update the relevant lines in the config file
       config = config
         .replace(/^orientation\s*=\s*.*/m, `orientation=${status.orientation}`)
-        .replace(/^cpumode\s*=\s*.*/m, `cpumode=${status.cpu ? "on" : "off"}`)
-        .replace(/^gpumode\s*=\s*.*/m, `gpumode=${status.gpu ? "on" : "off"}`)
-        .replace(/^psumode\s*=\s*.*/m, `psumode=${status.psu ? "on" : "off"}`)
         .replace(
-          /^networkmode\s*=\s*.*/m,
-          `networkmode=${status.network ? "on" : "off"}`
+          /^chassis\s*=\s*.*/m,
+          `chassis=${status.chassis ? "on" : "off"}`
         )
-        .replace(
-          /^sensormode\s*=\s*.*/m,
-          `sensormode=${status.sensors ? "on" : "off"}`
-        )
+        .replace(/^cpu\s*=\s*.*/m, `cpu=${status.cpu ? "on" : "off"}`)
+        .replace(/^gpu\s*=\s*.*/m, `gpu=${status.gpu ? "on" : "off"}`)
+        .replace(/^memory\s*=\s*.*/m, `memory=${status.memory ? "on" : "off"}`)
+        .replace(/^memory\s*=\s*.*/m, `psu=${status.psu ? "on" : "off"}`)
         .replace(/^time\s*=\s*.*/m, `time=${rotationTime}`);
 
       // Write the updated config file back to the file system
@@ -50,7 +47,7 @@ export async function POST(request) {
 
 export async function GET() {
   try {
-    const homeDir = "/home/gadgetini/gadgetini/src/display"; // config 파일 경로
+    const homeDir = "/home/gadgetini/gadgetini/src/display";
     const configPath = path.join(homeDir, "config.ini");
 
     // 파일 존재 여부 확인
@@ -75,11 +72,11 @@ export async function GET() {
     // JSON 형태로 변환
     const configData = {
       orientation: getConfigValue("orientation") || "vertical",
-      cpu: getConfigValue("cpumode") === "on",
-      gpu: getConfigValue("gpumode") === "on",
-      psu: getConfigValue("psumode") === "on",
-      network: getConfigValue("networkmode") === "on",
-      sensors: getConfigValue("sensormode") === "on",
+      chassis: getConfigValue("chassis") === "on",
+      cpu: getConfigValue("cpu") === "on",
+      gpu: getConfigValue("gpu") === "on",
+      memory: getConfigValue("memory") === "on",
+      psu: getConfigValue("psu") === "on",
       rotationTime: parseInt(getConfigValue("time") || "5", 10),
     };
 
