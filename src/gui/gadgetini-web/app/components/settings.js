@@ -318,8 +318,8 @@ export default function Settings() {
             {Object.entries({
               Chassis:
                 "Front display shows internal temperature and humidity, water leakage detection, and coolant level",
-              CPU: "Front display shows CPU temperature.",
-              GPU: "Front display shows GPU temperature.",
+              CPU: "Front display shows CPU temperature and utilization.",
+              GPU: "Front display shows GPU temperature and utilization.",
               Memory: "Front display shows memory usage.",
               PSU: "Front display shows power consumption, PSU temperature",
             }).map(([key, description]) => (
