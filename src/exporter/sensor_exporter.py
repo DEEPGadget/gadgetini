@@ -14,12 +14,12 @@ import RPi.GPIO as GPIO
 import board
 from prometheus_client import start_http_server, CollectorRegistry
 from prometheus_client.core import GaugeMetricFamily
-import random 
+import random
 import time
 import requests
 import adafruit_dht
 import mpu6050 as gyro
-import subprocess 
+import subprocess
 #from dlc_alert import leak_detection_beep, leak_detection_beep_off, coolant_overheat_beep, coolant_empty_beep, coolant_slow_beep
 
 ADC = ADS1256.ADS1256()
@@ -52,7 +52,7 @@ class DLC_sensor_Collector(object):
         gauge_metric.add_metric(["sg-tt00","Chassis stability", "1 is stable, 0 is unstable, may server in oscillatting"], self.chassis_stabil_calc())
         yield gauge_metric
 
-    # Coolant temperature fomula generate by several measured data using linear regression. 
+    # Coolant temperature fomula generate by several measured data using linear regression.
     # x: Raw sensing data(ADC_Value, y: Degree celcisous
     def coolant_temp_calc(self):
         ADC_Value = ADC.ADS1256_GetAll()
@@ -69,10 +69,10 @@ class DLC_sensor_Collector(object):
             if self.temp_alert_count < 5:
                 self.temp_alert_count = self.temp_alert_count + 1
         # if temperature exceeds accumulate above 4 times, coolant overheat beep alert will start.
-            else: 
+            else:
                 coolant_overheat_beep()
                 self.temp_alert_count = self.temp_alert_count - 1
-        else: 
+        else:
             self.temp_alert_count = self.temp_alert_count - 1
             if self.temp_alert_count < 0:  self.temp_alert_count = 0
         celcious = round(celcious, 1)
@@ -84,14 +84,14 @@ class DLC_sensor_Collector(object):
     def chassis_stabil_calc(self):
         # get x, y, z, axis value. type: dict
         current_stabil = gyroDevice.get_gyro_data()
-        curr_x = current_stabil['x'] 
+        curr_x = current_stabil['x']
         curr_y = current_stabil['y']
         curr_z = current_stabil['z']
         init_x = boot_stabil['x']
         init_y = boot_stabil['y']
         init_z = boot_stabil['z']
         is_stable = 1
-        # Compare current xyz coordinate data with boot xyz data. 
+        # Compare current xyz coordinate data with boot xyz data.
         if abs(curr_x - init_x) > 5 and abs(curr_y - init_y) > 5 or abs(curr_z - init_z) > 5:
             is_stable = 0
         else:
@@ -141,14 +141,14 @@ if __name__ == "__main__":
         registry.register(sensor_collector)
         start_http_server(port, registry=registry)
     except Exception as e:
-        # Error happen fairly often, DHT's are hard to read, just keep going 
+        # Error happen fairly often, DHT's are hard to read, just keep going
         GPIO.cleanup()
         ADC = ADS1256.ADS1256()
         ADC.ADS1256_init()
         # DHT11 connected to GPIO 4
         dhtDevice = adafruit_dht.DHT11(board.D4)
         gyroDevice = gyro.mpu6050(0x68)
-        # If sensing fail, initialize ADS1256 module. 
+        # If sensing fail, initialize ADS1256 module.
         pass
     while True:
         #print("DLC sensor telemetry initiate..")
