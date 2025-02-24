@@ -22,6 +22,7 @@ export async function POST(request) {
         .replace(/^cpu\s*=\s*.*/m, `cpu=${status.cpu ? "on" : "off"}`)
         .replace(/^gpu\s*=\s*.*/m, `gpu=${status.gpu ? "on" : "off"}`)
         .replace(/^memory\s*=\s*.*/m, `memory=${status.memory ? "on" : "off"}`)
+        .replace(/^memory\s*=\s*.*/m, `psu=${status.psu ? "on" : "off"}`)
         .replace(/^time\s*=\s*.*/m, `time=${rotationTime}`);
 
       // Write the updated config file back to the file system
@@ -75,6 +76,7 @@ export async function GET() {
       cpu: getConfigValue("cpu") === "on",
       gpu: getConfigValue("gpu") === "on",
       memory: getConfigValue("memory") === "on",
+      psu: getConfigValue("psu") === "on",
       rotationTime: parseInt(getConfigValue("time") || "5", 10),
     };
 

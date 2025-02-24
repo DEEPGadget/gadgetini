@@ -29,10 +29,11 @@ export default function Settings() {
   const [ipMode, setIpMode] = useState("dhcp");
   const [status, setStatus] = useState({
     orientation: "vertical",
-    chassis: false,
+    chassis: true,
     cpu: false,
     gpu: false,
     memory: false,
+    psu: false,
   });
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function Settings() {
           cpu: configData.cpu,
           gpu: configData.gpu,
           memory: configData.memory,
+          psu: configData.psu,
         });
         setRotationTime(configData.rotationTime);
       } catch (error) {
@@ -316,9 +318,10 @@ export default function Settings() {
             {Object.entries({
               Chassis:
                 "Monitors internal temperature and humidity, water leakage detection, and coolant level",
-              CPU: "Monitors CPU memory usage and temperature.",
-              GPU: "Monitors GPU memory usage and temperature.",
+              CPU: "Monitors CPU temperature.",
+              GPU: "Monitors GPU temperature.",
               Memory: "Monitors memory usage.",
+              PSU: "Monitors power consumption, PSU temperature",
             }).map(([key, description]) => (
               <tr key={key} className="border-b border-gray-300 ">
                 <td className="py-2 px-4 border border-gray-300 text-center">
@@ -336,6 +339,7 @@ export default function Settings() {
                           ? "bg-green-500"
                           : "bg-red-500"
                       }`}
+                      disabled={key !== "Chassis"}
                     >
                       <span
                         className={`absolute left-1 transition-transform duration-300 transform ${
