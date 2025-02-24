@@ -12,7 +12,7 @@ After=display_logo.service
 Requires=networking.service
 [Service]
 Type=simple
-ExecStart=python3 /home/gadgetini/gadgetini/src/display/display_plot.py
+ExecStart=python3 /home/gadgetini/gadgetini/src/display/display_main.py
 Restart=always
 RestartSec=3
 [Install]
