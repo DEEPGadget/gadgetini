@@ -317,11 +317,11 @@ export default function Settings() {
 
             {Object.entries({
               Chassis:
-                "Monitors internal temperature and humidity, water leakage detection, and coolant level",
-              CPU: "Monitors CPU temperature.",
-              GPU: "Monitors GPU temperature.",
-              Memory: "Monitors memory usage.",
-              PSU: "Monitors power consumption, PSU temperature",
+                "Front display shows internal temperature and humidity, water leakage detection, and coolant level",
+              CPU: "Front display shows CPU temperature and utilization.",
+              GPU: "Front display shows GPU temperature and utilization.",
+              Memory: "Front display shows memory usage.",
+              PSU: "Front display shows power consumption, PSU temperature",
             }).map(([key, description]) => (
               <tr key={key} className="border-b border-gray-300 ">
                 <td className="py-2 px-4 border border-gray-300 text-center">
