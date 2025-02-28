@@ -1,4 +1,3 @@
-from adafruit_rgb_display import st7789
 import numpy as np
 
 import threading
@@ -9,10 +8,10 @@ import requests
 
 
 # Blinka CircuitPython
-import board
-import digitalio
-import busio
-import RPi.GPIO as GPIO
+#import board
+#import digitalio
+#import busio
+#import RPi.GPIO as GPIO
 
 import socket
 import fcntl
@@ -20,30 +19,42 @@ import struct
 
 from PIL import Image, ImageDraw, ImageFont
 
-DEBUG = 0
+import cv2
+
+DEBUG = 1
+
+
+USE_VIRTUAL_LCD = True
+if USE_VIRTUAL_LCD:
+    from virtual_lcd import VirtualLCD
+else :
+    from adafruit_rgb_display import st7789
+    # Configuration for CS and DC pins (these are PiTFT defaults):)))))
+    cs_pin = digitalio.DigitalInOut(board.D18)
+    dc_pin = digitalio.DigitalInOut(board.D26)
+    reset_pin = digitalio.DigitalInOut(board.D13)
+
+    # Config for display baudrate (default max is 24mhz):
+    BAUDRATE = 24000000
+    # Setup SPI bus using hardware SPI:
+    spi = busio.SPI(board.SCK_1,board.MOSI_1,board.MISO_1)
+
+
 
 
 ##Sensors
-import sys 
-sys.path.append('/home/gadgetini/High-Precision-AD-DA-Board-Code/RaspberryPI/ADS1256/python3')
-import ADS1256
-import adafruit_dht
+#import sys 
+#sys.path.append('/home/gadgetini/High-Precision-AD-DA-Board-Code/RaspberryPI/ADS1256/python3')
+#import ADS1256
+#import adafruit_dht
 
-# Configuration for CS and DC pins (these are PiTFT defaults):)))))
-cs_pin = digitalio.DigitalInOut(board.D18)
-dc_pin = digitalio.DigitalInOut(board.D26)
-reset_pin = digitalio.DigitalInOut(board.D13)
 
-# Config for display baudrate (default max is 24mhz):
-BAUDRATE = 24000000
 
-# Setup SPI bus using hardware SPI:
-spi = busio.SPI(board.SCK_1,board.MOSI_1,board.MISO_1)
 
 
 GRAPH_SIZE = 145
 
-FPS = 30
+FPS = 10
 
 FONT_PATH = "fonts/JetBrainsMono-Regular.ttf"
 BOLD_FONT_PATH = "fonts/JetBrainsMono-Bold.ttf"
@@ -77,14 +88,14 @@ def get_text_dimensions(draw, text_string, font):
     #return font.getsize(text_string) 
 #box: (x, y, width, height)
 #align: "left", "center", "right"
-def draw_aligned_text(draw, text, font_size, fill, box, align="left", halign="top", font_path=FONT_PATH):
+def draw_aligned_text(draw, text, font_size, fill, box, align="left", halign="top", font_path=FONT_PATH, autoscale=False):
     x, y, width, height = box
 
     font = get_cached_font(font_size, font_path)
     text_width, text_height, ascent = get_text_dimensions(draw, text, font=font)
     new_font_size = font_size
 
-    if text_width > width or text_height > height:
+    if (autoscale == True) and (text_width > width or text_height > height):
         scale = min(width / text_width, height / text_height)
         new_font_size = max(1, int(font.size * scale))
         font = get_cached_font(new_font_size)
@@ -137,6 +148,7 @@ class SensorData:
         if value < self.min_val:
             value = self.min_val
         self.prev = value
+        #print("value = " + str(value))
         return value
 
     def read_sensor(self):
@@ -219,6 +231,52 @@ class Viewer:
         self.title = title
         self.active = active
 
+        self.frameSize = (240, 240)
+        self.xyCoord = [10, 0]
+        self.isUp = True
+        self.colors = ["red", "orange", "yellow", "green", "blue", "magenta", "white", "cyan"]
+        self.color_index = 0
+
+        self.image_buffer = Image.new('RGB', self.frameSize, color=(0, 0, 0))
+        self.draw_object = ImageDraw.Draw(self.image_buffer)
+
+    def draw(self, draw2, disp_manager):
+            self.image_buffer = disp_manager.disp_buffer
+            self.draw_object = draw2
+
+        #while True:
+            
+            #draw = ImageDraw.Draw(self.image)
+            # 움직이는 텍스트
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
+            self.draw_object.text((self.xyCoord[0], self.xyCoord[1]), "Hello World!", font=font, fill=self.colors[self.color_index])
+
+            # 좌표 및 색상 업데이트
+            if self.isUp:
+                self.xyCoord[1] += 2
+                if self.xyCoord[1] >= self.frameSize[1] - 30:
+                    self.isUp = False
+                    self.color_index = (self.color_index + 1) % len(self.colors)
+            else:
+                self.xyCoord[1] -= 2
+                if self.xyCoord[1] <= 0:
+                    self.isUp = True
+                    self.color_index = (self.color_index + 1) % len(self.colors)
+
+            # PIL 이미지를 OpenCV 형식으로 변환
+            #cv_image = cv2.cvtColor(np.array(self.image_buffer), cv2.COLOR_RGB2BGR)
+
+            # 창에 표시
+            #cv2.imshow("Virtual Display", cv_image)
+
+            # ESC 키로 종료
+            key = cv2.waitKey(30)
+            #if key == 27:  # ESC
+                #break
+
+        #cv2.destroyAllWindows()
+
+
 class Chassis_Viewer(Viewer):
     def __init__(self, title="", active=1):
         self.title = title
@@ -226,39 +284,54 @@ class Chassis_Viewer(Viewer):
         self.type = "Chassis"
 
     def draw(self, draw, disp_manager):
+        if disp_manager.horizontal == 1:
+            offset = (disp_manager.x_offset, disp_manager.y_offset)
+        else:
+            offset = (disp_manager.y_offset, disp_manager.x_offset)
+
         draw.rectangle((0, 0, disp_manager.width, disp_manager.height), fill='black')
+        if DEBUG != 0:
+            draw.rectangle((offset[0],offset[1],disp_manager.width, disp_manager.height), outline=(0,0,255), width=3)
 
         sensor_data = disp_manager.disp_data[0]
         if len(sensor_data.buffer) < 2:
             return
+
+        #print(str(disp_manager.width) + ", " + str(disp_manager.height))
 
         min_value = int(np.min(sensor_data.buffer)*0.95)
         max_value = int(np.max(sensor_data.buffer)*1.05)
 
         normalized_data = np.interp(
             sensor_data.buffer, 
-            #(sensor_data.min_val, sensor_data.max_val), 
             (min_value, max_value), 
-            (48, disp_manager.height-55) 
+            #(48, disp_manager.height-55) 
+            (8, GRAPH_SIZE-8) 
         )
 
-        if disp_manager.horizontal == 0:
-            x1 = 50
-            x2 = x1 + GRAPH_SIZE
-            y1 = 25
-            y2 = y1 + GRAPH_SIZE
+        gray = (50,50,50)
+
+        #GRAPHBOX
+        graphbox_x1 = offset[0]
+        graphbox_y1 = offset[1]
+        graphbox_x2 = graphbox_x1 + GRAPH_SIZE
+        graphbox_y2 = graphbox_y1 + GRAPH_SIZE
+        draw.rectangle((graphbox_x1, graphbox_y1, graphbox_x2, graphbox_y2), outline=gray, width=3)
+
+
+        #DATABOX
+        if disp_manager.horizontal == 1:
+            databox_x1 = graphbox_x2 + 5
+            databox_y1 = graphbox_y1
+            databox_x2 = databox_x1 + GRAPH_SIZE
+            databox_y2 = databox_y1 + GRAPH_SIZE
         else:
-            x1 = 10
-            x2 = x1 + GRAPH_SIZE
-            y1 = 50
-            y2 = y1 + GRAPH_SIZE
+            databox_x1 = graphbox_x1
+            databox_y1 = graphbox_y2 + 5
+            databox_x2 = databox_x1 + GRAPH_SIZE
+            databox_y2 = databox_y1 + GRAPH_SIZE
 
-
-        gray = (12,12,12)
-        draw.line((x1, y1, x2, y1), fill=gray) 
-        draw.line((x1, y1, x1, y2), fill=gray) 
-        draw.line((x1, y2, x2, y2), fill=gray) 
-        draw.line((x2, y1, x2, y2), fill=gray) 
+            draw.rectangle((databox_x1, databox_y1, databox_x2, databox_y2), outline=gray, width=3)
 
         sensor_value_str = str(f"{round(sensor_data.buffer[-1],2):.1f}")
         title = str(sensor_data.type_name_str)
@@ -267,68 +340,88 @@ class Chassis_Viewer(Viewer):
         min_value_str = str(f"{round(min_value):.1f}"+sensor_data.unit_str)
         max_value_str = str(f"{round(max_value):.1f}"+sensor_data.unit_str)
 
-        if disp_manager.horizontal == 1:
-            #TITLE
-            draw_aligned_text(draw=draw, text=title, font_size=40, fill=sensor_data.get_color_gradient(sensor_data.buffer[-1]), box=(x1+GRAPH_SIZE+5, y1-8, 159, 30), align="center", halign="center", font_path=BOLD_FONT_PATH)
-            #VALUE
-            draw_aligned_text(draw=draw, text=sensor_value_str, font_size=55, fill=sensor_data.get_color_gradient(sensor_data.buffer[-1]), box=(x1+GRAPH_SIZE+5, y1+22, 135, 45), align="right", halign="top", font_path=EXTRABOLD_FONT_PATH)
-            #UNIT
-            draw_aligned_text(draw=draw, text=unit, font_size=40, fill='white', box=(x1+GRAPH_SIZE+5+135, y1+22, 25, 45), align="left", halign="top", font_path=BOLD_FONT_PATH)
+        version_str = str(disp_manager.version)
 
-            #IP
-            draw_aligned_text(draw=draw, text=disp_manager.ip_addr, font_size=10, fill='white', box=(x2, y2, 165, 8), align="right", halign="bottom", font_path=LIGHT_FONT_PATH)
+        #TITLE
+        draw_aligned_text(draw=draw, text=title, font_size=40, fill=sensor_data.get_color_gradient(sensor_data.buffer[-1]), box=(databox_x1, databox_y1, databox_x2-databox_x1, 30), align="center", halign="center", font_path=BOLD_FONT_PATH, autoscale=True)
+        #VALUE
+        draw_aligned_text(draw=draw, text=sensor_value_str, font_size=50, fill=sensor_data.get_color_gradient(sensor_data.buffer[-1]), box=(databox_x1, databox_y1+30, (databox_x2-databox_x1-25), 45), align="right", halign="top", font_path=EXTRABOLD_FONT_PATH)
+        #UNIT
+        draw_aligned_text(draw=draw, text=unit, font_size=40, fill='white', box=(databox_x2-25, databox_y1+30, 25, 45), align="left", halign="top", font_path=BOLD_FONT_PATH, autoscale=True)
 
+        #IP
+        draw_aligned_text(draw=draw, text=disp_manager.ip_addr, font_size=8, fill='white', box=(databox_x1, databox_y2-12, GRAPH_SIZE, 12), align="left", halign="center", font_path=LIGHT_FONT_PATH)
 
-            #CHASSIS Value
-
-
-            #Min/Max
-            draw_aligned_text(draw=draw, text=max_value_str, font_size=10, fill=sensor_data.get_color_gradient(max_value), box=(x1, y1-8, x2-x1, 8), align="center", halign="top", font_path=THIN_FONT_PATH)
-            draw_aligned_text(draw=draw, text=min_value_str, font_size=10, fill=sensor_data.get_color_gradient(min_value), box=(x1, y2, x2-x1, 8), align="center", halign="bottom", font_path=THIN_FONT_PATH)
-
-            for i in range(1, len(sensor_data.buffer)):
-                px1 = i + x1
-                py1 = int(disp_manager.height - normalized_data[i-1])
-                px2 = i + x1 + 1
-                py2 = int(disp_manager.height - normalized_data[i])
-                color = sensor_data.get_color_gradient(sensor_data.buffer[i])
-                draw.line((px1,py1,px2,py2), fill=color, width=3)
-
-        else:
-            self.draw.text((x1-5, GRAPH_SIZE + 50), sensor_value_str, fill=sensor_data.get_color_gradient(sensor_data.buffer[-1]), font=self.big_font)
-            draw_aligned_text(draw=self.draw, text=sensor_value_str, font_size=75, fill=sensor_data.get_color_gradient(sensor_data.buffer[-1]), box=(x1-5, y1+30, 135, 80), align="right", halign="top")
+        #Gadgetini Version
+        draw_aligned_text(draw=draw, text=version_str, font_size=8, fill='gray', box=(databox_x1, databox_y2-12, GRAPH_SIZE, 12), align="right", halign="center", font_path=LIGHT_FONT_PATH)
 
 
+        #CHASSIS Value
+
+
+        #Min/Max
+        draw_aligned_text(draw=draw, text=max_value_str, font_size=8, fill=sensor_data.get_color_gradient(max_value), box=(graphbox_x1, graphbox_y1, GRAPH_SIZE, 8), align="center", halign="top", font_path=THIN_FONT_PATH)
+        draw_aligned_text(draw=draw, text=min_value_str, font_size=8, fill=sensor_data.get_color_gradient(min_value), box=(graphbox_x1, graphbox_y2-8, GRAPH_SIZE, 8), align="center", halign="bottom", font_path=THIN_FONT_PATH)
+
+        for i in range(1, len(sensor_data.buffer)):
+            px1 = i + graphbox_x1
+            py1 = int(graphbox_y2 - normalized_data[i-1])
+            px2 = i + graphbox_x1 + 1
+            py2 = int(graphbox_y2 - normalized_data[i])
+            color = sensor_data.get_color_gradient(sensor_data.buffer[i])
+            draw.line((px1,py1,px2,py2), fill=color, width=3)
+
+        
 class DisplayManager:
     def __init__(self, rotation=270):
         self.rotation = rotation
-        self.disp = st7789.ST7789(spi, # 1.9" ST7789
-            rotation=self.rotation,
-            cs=cs_pin,
-            dc=dc_pin,
-            rst=reset_pin,
-            baudrate=BAUDRATE,
-            x_offset=0, y_offset=0
-        )
+        self.version = "gadgetini v0.3"
 
-        self.ADC=ADS1256.ADS1256()
-        self.ADC.ADS1256_init()
 
+        if not USE_VIRTUAL_LCD:
+            self.x_offset = 10 
+            self.y_offset = 50
+            self.deadzone_x = 170
+            self.deadzone_y = 320
+
+            self.disp = st7789.ST7789(spi, # 1.9" ST7789
+                rotation=self.rotation,
+                cs=cs_pin,
+                dc=dc_pin,
+                rst=reset_pin,
+                baudrate=BAUDRATE,
+                x_offset=0, y_offset=0)
+        else:
+            self.x_offset = 0
+            self.y_offset = 0
+            self.deadzone_x = 170
+            self.deadzone_y = 320
+
+            self.disp = VirtualLCD(
+                    (170, 320),
+                    (self.x_offset, self.y_offset),
+                    (self.deadzone_x, self.deadzone_y),
+                    ) #170x320
+        
+
+        #self.ADC=ADS1256.ADS1256()
+        #self.ADC.ADS1256_init()
         #self.DHT = adafruit_dht.DHT11(board.D4)
 
         self.viewer_rotation_sec = 5 #sec
         self.current_viewer = 0
         self.viewers = []
         self.viewers.append(Chassis_Viewer("Chassis Info")) #0 Viewer
+        #self.viewers.append(Viewer("Chassis Info")) #0 Viewer
 
         self.disp_data = []
-        #self.disp_data.append(SensorData("CPU Temperature", "°C", 0, 20, 1))
+        self.disp_data.append(SensorData("CPU Temperature", "°C", 0, 20, 1))
         #self.disp_data.append(SensorData("CPU Utilization", "%", 0, 100, 10))
         #self.disp_data.append(SensorData("GPU Temperature", "°C", 0, 120, 10))
         #self.disp_data.append(SensorData("GPU Utilization", "%", 0, 100, 10))
         #self.disp_data.append(SensorData("RAM Utilization", "%", 0, 100, 10))
         #self.disp_data.append(SensorData("HDD Utilization", "%", 0, 100, 10))
-        self.disp_data.append(CoolantTemperatureData(self.ADC, "Coolant Temperature", "°C", 20, 60, 10))  #0 Data
+        #self.disp_data.append(CoolantTemperatureData(self.ADC, "Coolant Temperature", "°C", 20, 60, 10))  #0 Data
         #self.disp_data.append(ChassisHumidData(self.DHT, "Chassis Humid", "%", 10, 80, 1))         #1 Data
         #self.disp_data.append(SensorData("Chassis Temperature", "°C", 0, 50, 1))   #2 Data
 
@@ -366,15 +459,7 @@ class DisplayManager:
 
 
     def read_sensor(self):
-        try:
-            chassis_temp_query = 'DLC_sensors_gauge{metric="Chassis temperature"}'
-            chassis_temp_response = requests.get('http://192.168.1.145:9090/api/v1/query', params={'query': chassis_temp_query})
-            chassis_temp_response = chassis_temp_response.json()['data']['result']
-            temp = float(chassis_temp_response[-1]['value'][-1])
-            print(temp)
-            return temp
-        except Exception as e:
-            return 0
+        return 0
 
     def set_next_viewer(self):
         self.current_viewer = self.current_viewer+1
@@ -394,13 +479,16 @@ class DisplayManager:
         self.get_ip_address()
 
     def get_ip_address(self, ifname="eth0"):
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.ip_addr = socket.inet_ntoa(fcntl.ioctl(
-            s.fileno(),
-            0x8915,  # SIOCGIFADDR
-            struct.pack('256s', ifname[:15].encode('utf-8'))
-        )[20:24])
-        #self.ip_addr = '.'.join(octet.zfill(3) for octet in ip.split('.'))
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.ip_addr = socket.inet_ntoa(fcntl.ioctl(
+                s.fileno(),
+                0x8915,  # SIOCGIFADDR
+                struct.pack('256s', ifname[:15].encode('utf-8'))
+            )[20:24])
+            #self.ip_addr = '.'.join(octet.zfill(3) for octet in ip.split('.'))
+        except Exception as e:
+            self.ip_addr = "no eth0 device"
 
     def sensor_data_collector(self):
         while not self.stop_event.is_set():
@@ -449,7 +537,7 @@ class DisplayManager:
 
 def main():
     try:
-        display_manager = DisplayManager(rotation=270)
+        display_manager = DisplayManager(rotation=180)
         sensor_thread, graph_thread = display_manager.start_thr()
 
         sensor_thread.join()
@@ -457,7 +545,10 @@ def main():
     except KeyboardInterrupt:
         print("Quit")
     finally:
-        GPIO.cleanup()
+        if not USE_VIRTUAL_LCD:
+            GPIO.cleanup()
+        else:
+            cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
