@@ -41,6 +41,8 @@ else :
 
 
 
+import configparser
+
 
 ##Sensors
 #import sys 
@@ -125,8 +127,8 @@ def draw_aligned_text(draw, text, font_size, fill, box, align="left", halign="to
     draw.text((tx, ty), text, font=font, fill=fill)
 
 class SensorData:
-    def __init__(self, type_name, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE):
-        self.type_name_str = type_name
+    def __init__(self, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE):
+        self.title_str = title_str
         self.unit_str = unit_str
         #self.data_queue = queue.Queue(max_buffer_size)
         self.data_queue = queue.Queue(1)
@@ -183,8 +185,8 @@ class SensorData:
 
 
 class CoolantTemperatureData(SensorData):
-    def __init__(self, ADC, type_name, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE):
-        super().__init__(type_name, unit_str, min_val, max_val, read_rate, max_buffer_size)
+    def __init__(self, ADC, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE):
+        super().__init__(title_str, unit_str, min_val, max_val, read_rate, max_buffer_size)
         self.ADC = ADC
     def read_sensor(self):
         return self.get_coolant_temp()
@@ -206,8 +208,8 @@ class CoolantTemperatureData(SensorData):
         return celcious
 
 class ChassisHumidData(SensorData):
-    def __init__(self, DHT, type_name, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE):
-        super().__init__(type_name, unit_str, min_val, max_val, read_rate, max_buffer_size)
+    def __init__(self, DHT, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE):
+        super().__init__(title_str, unit_str, min_val, max_val, read_rate, max_buffer_size)
         self.DHT = DHT
     def read_sensor(self):
         return self.get_air_humid()
@@ -293,10 +295,18 @@ class Chassis_Viewer(Viewer):
         if DEBUG != 0:
             draw.rectangle((offset[0],offset[1],disp_manager.width, disp_manager.height), outline=(0,0,255), width=3)
 
-        sensor_data = disp_manager.disp_data[0]
-        if len(sensor_data.buffer) < 2:
-            return
+        coolant_temp_data = disp_manager.disp_data[0]
+        chassis_humid_data = disp_manager.disp_data[1]
+        chassis_temp_data = disp_manager.disp_data[2]
 
+        sensor_data = coolant_temp_data     #main sensor
+        sub_sensor_data_1 = chassis_humid_data  #sub sensor 1
+        sub_sensor_data_2 = chassis_temp_data   #sub sensor 2
+
+        if len(sensor_data.buffer) < 2:
+            print("Ready for reading the sensor data")
+            return
+        
         #print(str(disp_manager.width) + ", " + str(disp_manager.height))
 
         min_value = int(np.min(sensor_data.buffer)*0.95)
@@ -334,7 +344,7 @@ class Chassis_Viewer(Viewer):
             draw.rectangle((databox_x1, databox_y1, databox_x2, databox_y2), outline=gray, width=3)
 
         sensor_value_str = str(f"{round(sensor_data.buffer[-1],2):.1f}")
-        title = str(sensor_data.type_name_str)
+        title = str(sensor_data.title_str)
         unit = str(sensor_data.unit_str)
 
         min_value_str = str(f"{round(min_value):.1f}"+sensor_data.unit_str)
@@ -357,6 +367,18 @@ class Chassis_Viewer(Viewer):
 
 
         #CHASSIS Value
+        if len(sub_sensor_data_1.buffer) > 0:
+            draw_aligned_text(draw=draw, text=sub_sensor_data_1.title_str, font_size=6, fill='white', box=(databox_x1, databox_y1+75, (databox_x2-databox_x1)/2, 15), align="center", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_1.buffer[-1],2):.1f}"), font_size=30, fill='white', box=(databox_x1, databox_y1+90, (databox_x2-databox_x1)/2, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_1.unit_str, font_size=20, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2-25, databox_y1+115, 25, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
+
+
+        if len(sub_sensor_data_2.buffer) > 0:
+            draw_aligned_text(draw=draw, text=sub_sensor_data_2.title_str, font_size=6, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2, databox_y1+75, (databox_x2-databox_x1)/2, 15), align="center", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_2.buffer[-1],2):.1f}"), font_size=30, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2, databox_y1+90, (databox_x2-databox_x1)/2, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_2.unit_str, font_size=20, fill='white', box=(databox_x2-25, databox_y1+115, 25, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
+
+
 
 
         #Min/Max
@@ -373,11 +395,56 @@ class Chassis_Viewer(Viewer):
 
         
 class DisplayManager:
-    def __init__(self, rotation=270):
-        self.rotation = rotation
+    def __init__(self):
+        self.config = configparser.ConfigParser()
+        self.horizontal = -1
+
+        self.update_info()
         self.version = "gadgetini v0.3"
 
+        #self.ADC=ADS1256.ADS1256()
+        #self.ADC.ADS1256_init()
+        #self.DHT = adafruit_dht.DHT11(board.D4)
 
+        self.viewer_rotation_sec = 5 #sec
+        self.current_viewer = 0
+        self.viewers = []
+        self.viewers.append(Chassis_Viewer("Chassis Info")) #0 Viewer
+        #self.viewers.append(Viewer("Chassis Info")) #0 Viewer
+
+        self.disp_data = []
+        self.disp_data.append(SensorData("Coolant Temperature", "°C", 0, 65, 1))
+        self.disp_data.append(SensorData("Chassis Humidity", "%", 0, 100, 1))
+        self.disp_data.append(SensorData("Chassis Temperature", "°C", -20, 60, 1))
+        #self.disp_data.append(SensorData("CPU Temperature", "°C", 0, 20, 1))
+        #self.disp_data.append(SensorData("CPU Utilization", "%", 0, 100, 10))
+        #self.disp_data.append(SensorData("GPU Temperature", "°C", 0, 120, 10))
+        #self.disp_data.append(SensorData("GPU Utilization", "%", 0, 100, 10))
+        #self.disp_data.append(SensorData("RAM Utilization", "%", 0, 100, 10))
+        #self.disp_data.append(SensorData("HDD Utilization", "%", 0, 100, 10))
+        #self.disp_data.append(CoolantTemperatureData(self.ADC, "Coolant Temperature", "°C", 20, 60, 10))  #0 Data
+        #self.disp_data.append(ChassisHumidData(self.DHT, "Chassis Humid", "%", 10, 80, 1))         #1 Data
+        #self.disp_data.append(SensorData("Chassis Temperature", "°C", 0, 50, 1))   #2 Data
+
+        self.stop_event = threading.Event()
+       
+        self.ip_addr = ""
+
+        try:
+            #self.font = ImageFont.truetype(FONT_PATH, 20)
+            self.font = get_cached_font(20)
+            self.mid_font = get_cached_font(40)
+            self.big_font = get_cached_font(80)
+            self.small_font = get_cached_font(12)
+            #self.mid_font = ImageFont.truetype("fonts/PretendardVariable.ttf", 40)
+            #self.big_font = ImageFont.truetype("fonts/PretendardVariable.ttf", 80)
+            #self.small_font = ImageFont.truetype("fonts/PretendardVariable.ttf", 12)
+        except Exception as e:
+            print("Cannot find font!")
+            return
+
+    def set_display(self, rotation):
+        self.rotation = rotation
         if not USE_VIRTUAL_LCD:
             self.x_offset = 10 
             self.y_offset = 50
@@ -402,32 +469,8 @@ class DisplayManager:
                     (self.x_offset, self.y_offset),
                     (self.deadzone_x, self.deadzone_y),
                     ) #170x320
-        
-
-        #self.ADC=ADS1256.ADS1256()
-        #self.ADC.ADS1256_init()
-        #self.DHT = adafruit_dht.DHT11(board.D4)
-
-        self.viewer_rotation_sec = 5 #sec
-        self.current_viewer = 0
-        self.viewers = []
-        self.viewers.append(Chassis_Viewer("Chassis Info")) #0 Viewer
-        #self.viewers.append(Viewer("Chassis Info")) #0 Viewer
-
-        self.disp_data = []
-        self.disp_data.append(SensorData("CPU Temperature", "°C", 0, 20, 1))
-        #self.disp_data.append(SensorData("CPU Utilization", "%", 0, 100, 10))
-        #self.disp_data.append(SensorData("GPU Temperature", "°C", 0, 120, 10))
-        #self.disp_data.append(SensorData("GPU Utilization", "%", 0, 100, 10))
-        #self.disp_data.append(SensorData("RAM Utilization", "%", 0, 100, 10))
-        #self.disp_data.append(SensorData("HDD Utilization", "%", 0, 100, 10))
-        #self.disp_data.append(CoolantTemperatureData(self.ADC, "Coolant Temperature", "°C", 20, 60, 10))  #0 Data
-        #self.disp_data.append(ChassisHumidData(self.DHT, "Chassis Humid", "%", 10, 80, 1))         #1 Data
-        #self.disp_data.append(SensorData("Chassis Temperature", "°C", 0, 50, 1))   #2 Data
-
-        self.stop_event = threading.Event()
+ 
         self.horizontal = 1
-
         if self.rotation % 180 == 0:
             self.width = self.disp.width
             self.height = self.disp.height
@@ -440,23 +483,19 @@ class DisplayManager:
 
         self.disp_buffer = Image.new('RGB', (self.width, self.height), 'black')
         self.draw = ImageDraw.Draw(self.disp_buffer)
-        
-        self.ip_addr = ""
 
-        try:
-            #self.font = ImageFont.truetype(FONT_PATH, 20)
-            self.font = get_cached_font(20)
-            self.mid_font = get_cached_font(40)
-            self.big_font = get_cached_font(80)
-            self.small_font = get_cached_font(12)
-            #self.mid_font = ImageFont.truetype("fonts/PretendardVariable.ttf", 40)
-            #self.big_font = ImageFont.truetype("fonts/PretendardVariable.ttf", 80)
-            #self.small_font = ImageFont.truetype("fonts/PretendardVariable.ttf", 12)
-        except Exception as e:
-            print("Cannot find font!")
+    def update_display(self):
+        orientation = self.config['DISPLAY']['orientation'].lower()
+
+        if orientation == "horizontal":
+            if self.horizontal != 1:
+                self.set_display(270)
+        elif orientation == "vertical":
+            if self.horizontal != 0:
+                self.set_display(180)
+        else:
+            print(f"Orientation: {orientation} must be horizontal or vertical")
             return
-
-
 
     def read_sensor(self):
         return 0
@@ -475,8 +514,10 @@ class DisplayManager:
         cur_viewer.draw(self.draw, self)
         self.disp.image(self.disp_buffer)
 
-    def update_info(self):
+    def update_info(self, config_path="config.ini"):
+        self.config.read(config_path)
         self.get_ip_address()
+        self.update_display()
 
     def get_ip_address(self, ifname="eth0"):
         try:
@@ -537,7 +578,7 @@ class DisplayManager:
 
 def main():
     try:
-        display_manager = DisplayManager(rotation=180)
+        display_manager = DisplayManager()
         sensor_thread, graph_thread = display_manager.start_thr()
 
         sensor_thread.join()
