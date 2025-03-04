@@ -7,28 +7,29 @@ import random
 import requests
 
 
-# Blinka CircuitPython
-#import board
-#import digitalio
-#import busio
-#import RPi.GPIO as GPIO
-
 import socket
 import fcntl
 import struct
 
 from PIL import Image, ImageDraw, ImageFont
-
-import cv2
-
-DEBUG = 1
+import redis
 
 
-USE_VIRTUAL_LCD = True
+#For Debugging
+DEBUG = 0
+USE_VIRTUAL_LCD = False
+
 if USE_VIRTUAL_LCD:
     from virtual_lcd import VirtualLCD
+    import cv2
 else :
     from adafruit_rgb_display import st7789
+    # Blinka CircuitPython
+    import board
+    import digitalio
+    import busio
+    import RPi.GPIO as GPIO
+
     # Configuration for CS and DC pins (these are PiTFT defaults):)))))
     cs_pin = digitalio.DigitalInOut(board.D18)
     dc_pin = digitalio.DigitalInOut(board.D26)
@@ -142,6 +143,7 @@ class SensorData:
         self.count = 0
         self.prev = 2
 
+
     def read_sensor_fake(self):
         r =random.uniform(-2,2)
         value = self.prev + r
@@ -157,7 +159,7 @@ class SensorData:
         return self.read_sensor_fake()
 
     def sensor_data_collector(self):
-        if self.count > self.read_rate:
+        if self.count >= self.read_rate:
             self.count = 0
             sensor_value = self.read_sensor()          
             with self.lock:
@@ -185,48 +187,45 @@ class SensorData:
 
 
 class CoolantTemperatureData(SensorData):
-    def __init__(self, ADC, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE):
+    def __init__(self, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE, redis=None):
         super().__init__(title_str, unit_str, min_val, max_val, read_rate, max_buffer_size)
-        self.ADC = ADC
+        #print(f"read_rate={self.read_rate}")
+        self.redis = redis
+    
     def read_sensor(self):
+        #print("read_sensor")
+        #return self.read_sensor_fake()
         return self.get_coolant_temp()
 
-# Coolant temperature fomula generate by several measured data using linear regression. 
-# x: Raw sensing data(ADC_Value, y: Degree celcisous)
     def get_coolant_temp(self):
-        ADC_Value = self.ADC.ADS1256_GetAll()
-        coeff_a = 50.453
-        coeff_b = -1.177
-        raw = 0
-        celcious = 0
-        if float(ADC_Value[4]*5.0/0x7fffff) < 1:
-            raw = 1.282
-            celcious = coeff_a * raw ** coeff_b
-        else:
-            celcious = coeff_a * float(ADC_Value[4]*5.0/0x7fffff) ** coeff_b
-        celcious = round(celcious, 1)
+        celcious = float(self.redis.get('coolant_temp'))
+        #print(f"celcious = {celcious}")
         return celcious
 
 class ChassisHumidData(SensorData):
-    def __init__(self, DHT, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE):
+    def __init__(self, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE, redis=None):
         super().__init__(title_str, unit_str, min_val, max_val, read_rate, max_buffer_size)
-        self.DHT = DHT
+        self.redis = redis
+
     def read_sensor(self):
         return self.get_air_humid()
 
     def get_air_humid(self):
-        curr_humid = 25
-        try:
-            curr_humid = dhtDevice.humidity
-            print("humidity = " + str(curr_humid))
-        except Exception as e:
-            print("dht sensing error")
-            # Error happen fairly often, DHT's are hard to read, just keep going 
-            #dhtDevice = adafruit_dht.DHT11(board.D4)
-            #curr_humit = dhtDevice.humidity
-            pass
-        finally:
-            return curr_humid
+        humid = float(self.redis.get('air_humit'))
+        return humid
+
+class ChassisTemperatureData(SensorData):
+    def __init__(self, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE, redis=None):
+        super().__init__(title_str, unit_str, min_val, max_val, read_rate, max_buffer_size)
+        self.redis = redis
+
+    def read_sensor(self):
+        return self.get_air_temp()
+
+    def get_air_temp(self):
+        humid = float(self.redis.get('air_temp'))
+        return humid
+
 
 class Viewer:
     def __init__(self, title="", active=1):
@@ -285,7 +284,7 @@ class Chassis_Viewer(Viewer):
         self.active = active
         self.type = "Chassis"
 
-    def draw(self, draw, disp_manager):
+    def draw(self, draw, disp_manager, frame):
         if disp_manager.horizontal == 1:
             offset = (disp_manager.x_offset, disp_manager.y_offset)
         else:
@@ -326,7 +325,8 @@ class Chassis_Viewer(Viewer):
         graphbox_y1 = offset[1]
         graphbox_x2 = graphbox_x1 + GRAPH_SIZE
         graphbox_y2 = graphbox_y1 + GRAPH_SIZE
-        draw.rectangle((graphbox_x1, graphbox_y1, graphbox_x2, graphbox_y2), outline=gray, width=3)
+        if DEBUG == 1:
+            draw.rectangle((graphbox_x1, graphbox_y1, graphbox_x2, graphbox_y2), outline=gray, width=3)
 
 
         #DATABOX
@@ -340,7 +340,8 @@ class Chassis_Viewer(Viewer):
             databox_y1 = graphbox_y2 + 5
             databox_x2 = databox_x1 + GRAPH_SIZE
             databox_y2 = databox_y1 + GRAPH_SIZE
-
+        
+        if DEBUG == 1:
             draw.rectangle((databox_x1, databox_y1, databox_x2, databox_y2), outline=gray, width=3)
 
         sensor_value_str = str(f"{round(sensor_data.buffer[-1],2):.1f}")
@@ -368,22 +369,22 @@ class Chassis_Viewer(Viewer):
 
         #CHASSIS Value
         if len(sub_sensor_data_1.buffer) > 0:
-            draw_aligned_text(draw=draw, text=sub_sensor_data_1.title_str, font_size=6, fill='white', box=(databox_x1, databox_y1+75, (databox_x2-databox_x1)/2, 15), align="center", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
-            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_1.buffer[-1],2):.1f}"), font_size=30, fill='white', box=(databox_x1, databox_y1+90, (databox_x2-databox_x1)/2, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
-            draw_aligned_text(draw=draw, text=sub_sensor_data_1.unit_str, font_size=20, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2-25, databox_y1+115, 25, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_1.title_str, font_size=6, fill='white', box=(databox_x1, databox_y1+75, (databox_x2-databox_x1)/2-4, 15), align="center", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_1.buffer[-1],2):.1f}"), font_size=30, fill='white', box=(databox_x1, databox_y1+90, (databox_x2-databox_x1)/2-4, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_1.unit_str, font_size=15, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2-25, databox_y1+115, 25-4, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
 
 
         if len(sub_sensor_data_2.buffer) > 0:
             draw_aligned_text(draw=draw, text=sub_sensor_data_2.title_str, font_size=6, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2, databox_y1+75, (databox_x2-databox_x1)/2, 15), align="center", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
-            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_2.buffer[-1],2):.1f}"), font_size=30, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2, databox_y1+90, (databox_x2-databox_x1)/2, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
-            draw_aligned_text(draw=draw, text=sub_sensor_data_2.unit_str, font_size=20, fill='white', box=(databox_x2-25, databox_y1+115, 25, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_2.buffer[-1],2):.1f}"), font_size=30, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2+4, databox_y1+90, (databox_x2-databox_x1)/2-4, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_2.unit_str, font_size=15, fill='white', box=(databox_x2-25, databox_y1+115, 25, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
 
 
 
 
         #Min/Max
-        draw_aligned_text(draw=draw, text=max_value_str, font_size=8, fill=sensor_data.get_color_gradient(max_value), box=(graphbox_x1, graphbox_y1, GRAPH_SIZE, 8), align="center", halign="top", font_path=THIN_FONT_PATH)
-        draw_aligned_text(draw=draw, text=min_value_str, font_size=8, fill=sensor_data.get_color_gradient(min_value), box=(graphbox_x1, graphbox_y2-8, GRAPH_SIZE, 8), align="center", halign="bottom", font_path=THIN_FONT_PATH)
+        draw_aligned_text(draw=draw, text=max_value_str, font_size=8, fill=sensor_data.get_color_gradient(max_value), box=(graphbox_x1, graphbox_y1, GRAPH_SIZE, 8), align="center", halign="top", font_path=FONT_PATH)
+        draw_aligned_text(draw=draw, text=min_value_str, font_size=8, fill=sensor_data.get_color_gradient(min_value), box=(graphbox_x1, graphbox_y2-8, GRAPH_SIZE, 8), align="center", halign="bottom", font_path=FONT_PATH)
 
         for i in range(1, len(sensor_data.buffer)):
             px1 = i + graphbox_x1
@@ -401,10 +402,7 @@ class DisplayManager:
 
         self.update_info()
         self.version = "gadgetini v0.3"
-
-        #self.ADC=ADS1256.ADS1256()
-        #self.ADC.ADS1256_init()
-        #self.DHT = adafruit_dht.DHT11(board.D4)
+        self.redis = redis.Redis(host='localhost', port=6379, db=0)
 
         self.viewer_rotation_sec = 5 #sec
         self.current_viewer = 0
@@ -413,9 +411,9 @@ class DisplayManager:
         #self.viewers.append(Viewer("Chassis Info")) #0 Viewer
 
         self.disp_data = []
-        self.disp_data.append(SensorData("Coolant Temperature", "°C", 0, 65, 1))
-        self.disp_data.append(SensorData("Chassis Humidity", "%", 0, 100, 1))
-        self.disp_data.append(SensorData("Chassis Temperature", "°C", -20, 60, 1))
+        self.disp_data.append(CoolantTemperatureData("Coolant Temperature", "°C", 25, 50, read_rate=1, redis=self.redis))
+        self.disp_data.append(ChassisHumidData("Chassis Humidity", "%", 0, 100, 1, redis=self.redis))
+        self.disp_data.append(ChassisTemperatureData("Chassis Temperature", "°C", -20, 60, 1, redis=self.redis))
         #self.disp_data.append(SensorData("CPU Temperature", "°C", 0, 20, 1))
         #self.disp_data.append(SensorData("CPU Utilization", "%", 0, 100, 10))
         #self.disp_data.append(SensorData("GPU Temperature", "°C", 0, 120, 10))
@@ -511,7 +509,7 @@ class DisplayManager:
 
     def draw_viewer(self, frame):
         cur_viewer = self.get_cur_viewer()
-        cur_viewer.draw(self.draw, self)
+        cur_viewer.draw(self.draw, self, frame)
         self.disp.image(self.disp_buffer)
 
     def update_info(self, config_path="config.ini"):
@@ -519,17 +517,22 @@ class DisplayManager:
         self.get_ip_address()
         self.update_display()
 
-    def get_ip_address(self, ifname="eth0"):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.ip_addr = socket.inet_ntoa(fcntl.ioctl(
-                s.fileno(),
-                0x8915,  # SIOCGIFADDR
-                struct.pack('256s', ifname[:15].encode('utf-8'))
-            )[20:24])
-            #self.ip_addr = '.'.join(octet.zfill(3) for octet in ip.split('.'))
-        except Exception as e:
-            self.ip_addr = "no eth0 device"
+    def get_ip_address(self):
+        interfaces = ["eth0", "wlan0"]
+        self.ip_addr = "no network found"
+
+        for ifname in interfaces:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                self.ip_addr = socket.inet_ntoa(fcntl.ioctl(
+                    s.fileno(),
+                    0x8915,  # SIOCGIFADDR
+                    struct.pack('256s', ifname[:15].encode('utf-8'))
+                )[20:24])
+                return
+            except Exception as e:
+                self.ip_addr = "no network found"
+                continue
 
     def sensor_data_collector(self):
         while not self.stop_event.is_set():
