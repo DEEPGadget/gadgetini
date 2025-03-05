@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import { exec } from "child_process";
 
-const filePath = `/etc/NetworkManager/system-connections/Wired connection 1.nmconnection`;
+const filePath = `/etc/NetworkManager/system-connections/'Wired connection 1.nmconnection'`;
 
 export async function POST(req) {
   try {
