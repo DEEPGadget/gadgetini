@@ -49,7 +49,7 @@ export async function POST(req) {
       fileData.substring(ipv4EndIndex);
 
     // 변경된 설정 저장
-    await fs.writeFile(filePath, newFileContent, { mode: 0o600 });
+    await fs.writeFile(filePath, newFileContent);
     console.log("Configuration updated:", newFileContent);
 
     // NetworkManager 설정 적용
