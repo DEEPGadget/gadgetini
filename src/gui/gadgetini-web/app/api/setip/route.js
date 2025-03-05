@@ -2,58 +2,76 @@ import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import { exec } from "child_process";
 
-const filePath = "/etc/systemd/network/static-ip.network";
+const filePath = `/etc/NetworkManager/system-connections/Wired connection 1.nmconnection`;
 
 export async function POST(req) {
   try {
     const payload = await req.json();
     console.log("Received IP Configuration Payload:", payload);
 
-    let newNetworkContent = "";
-    if (payload.mode === "static") {
-      newNetworkContent = `DHCP=no
-Address=${payload.ip}/${payload.netmask}
-Gateway=${payload.gateway}
-DNS=${payload.dns1}
-DNS=${payload.dns2}
-`;
-    } else if (payload.mode === "dhcp") {
-      newNetworkContent = `DHCP=yes
-Address=
-Gateway=
-DNS=
-DNS=
-`;
-    } else {
-      return NextResponse.json(
-        { success: false, error: "Invalid mode" },
-        { status: 400 }
-      );
+    // 파일 읽기
+    let fileData = await fs.readFile(filePath, "utf8");
+
+    // IPv4 섹션 찾기
+    const ipv4Marker = "[ipv4]";
+    const ipv6Marker = "[ipv6]";
+
+    const ipv4StartIndex = fileData.indexOf(ipv4Marker);
+    if (ipv4StartIndex === -1) {
+      throw new Error("Invalid configuration file: Missing [ipv4] section");
     }
 
-    const fileData = await fs.readFile(filePath, "utf8");
-    const networkMarker = "[Network]";
-    const markerIndex = fileData.indexOf(networkMarker);
-    const preservedContent = fileData.substring(0, markerIndex).trimEnd();
-    const newFileContent = `${preservedContent}
-${networkMarker}
-${newNetworkContent}`;
+    // IPv4 섹션 추출
+    const ipv6StartIndex = fileData.indexOf(ipv6Marker);
+    const ipv4EndIndex =
+      ipv6StartIndex !== -1 ? ipv6StartIndex : fileData.length;
+    const ipv4Content = fileData.substring(ipv4StartIndex, ipv4EndIndex);
 
-    await fs.writeFile(filePath, newFileContent);
+    // IPv4 섹션 수정
+    let newIpv4Content = ipv4Content.replace(
+      /method=.*/g,
+      `method=${payload.mode === "dhcp" ? "auto" : "manual"}`
+    );
+
+    if (payload.mode === "static") {
+      // static 설정 적용 (address1, dns 수정)
+      newIpv4Content = newIpv4Content
+        .replace(
+          /address1=.*/g,
+          `address1=${payload.ip}/${payload.netmask},${payload.gateway}`
+        )
+        .replace(/dns=.*/g, `dns=${payload.dns1};${payload.dns2};`);
+    }
+
+    // IPv4 섹션만 변경한 새로운 파일 내용 생성
+    const newFileContent =
+      fileData.substring(0, ipv4StartIndex) +
+      newIpv4Content +
+      fileData.substring(ipv4EndIndex);
+
+    // 변경된 설정 저장
+    await fs.writeFile(filePath, newFileContent, { mode: 0o600 });
     console.log("Configuration updated:", newFileContent);
 
-    exec("sudo systemctl restart systemd-networkd", (error, stdout, stderr) => {
-      if (error) {
-        console.error("Error restarting systemd-networkd:", error);
-      } else {
-        console.log("systemd-networkd restarted successfully:", stdout);
+    // NetworkManager 설정 적용
+    exec(
+      `sudo nmcli connection reload && sudo nmcli connection down "Wired connection 1" && sudo nmcli connection up "Wired connection 1"`,
+      (error, stdout, stderr) => {
+        if (error) {
+          console.error("Error restarting NetworkManager connection:", error);
+        } else {
+          console.log(
+            "NetworkManager connection restarted successfully:",
+            stdout
+          );
+        }
       }
-    });
+    );
 
     return NextResponse.json({
       success: true,
       message:
-        "Configuration updated and network service restarted successfully",
+        "Configuration updated and NetworkManager restarted successfully",
       updatedFileContent: newFileContent,
     });
   } catch (error) {
