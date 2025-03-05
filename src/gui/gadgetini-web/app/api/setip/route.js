@@ -1,60 +1,56 @@
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
 import { exec } from "child_process";
 
-const filePath = "/etc/systemd/network/static-ip.network";
+const connectionName = "Wired connection 1";
 
 export async function POST(req) {
   try {
     const payload = await req.json();
     console.log("Received IP Configuration Payload:", payload);
 
-    let newNetworkContent = "";
-    if (payload.mode === "static") {
-      newNetworkContent = `DHCP=no
-Address=${payload.ip}/${payload.netmask}
-Gateway=${payload.gateway}
-DNS=${payload.dns1}
-DNS=${payload.dns2}
-`;
-    } else if (payload.mode === "dhcp") {
-      newNetworkContent = `DHCP=yes
-Address=
-Gateway=
-DNS=
-DNS=
-`;
-    } else {
-      return NextResponse.json(
-        { success: false, error: "Invalid mode" },
-        { status: 400 }
+    // 모드 확인
+    if (!["dhcp", "static"].includes(payload.mode)) {
+      throw new Error("Invalid mode. Allowed values: 'dhcp', 'static'");
+    }
+
+    // DHCP 모드 변경
+    if (payload.mode === "dhcp") {
+      exec(
+        `sudo nmcli connection modify "${connectionName}" ipv4.method auto && sudo nmcli connection up "${connectionName}"`,
+        (error, stdout, stderr) => {
+          if (error) {
+            console.error("Error setting DHCP mode:", error);
+            return;
+          }
+          console.log("DHCP mode enabled:", stdout);
+        }
       );
     }
 
-    const fileData = await fs.readFile(filePath, "utf8");
-    const networkMarker = "[Network]";
-    const markerIndex = fileData.indexOf(networkMarker);
-    const preservedContent = fileData.substring(0, markerIndex).trimEnd();
-    const newFileContent = `${preservedContent}
-${networkMarker}
-${newNetworkContent}`;
-
-    await fs.writeFile(filePath, newFileContent);
-    console.log("Configuration updated:", newFileContent);
-
-    exec("sudo systemctl restart systemd-networkd", (error, stdout, stderr) => {
-      if (error) {
-        console.error("Error restarting systemd-networkd:", error);
-      } else {
-        console.log("systemd-networkd restarted successfully:", stdout);
+    // Static 모드 변경
+    if (payload.mode === "static") {
+      if (!payload.ip || !payload.netmask || !payload.gateway) {
+        throw new Error("Missing required static IP parameters");
       }
-    });
+
+      const address = `${payload.ip}/${payload.netmask}`;
+      const gateway = payload.gateway;
+      const dns = `${payload.dns1}${payload.dns2 ? `,${payload.dns2}` : ""}`;
+
+      const command = `sudo nmcli connection modify "${connectionName}" ipv4.method manual ipv4.addresses "${address}" ipv4.gateway "${gateway}" ipv4.dns "${dns}" && sudo nmcli connection up "${connectionName}"`;
+
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error("Error setting static IP mode:", error);
+          return;
+        }
+        console.log("Static IP mode applied:", stdout);
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      message:
-        "Configuration updated and network service restarted successfully",
-      updatedFileContent: newFileContent,
+      message: `Network configuration updated to ${payload.mode}`,
     });
   } catch (error) {
     console.error("Error processing IP payload:", error);

@@ -101,6 +101,10 @@ export default function Settings() {
   };
 
   const handleIPChange = async () => {
+    if (!window.confirm("Are you sure you want to change the IP?")) {
+      return;
+    }
+
     setLoadingIP(true);
     const payload =
       ipMode === "static"
@@ -124,10 +128,7 @@ export default function Settings() {
       if (response.ok) {
         const data = await response.json();
         alert(
-          `IP updated: ${staticConfig.ip}/${staticConfig.netmask}
-          gateway: ${staticConfig.gateway}
-          dns1: ${staticConfig.dns1} 
-          dns2: ${staticConfig.dns2} `
+          `IP updated: method:${staticConfig.mode}\naddress:${staticConfig.ip}/${staticConfig.netmask}\ngateway: ${staticConfig.gateway}\ndns1: ${staticConfig.dns1}\ndns2: ${staticConfig.dns2} `
         );
       } else {
         alert("Failed to update IP");
