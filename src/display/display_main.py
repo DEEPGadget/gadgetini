@@ -16,9 +16,9 @@ import redis
 
 
 #For Debugging
-DEBUG = 0
-USE_VIRTUAL_LCD = False
-USE_REAL_DATA = True
+DEBUG = 1
+USE_VIRTUAL_LCD = True
+USE_REAL_DATA = False
 
 if USE_VIRTUAL_LCD:
     from virtual_lcd import VirtualLCD
@@ -370,17 +370,18 @@ class Chassis_Viewer(Viewer):
         draw_aligned_text(draw=draw, text=version_str, font_size=8, fill='gray', box=(databox_x1, databox_y2-12, GRAPH_SIZE, 12), align="right", halign="center", font_path=LIGHT_FONT_PATH)
 
 
+        margin=5
         #CHASSIS Value
         if len(sub_sensor_data_1.buffer) > 0:
-            draw_aligned_text(draw=draw, text=sub_sensor_data_1.title_str, font_size=6, fill='white', box=(databox_x1, databox_y1+75, (databox_x2-databox_x1)/2, 15), align="right", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
-            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_1.buffer[-1],2):.1f}"), font_size=26, fill='white', box=(databox_x1, databox_y1+90, (databox_x2-databox_x1)/2, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
-            draw_aligned_text(draw=draw, text=sub_sensor_data_1.unit_str, font_size=15, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2-25, databox_y1+115, 25-2, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_1.title_str, font_size=6, fill='white', box=(databox_x1, databox_y1+75, (databox_x2-databox_x1)/2-margin, 15), align="center", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_1.buffer[-1],2):.1f}"), font_size=26, fill='white', box=(databox_x1, databox_y1+90, (databox_x2-databox_x1)/2-margin, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_1.unit_str, font_size=15, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2-25, databox_y1+115, 25-2-margin, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
 
 
         if len(sub_sensor_data_2.buffer) > 0:
-            draw_aligned_text(draw=draw, text=sub_sensor_data_2.title_str, font_size=6, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2, databox_y1+75, (databox_x2-databox_x1)/2, 15), align="right", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
-            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_2.buffer[-1],2):.1f}"), font_size=26, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2, databox_y1+90, (databox_x2-databox_x1)/2, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
-            draw_aligned_text(draw=draw, text=sub_sensor_data_2.unit_str, font_size=15, fill='white', box=(databox_x1+(databox_x2-databox_x1)-25, databox_y1+115, 25-2, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_2.title_str, font_size=6, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2+margin, databox_y1+75, (databox_x2-databox_x1)/2-margin, 15), align="center", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_2.buffer[-1],2):.1f}"), font_size=26, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2+margin, databox_y1+90, (databox_x2-databox_x1)/2-margin, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_2.unit_str, font_size=15, fill='white', box=(databox_x1+(databox_x2-databox_x1)-25+margin, databox_y1+115, 25-2-margin, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
 
 
 
