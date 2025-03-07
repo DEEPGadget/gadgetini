@@ -1,0 +1,13 @@
+[Unit]
+Description=dg5w sensor exporter daemon.
+After=data_crawler.service
+
+[Service]
+Type=simple
+ExecStart=python3 /home/gadgetini/gadgetini/src/exporter/sensor_exporter.py
+Restart=always
+RestartSec=5
+User=gadgetini
+Group=gadgetini
+[Install]
+WantedBy=default.target

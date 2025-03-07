@@ -52,7 +52,7 @@ class TT_WH_Collector(object):
             else:
                 guage_metric.add_metric([str(cpu_id),"Tctl"], cpu['Tctl']['temp1_input'])
         
-        guage_metric.add_metric(["0,1","total utilization"], cpu_util)
+        guage_metric.add_metric(["0,1","total utilization"], round(cpu_util,1))
 
         yield guage_metric
 

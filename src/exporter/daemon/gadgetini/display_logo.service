@@ -1,0 +1,11 @@
+[Unit]
+Description=dg5w external LCD display logo control daemon.
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=python3 /home/gadgetini/gadgetini/src/display/splash_logo.py
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
