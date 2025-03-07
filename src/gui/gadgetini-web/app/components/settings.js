@@ -128,7 +128,7 @@ export default function Settings() {
       if (response.ok) {
         const data = await response.json();
         alert(
-          `IP updated: method:${staticConfig.mode}\naddress:${staticConfig.ip}/${staticConfig.netmask}\ngateway: ${staticConfig.gateway}\ndns1: ${staticConfig.dns1}\ndns2: ${staticConfig.dns2} `
+          `IP updated\nmethod:${ipMode}\naddress:${staticConfig.ip}/${staticConfig.netmask}\ngateway: ${staticConfig.gateway}\ndns1: ${staticConfig.dns1}\ndns2: ${staticConfig.dns2} `
         );
       } else {
         alert("Failed to update IP");
