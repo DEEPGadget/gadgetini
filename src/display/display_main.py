@@ -18,6 +18,7 @@ import redis
 #For Debugging
 DEBUG = 0
 USE_VIRTUAL_LCD = False
+USE_REAL_DATA = True
 
 if USE_VIRTUAL_LCD:
     from virtual_lcd import VirtualLCD
@@ -194,7 +195,8 @@ class CoolantTemperatureData(SensorData):
     
     def read_sensor(self):
         #print("read_sensor")
-        #return self.read_sensor_fake()
+        if not USE_REAL_DATA:
+            return self.read_sensor_fake()
         return self.get_coolant_temp()
 
     def get_coolant_temp(self):
@@ -208,6 +210,9 @@ class ChassisHumidData(SensorData):
         self.redis = redis
 
     def read_sensor(self):
+        if not USE_REAL_DATA:
+            return self.read_sensor_fake()
+
         return self.get_air_humid()
 
     def get_air_humid(self):
@@ -220,6 +225,9 @@ class ChassisTemperatureData(SensorData):
         self.redis = redis
 
     def read_sensor(self):
+        if not USE_REAL_DATA:
+            return self.read_sensor_fake()
+
         return self.get_air_temp()
 
     def get_air_temp(self):
@@ -248,11 +256,9 @@ class Viewer:
         #while True:
             
             #draw = ImageDraw.Draw(self.image)
-            # 움직이는 텍스트
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
             self.draw_object.text((self.xyCoord[0], self.xyCoord[1]), "Hello World!", font=font, fill=self.colors[self.color_index])
 
-            # 좌표 및 색상 업데이트
             if self.isUp:
                 self.xyCoord[1] += 2
                 if self.xyCoord[1] >= self.frameSize[1] - 30:
@@ -264,13 +270,10 @@ class Viewer:
                     self.isUp = True
                     self.color_index = (self.color_index + 1) % len(self.colors)
 
-            # PIL 이미지를 OpenCV 형식으로 변환
             #cv_image = cv2.cvtColor(np.array(self.image_buffer), cv2.COLOR_RGB2BGR)
 
-            # 창에 표시
             #cv2.imshow("Virtual Display", cv_image)
 
-            # ESC 키로 종료
             key = cv2.waitKey(30)
             #if key == 27:  # ESC
                 #break
@@ -369,15 +372,15 @@ class Chassis_Viewer(Viewer):
 
         #CHASSIS Value
         if len(sub_sensor_data_1.buffer) > 0:
-            draw_aligned_text(draw=draw, text=sub_sensor_data_1.title_str, font_size=6, fill='white', box=(databox_x1, databox_y1+75, (databox_x2-databox_x1)/2-4, 15), align="center", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
-            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_1.buffer[-1],2):.1f}"), font_size=30, fill='white', box=(databox_x1, databox_y1+90, (databox_x2-databox_x1)/2-4, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
-            draw_aligned_text(draw=draw, text=sub_sensor_data_1.unit_str, font_size=15, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2-25, databox_y1+115, 25-4, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_1.title_str, font_size=6, fill='white', box=(databox_x1, databox_y1+75, (databox_x2-databox_x1)/2, 15), align="right", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_1.buffer[-1],2):.1f}"), font_size=26, fill='white', box=(databox_x1, databox_y1+90, (databox_x2-databox_x1)/2, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_1.unit_str, font_size=15, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2-25, databox_y1+115, 25-2, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
 
 
         if len(sub_sensor_data_2.buffer) > 0:
-            draw_aligned_text(draw=draw, text=sub_sensor_data_2.title_str, font_size=6, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2, databox_y1+75, (databox_x2-databox_x1)/2, 15), align="center", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
-            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_2.buffer[-1],2):.1f}"), font_size=30, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2+4, databox_y1+90, (databox_x2-databox_x1)/2-4, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
-            draw_aligned_text(draw=draw, text=sub_sensor_data_2.unit_str, font_size=15, fill='white', box=(databox_x2-25, databox_y1+115, 25, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_2.title_str, font_size=6, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2, databox_y1+75, (databox_x2-databox_x1)/2, 15), align="right", halign="center", font_path=THIN_FONT_PATH, autoscale=False)
+            draw_aligned_text(draw=draw, text=str(f"{round(sub_sensor_data_2.buffer[-1],2):.1f}"), font_size=26, fill='white', box=(databox_x1+(databox_x2-databox_x1)/2, databox_y1+90, (databox_x2-databox_x1)/2, 24), align="right", halign="top", font_path=BOLD_FONT_PATH)
+            draw_aligned_text(draw=draw, text=sub_sensor_data_2.unit_str, font_size=15, fill='white', box=(databox_x1+(databox_x2-databox_x1)-25, databox_y1+115, 25-2, 15), align="right", halign="top", font_path=FONT_PATH, autoscale=False)
 
 
 
