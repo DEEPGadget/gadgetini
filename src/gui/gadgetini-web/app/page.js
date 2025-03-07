@@ -9,7 +9,7 @@ export default function Home() {
       <header className="flex items-center justify-between p-4 bg-gray-200">
         <h1 className="text-gray-800 font-bold text-lg">
           Gadgetini{" "}
-          <span className="text-gray-500 font-semibold text-base">v0.2</span>
+          <span className="text-gray-500 font-semibold text-base">v0.3</span>
         </h1>
       </header>
       <div className="flex flex-1">
