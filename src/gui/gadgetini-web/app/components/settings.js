@@ -347,7 +347,7 @@ export default function Settings() {
             type="number"
             placeholder="5"
             min="1"
-            value={rotationTime}
+            value={displayMode.rotationTime}
             onChange={(e) => {
               const value = Math.floor(Number(e.target.value));
               if (value < 1) {
