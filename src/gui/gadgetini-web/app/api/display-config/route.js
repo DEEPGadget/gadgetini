@@ -3,44 +3,53 @@ import path from "path";
 
 export async function POST(request) {
   try {
-    const { status, rotationTime } = await request.json();
+    const { displayMode } = await request.json();
 
-    const updateLocalConfig = async (status, rotationTime) => {
-      // read existing config
+    const updateDisplayConfig = async (displayMode) => {
+      // Read existing config
       const homeDir = "/home/gadgetini/gadgetini/src/display";
       const configPath = path.join(homeDir, "config.ini");
       let config = await fs.promises.readFile(configPath, "utf-8");
 
       // Update the relevant lines in the config file
       config = config
-        .replace(/^orientation\s*=\s*.*/m, `orientation=${status.orientation}`)
+        .replace(
+          /^orientation\s*=\s*.*/m,
+          `orientation=${displayMode.orientation}`
+        )
         .replace(
           /^chassis\s*=\s*.*/m,
-          `chassis=${status.chassis ? "on" : "off"}`
+          `chassis=${displayMode.chassis ? "on" : "off"}`
         )
-        .replace(/^cpu\s*=\s*.*/m, `cpu=${status.cpu ? "on" : "off"}`)
-        .replace(/^gpu\s*=\s*.*/m, `gpu=${status.gpu ? "on" : "off"}`)
-        .replace(/^memory\s*=\s*.*/m, `memory=${status.memory ? "on" : "off"}`)
-        .replace(/^psu\s*=\s*.*/m, `psu=${status.psu ? "on" : "off"}`)
-        .replace(/^time\s*=\s*.*/m, `time=${rotationTime}`);
+        .replace(/^cpu\s*=\s*.*/m, `cpu=${displayMode.cpu ? "on" : "off"}`)
+        .replace(/^gpu\s*=\s*.*/m, `gpu=${displayMode.gpu ? "on" : "off"}`)
+        .replace(
+          /^memory\s*=\s*.*/m,
+          `memory=${displayMode.memory ? "on" : "off"}`
+        )
+        .replace(/^psu\s*=\s*.*/m, `psu=${displayMode.psu ? "on" : "off"}`)
+        .replace(/^time\s*=\s*.*/m, `time=${displayMode.rotationTime}`);
 
       // Write the updated config file back to the file system
       await fs.promises.writeFile(configPath, config, "utf-8");
     };
 
     // Update the local config file first
-    await updateLocalConfig(status, rotationTime);
+    await updateDisplayConfig(displayMode);
 
     return new Response(JSON.stringify({ message: "Modes updated" }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error updating modes:", error);
-    return new Response(JSON.stringify({ error: "Failed to update modes." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error("[display/POST]", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to update display modes." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }
 
@@ -49,22 +58,18 @@ export async function GET() {
     const homeDir = "/home/gadgetini/gadgetini/src/display";
     const configPath = path.join(homeDir, "config.ini");
 
-    // 파일 존재 여부 확인
+    // Check if file exist & read
     if (!fs.existsSync(configPath)) {
       return new Response(JSON.stringify({ error: "Config file not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
       });
     }
+    const config = await fs.promises.readFile(configPath, "utf-8");
 
-    // 파일 읽기
-    const configContent = await fs.promises.readFile(configPath, "utf-8");
-
-    // 정규식을 이용해 각 설정 값을 추출
+    // Returns the value of a given key from the config string
     const getConfigValue = (key) => {
-      const match = configContent.match(
-        new RegExp(`^${key}\\s*=\\s*(.*)`, "m")
-      );
+      const match = config.match(new RegExp(`^${key}\\s*=\\s*(.*)`, "m"));
       return match ? match[1].trim() : null;
     };
 
@@ -84,7 +89,7 @@ export async function GET() {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error reading config:", error);
+    console.error("[display/GET]", error);
     return new Response(JSON.stringify({ error: "Failed to read config." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

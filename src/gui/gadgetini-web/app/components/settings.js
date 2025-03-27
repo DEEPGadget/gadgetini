@@ -11,28 +11,31 @@ import LoadingSpinner from "../utils/LoadingSpinner";
 import { getSelfIP } from "../utils/ip/getSelfIP";
 
 export default function Settings() {
-  const [loadingApply, setLoadingApply] = useState(false);
-  const [rotationTime, setRotationTime] = useState(5);
-  const [loadingIP, setLoadingIP] = useState(false);
-  const [staticConfig, setStaticConfig] = useState({
-    ip: "",
-    netmask: "",
-    gateway: "",
-    dns1: "",
-    dns2: "",
-  });
-
-  const [localIP, setLocalIP] = useState("localhost");
-  const [ipMode, setIpMode] = useState("dhcp");
-  const [status, setStatus] = useState({
+  const [currentIP, setCurrentIP] = useState("localhost");
+  const [displayMode, setDisplayMode] = useState({
     orientation: "vertical",
     chassis: true,
     cpu: false,
     gpu: false,
     memory: false,
     psu: false,
+    rotationTime: 5,
   });
 
+  const [IPConfig, setIPConfig] = useState({
+    ip: "",
+    netmask: "",
+    gateway: "",
+    dns1: "",
+    dns2: "",
+    mode: "dhcp",
+  });
+  const [loadingState, setLoadingState] = useState({
+    updateIP: false,
+    applyDisplayConfig: false,
+  });
+
+  // Get current IP and display mode
   useEffect(() => {
     const getDisplayConfig = async () => {
       try {
@@ -41,30 +44,26 @@ export default function Settings() {
           throw new Error("Failed to fetch config");
         }
         const configData = await response.json();
-
-        setStatus({
+        setDisplayMode({
           orientation: configData.orientation,
           chassis: configData.chassis,
           cpu: configData.cpu,
           gpu: configData.gpu,
           memory: configData.memory,
           psu: configData.psu,
+          rotationTime: configData.rotationTime,
         });
-        setRotationTime(configData.rotationTime);
       } catch (error) {
         console.error("Error loading config:", error);
-      } finally {
-        setLoadingConfig(false);
       }
     };
-
     getDisplayConfig();
-    getSelfIP().then(setLocalIP);
+    getSelfIP().then(setCurrentIP);
   }, []);
 
-  const handleApply = async () => {
-    setLoadingApply(true);
-    const payload = { status, rotationTime };
+  const handleDisplayMode = async () => {
+    setLoadingState({ ...loadingState, applyDisplayConfig: true });
+    const payload = { displayMode };
     try {
       const response = await fetch("/api/display-config", {
         method: "POST",
@@ -82,7 +81,7 @@ export default function Settings() {
     } catch (error) {
       console.error("Error applying config:", error);
     } finally {
-      setLoadingApply(false);
+      setLoadingState({ ...loadingState, applyDisplayConfig: false });
     }
   };
 
@@ -95,20 +94,19 @@ export default function Settings() {
   };
 
   const handleIPChange = async () => {
+    setLoadingState({ ...loadingState, updateIP: true });
     if (!window.confirm("Are you sure you want to change the IP?")) {
       return;
     }
-
-    setLoadingIP(true);
     const payload =
-      ipMode === "static"
+      IPConfig.mode === "static"
         ? {
             mode: "static",
-            ip: staticConfig.ip,
-            netmask: staticConfig.netmask,
-            gateway: staticConfig.gateway,
-            dns1: staticConfig.dns1,
-            dns2: staticConfig.dns2,
+            ip: IPConfig.ip,
+            netmask: IPConfig.netmask,
+            gateway: IPConfig.gateway,
+            dns1: IPConfig.dns1,
+            dns2: IPConfig.dns2,
           }
         : { mode: "dhcp" };
 
@@ -122,7 +120,7 @@ export default function Settings() {
       if (response.ok) {
         const data = await response.json();
         alert(
-          `IP updated\nmethod:${ipMode}\naddress:${staticConfig.ip}/${staticConfig.netmask}\ngateway: ${staticConfig.gateway}\ndns1: ${staticConfig.dns1}\ndns2: ${staticConfig.dns2} `
+          `IP updated\nmethod:${IPConfig.mode}\naddress:${IPConfig.ip}/${IPConfig.netmask}\ngateway: ${IPConfig.gateway}\ndns1: ${IPConfig.dns1}\ndns2: ${IPConfig.dns2} `
         );
       } else {
         alert("Failed to update IP");
@@ -130,7 +128,7 @@ export default function Settings() {
     } catch (error) {
       alert("Error updating IP");
     } finally {
-      setLoadingIP(false);
+      setLoadingState({ ...loadingState, updateIP: true });
     }
   };
 
@@ -142,10 +140,10 @@ export default function Settings() {
         <div className="flex gap-2 flex-row items-center mt-4">
           <div className="flex items-center">
             <p className="text-base">
-              Current IP :<strong> {localIP}</strong>
+              Current IP :<strong> {currentIP}</strong>
             </p>
             <a
-              href={`http://${localIP}/dashboard`}
+              href={`http://${currentIP}/dashboard`}
               target="_blank"
               rel="noopener noreferrer"
               className="ml-2 flex items-center px-4 py-2 text-white rounded-lg transition-all 
@@ -167,7 +165,7 @@ export default function Settings() {
                 type="radio"
                 value="dhcp"
                 checked={ipMode === "dhcp"}
-                onChange={() => setIpMode("dhcp")}
+                onChange={() => setIPConfig({ ...IPConfig, mode: "dhcp" })}
                 className="w-4 h-4 text-blue-500"
               />
               <span>DHCP</span>
@@ -178,7 +176,7 @@ export default function Settings() {
                 type="radio"
                 value="static"
                 checked={ipMode === "static"}
-                onChange={() => setIpMode("static")}
+                onChange={() => setIPConfig({ ...IPConfig, mode: "static" })}
                 className="w-4 h-4 text-blue-500"
               />
               <span>Static</span>
@@ -191,45 +189,45 @@ export default function Settings() {
               <input
                 type="text"
                 placeholder="IP Address"
-                value={staticConfig.ip}
+                value={IPConfig.ip}
                 onChange={(e) =>
-                  setStaticConfig({ ...staticConfig, ip: e.target.value })
+                  setIPConfig({ ...IPConfig, ip: e.target.value })
                 }
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="Netmask"
-                value={staticConfig.netmask}
+                value={IPConfig.netmask}
                 onChange={(e) =>
-                  setStaticConfig({ ...staticConfig, netmask: e.target.value })
+                  setIPConfig({ ...IPConfig, netmask: e.target.value })
                 }
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="Gateway"
-                value={staticConfig.gateway}
+                value={IPConfig.gateway}
                 onChange={(e) =>
-                  setStaticConfig({ ...staticConfig, gateway: e.target.value })
+                  setIPConfig({ ...IPConfig, gateway: e.target.value })
                 }
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="DNS 1 (Option)"
-                value={staticConfig.dns1}
+                value={IPConfig.dns1}
                 onChange={(e) =>
-                  setStaticConfig({ ...staticConfig, dns1: e.target.value })
+                  setIPConfig({ ...IPConfig, dns1: e.target.value })
                 }
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="DNS 2 (Option)"
-                value={staticConfig.dns2}
+                value={IPConfig.dns2}
                 onChange={(e) =>
-                  setStaticConfig({ ...staticConfig, dns2: e.target.value })
+                  setIPConfig({ ...IPConfig, dns2: e.target.value })
                 }
                 className="border p-2 rounded w-36 text-left"
               />
@@ -381,7 +379,7 @@ export default function Settings() {
                border-gray-600 w-16"
           />
           <button
-            onClick={handleApply}
+            onClick={handleDisplayMode}
             className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all ml-2"
             disabled={loadingApply}
           >
