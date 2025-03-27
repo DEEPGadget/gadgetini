@@ -162,7 +162,7 @@ export default function Settings() {
               <input
                 type="radio"
                 value="dhcp"
-                checked={ipMode === "dhcp"}
+                checked={ipRefs.current.value === "dhcp"}
                 onChange={() => {
                   ipRefs.current.mode = "dhcp";
                 }}
@@ -174,7 +174,7 @@ export default function Settings() {
               <input
                 type="radio"
                 value="static"
-                checked={ipMode === "static"}
+                checked={ipRefs.current.value === "static"}
                 onChange={() => {
                   ipRefs.current.mode = "static";
                 }}
@@ -185,7 +185,7 @@ export default function Settings() {
           </div>
 
           {/* Input when set IP as static mode */}
-          {ipMode === "static" && (
+          {ipRefs.current.value === "static" && (
             <div className="flex items-center gap-2">
               <input
                 type="text"
