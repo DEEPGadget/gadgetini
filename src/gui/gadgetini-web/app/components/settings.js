@@ -11,7 +11,10 @@ import LoadingSpinner from "../utils/LoadingSpinner";
 import { getSelfIP } from "../utils/ip/getSelfIP";
 
 export default function Settings() {
+  //Current IP Info
   const [currentIP, setCurrentIP] = useState("localhost");
+
+  // Display Config Info
   const [displayMode, setDisplayMode] = useState({
     orientation: "vertical",
     chassis: true,
@@ -21,6 +24,8 @@ export default function Settings() {
     psu: false,
     rotationTime: 5,
   });
+
+  // Input IP Config Info
   const ipRefs = useRef({
     ip: null,
     netmask: null,
@@ -29,12 +34,14 @@ export default function Settings() {
     dns2: null,
     mode: "dhcp",
   });
+
+  // Loading Info
   const [loadingState, setLoadingState] = useState({
     updateIP: false,
     applyDisplayConfig: false,
   });
 
-  // Get current IP and display config
+  // API: Get current IP and display config
   useEffect(() => {
     const getDisplayConfig = async () => {
       try {
@@ -59,6 +66,8 @@ export default function Settings() {
     getDisplayConfig();
     getSelfIP().then(setCurrentIP);
   }, []);
+
+  // API: Handle IP Update
   const handleIPChange = async () => {
     setLoadingState({ ...loadingState, updateIP: true });
     if (!window.confirm("Are you sure you want to change the IP?")) {
@@ -88,6 +97,7 @@ export default function Settings() {
     }
   };
 
+  // API: Handle Display Config Update
   const handleDisplayMode = async () => {
     setLoadingState({ ...loadingState, applyDisplayConfig: true });
     try {
@@ -111,6 +121,7 @@ export default function Settings() {
     }
   };
 
+  // FE: Toggle display config
   const toggleStatus = (key) => {
     const lowercaseKey = key.toLowerCase();
     setDisplayMode((prev) => ({
@@ -121,9 +132,9 @@ export default function Settings() {
 
   return (
     <div className="p-4">
-      {/* 그라파나 접속 버튼, IP 설정 */}
       <div className="mb-6">
         <h2 className="text-xl font-bold">System Configuration</h2>
+        {/* Display Cureent IP, Button accessing Grafana Dashboard */}
         <div className="flex gap-2 flex-row items-center mt-4">
           <div className="flex items-center">
             <p className="text-base">
@@ -145,95 +156,81 @@ export default function Settings() {
         <div className="flex items-center gap-4 mt-4">
           <span className="whitespace-nowrap">Set IP :</span>
 
-          {/* DHCP / Static 선택 라디오 버튼 */}
+          {/* Button selecting IP as DHCP or static */}
           <div className="flex items-center gap-4">
             <label className="flex items-center space-x-2">
               <input
                 type="radio"
                 value="dhcp"
                 checked={ipMode === "dhcp"}
-                onChange={() => setIPConfig({ ...IPConfig, mode: "dhcp" })}
+                onChange={() => {
+                  ipRefs.current.mode = "dhcp";
+                }}
                 className="w-4 h-4 text-blue-500"
               />
               <span>DHCP</span>
             </label>
-
             <label className="flex items-center space-x-2">
               <input
                 type="radio"
                 value="static"
                 checked={ipMode === "static"}
-                onChange={() => setIPConfig({ ...IPConfig, mode: "static" })}
+                onChange={() => {
+                  ipRefs.current.mode = "static";
+                }}
                 className="w-4 h-4 text-blue-500"
               />
               <span>Static</span>
             </label>
           </div>
 
-          {/* Static 선택 시 IP / Gateway / DNS 입력 필드 표시 */}
+          {/* Input when set IP as static mode */}
           {ipMode === "static" && (
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 placeholder="IP Address"
-                value={IPConfig.ip}
-                onChange={(e) =>
-                  setIPConfig({ ...IPConfig, ip: e.target.value })
-                }
+                ref={(el) => (ipRefs.current.ip = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="Netmask"
-                value={IPConfig.netmask}
-                onChange={(e) =>
-                  setIPConfig({ ...IPConfig, netmask: e.target.value })
-                }
+                ref={(el) => (ipRefs.current.netmask = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="Gateway"
-                value={IPConfig.gateway}
-                onChange={(e) =>
-                  setIPConfig({ ...IPConfig, gateway: e.target.value })
-                }
+                ref={(el) => (ipRefs.current.gateway = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="DNS 1 (Option)"
-                value={IPConfig.dns1}
-                onChange={(e) =>
-                  setIPConfig({ ...IPConfig, dns1: e.target.value })
-                }
+                ref={(el) => (ipRefs.current.dns1 = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="DNS 2 (Option)"
-                value={IPConfig.dns2}
-                onChange={(e) =>
-                  setIPConfig({ ...IPConfig, dns2: e.target.value })
-                }
+                ref={(el) => (ipRefs.current.dns2 = el)}
                 className="border p-2 rounded w-36 text-left"
               />
             </div>
           )}
-
-          {/* Update 버튼 */}
           <button
             onClick={handleIPChange}
             className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
-            disabled={loadingIP}
+            disabled={loadingState.updateIP}
           >
-            {loadingIP ? "Updating..." : "Update"}
+            {loadingState.updateIP ? "Updating..." : "Update"}
             <CheckIcon className="w-5 h-5 ml-2" />
           </button>
         </div>
       </div>
 
-      {/* 컨트롤 테이블 */}
+      {/* Display mode control table */}
       <h2 className="text-xl font-bold mb-4">Control Info</h2>
       <div className="overflow-x-auto w-full">
         <table className="w-full bg-white border-separate border-spacing-0 table-auto">
@@ -251,7 +248,6 @@ export default function Settings() {
             </tr>
           </thead>
           <tbody>
-            {/* 디스플레이 설정화면 재구성 */}
             <tr className="border-b border-gray-300">
               <td className="py-2 px-4 border border-gray-300 text-center">
                 Orientation
@@ -262,13 +258,13 @@ export default function Settings() {
               <td className="py-2 px-4 border border-gray-300 flex justify-center gap-2">
                 <button
                   onClick={() =>
-                    setStatus((prevStatus) => ({
-                      ...prevStatus,
+                    setDisplayMode((prev) => ({
+                      ...prev,
                       orientation: "vertical",
                     }))
                   }
                   className={`flex items-center bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition-all ${
-                    status.orientation === "vertical"
+                    displayMode.orientation === "vertical"
                       ? "border-2 border-black"
                       : ""
                   }`}
@@ -278,13 +274,13 @@ export default function Settings() {
                 </button>
                 <button
                   onClick={() =>
-                    setStatus((prevStatus) => ({
+                    setDisplayMode((prevStatus) => ({
                       ...prevStatus,
                       orientation: "horizontal",
                     }))
                   }
                   className={`flex items-center bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition-all ${
-                    status.orientation === "horizontal"
+                    displayMode.orientation === "horizontal"
                       ? "border-2 border-black"
                       : ""
                   }`}
@@ -294,7 +290,6 @@ export default function Settings() {
                 </button>
               </td>
             </tr>
-
             {Object.entries({
               Chassis:
                 "Front display shows internal temperature and humidity, water leakage detection, and coolant level",
@@ -302,44 +297,43 @@ export default function Settings() {
               GPU: "Front display shows GPU temperature and utilization.",
               Memory: "Front display shows memory usage.",
               PSU: "Front display shows power consumption, PSU temperature",
-            }).map(([key, description]) => (
-              <tr key={key} className="border-b border-gray-300 ">
-                <td className="py-2 px-4 border border-gray-300 text-center">
-                  {key}
-                </td>
-                <td className="py-2 px-4 border border-gray-300">
-                  {description}
-                </td>
-                <td className="py-2 px-4 border border-gray-300">
-                  <div className="flex flex-col items-center justify-center ">
-                    <button
-                      onClick={() => toggleStatus(key)}
-                      className={`relative flex items-center w-20 h-8 rounded-full border-2 border-gray-400 transition-colors duration-300 ${
-                        status[key.toLowerCase()]
-                          ? "bg-green-500"
-                          : "bg-red-500"
-                      }`}
-                      disabled={key !== "Chassis"}
-                    >
-                      <span
-                        className={`absolute left-1 transition-transform duration-300 transform ${
-                          status[key.toLowerCase()]
-                            ? "translate-x-11"
-                            : "translate-x-0"
-                        } bg-white rounded-full w-6 h-6`}
-                      />
-                      <span
-                        className={`text-white font-bold transition-all duration-300 ${
-                          status[key.toLowerCase()] ? "ml-2" : "ml-10"
+            }).map(([key, description]) => {
+              const status = displayMode[key.toLowerCase()];
+              return (
+                <tr key={key} className="border-b border-gray-300 ">
+                  <td className="py-2 px-4 border border-gray-300 text-center">
+                    {key}
+                  </td>
+                  <td className="py-2 px-4 border border-gray-300">
+                    {description}
+                  </td>
+                  <td className="py-2 px-4 border border-gray-300">
+                    <div className="flex flex-col items-center justify-center ">
+                      <button
+                        onClick={() => toggleStatus(key)}
+                        className={`relative flex items-center w-20 h-8 rounded-full border-2 border-gray-400 transition-colors duration-300 ${
+                          status ? "bg-green-500" : "bg-red-500"
                         }`}
+                        disabled={key !== "Chassis"}
                       >
-                        {status[key.toLowerCase()] ? "On" : "Off"}
-                      </span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                        <span
+                          className={`absolute left-1 transition-transform duration-300 transform ${
+                            status ? "translate-x-11" : "translate-x-0"
+                          } bg-white rounded-full w-6 h-6`}
+                        />
+                        <span
+                          className={`text-white font-bold transition-all duration-300 ${
+                            status ? "ml-2" : "ml-10"
+                          }`}
+                        >
+                          {status ? "On" : "Off"}
+                        </span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         <div className="mt-6 flex justify-end items-center">
@@ -357,9 +351,9 @@ export default function Settings() {
             onChange={(e) => {
               const value = Math.floor(Number(e.target.value));
               if (value < 1) {
-                setRotationTime(1);
+                setDisplayMode({ ...displayMode, rotationTime: 1 });
               } else {
-                setRotationTime(value);
+                setDisplayMode({ ...displayMode, rotationTime: value });
               }
             }}
             className="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500 

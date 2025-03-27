@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { exec } from "child_process";
 import os from "os";
 
+// Read IPv4 address and Return
 export async function GET() {
   try {
     const interfaces = os.networkInterfaces();
@@ -32,6 +33,7 @@ export async function GET() {
   }
 }
 
+// Update IPv4 address from user input
 export async function POST(req) {
   const connectionName = "Wired connection 1";
 
