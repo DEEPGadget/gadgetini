@@ -362,9 +362,9 @@ export default function Settings() {
           <button
             onClick={handleDisplayMode}
             className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all ml-2"
-            disabled={loadingApply}
+            disabled={loadingState.applyDisplayConfig}
           >
-            {loadingApply ? (
+            {loadingState.applyDisplayConfig ? (
               <LoadingSpinner />
             ) : (
               <>
