@@ -4,8 +4,8 @@ export const getSelfIP = async () => {
     if (!reponse.ok) {
       throw new Error("response error from /api/ip/self");
     }
-    const data = await response.json();
-    return data;
+    const ip = await response.json();
+    return ip;
   } catch (error) {
     console.error("[getSelfIP]]", error);
   }

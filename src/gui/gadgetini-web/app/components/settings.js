@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ArrowUpIcon,
   ArrowRightIcon,
@@ -21,13 +21,12 @@ export default function Settings() {
     psu: false,
     rotationTime: 5,
   });
-
-  const [IPConfig, setIPConfig] = useState({
-    ip: "",
-    netmask: "",
-    gateway: "",
-    dns1: "",
-    dns2: "",
+  const ipRefs = useRef({
+    ip: null,
+    netmask: null,
+    gateway: null,
+    dns1: null,
+    dns2: null,
     mode: "dhcp",
   });
   const [loadingState, setLoadingState] = useState({
@@ -35,7 +34,7 @@ export default function Settings() {
     applyDisplayConfig: false,
   });
 
-  // Get current IP and display mode
+  // Get current IP and display config
   useEffect(() => {
     const getDisplayConfig = async () => {
       try {
@@ -60,17 +59,44 @@ export default function Settings() {
     getDisplayConfig();
     getSelfIP().then(setCurrentIP);
   }, []);
+  const handleIPChange = async () => {
+    setLoadingState({ ...loadingState, updateIP: true });
+    if (!window.confirm("Are you sure you want to change the IP?")) {
+      return;
+    }
+    const payload = { ...ipRefs.current };
+
+    try {
+      const response = await fetch("/api/ip/self", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(
+          `IP updated\nmethod:${data.mode}\naddress:${data.ip}/${data.netmask}\ngateway: ${data.gateway}\ndns1: ${data.dns1}\ndns2: ${data.dns2} `
+        );
+      } else {
+        alert("Failed to update IP");
+      }
+    } catch (error) {
+      alert("Error updating IP");
+    } finally {
+      setLoadingState({ ...loadingState, updateIP: true });
+    }
+  };
 
   const handleDisplayMode = async () => {
     setLoadingState({ ...loadingState, applyDisplayConfig: true });
-    const payload = { displayMode };
     try {
       const response = await fetch("/api/display-config", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(displayMode),
       });
 
       if (response.ok) {
@@ -87,49 +113,10 @@ export default function Settings() {
 
   const toggleStatus = (key) => {
     const lowercaseKey = key.toLowerCase();
-    setStatus((prevStatus) => ({
-      ...prevStatus,
-      [lowercaseKey]: !prevStatus[lowercaseKey],
+    setDisplayMode((prev) => ({
+      ...prev,
+      [lowercaseKey]: !prev[lowercaseKey],
     }));
-  };
-
-  const handleIPChange = async () => {
-    setLoadingState({ ...loadingState, updateIP: true });
-    if (!window.confirm("Are you sure you want to change the IP?")) {
-      return;
-    }
-    const payload =
-      IPConfig.mode === "static"
-        ? {
-            mode: "static",
-            ip: IPConfig.ip,
-            netmask: IPConfig.netmask,
-            gateway: IPConfig.gateway,
-            dns1: IPConfig.dns1,
-            dns2: IPConfig.dns2,
-          }
-        : { mode: "dhcp" };
-
-    try {
-      const response = await fetch("/api/ip/self", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        alert(
-          `IP updated\nmethod:${IPConfig.mode}\naddress:${IPConfig.ip}/${IPConfig.netmask}\ngateway: ${IPConfig.gateway}\ndns1: ${IPConfig.dns1}\ndns2: ${IPConfig.dns2} `
-        );
-      } else {
-        alert("Failed to update IP");
-      }
-    } catch (error) {
-      alert("Error updating IP");
-    } finally {
-      setLoadingState({ ...loadingState, updateIP: true });
-    }
   };
 
   return (
