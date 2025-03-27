@@ -7,14 +7,12 @@ import {
   CheckIcon,
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/solid";
-
 import LoadingSpinner from "../utils/LoadingSpinner";
-import { fetchLocalIP } from "../utils/fetchLocalIP";
+import { getSelfIP } from "../utils/ip/getSelfIP";
 
 export default function Settings() {
   const [loadingApply, setLoadingApply] = useState(false);
   const [rotationTime, setRotationTime] = useState(5);
-  const [newIP, setNewIP] = useState("");
   const [loadingIP, setLoadingIP] = useState(false);
   const [staticConfig, setStaticConfig] = useState({
     ip: "",
@@ -25,7 +23,6 @@ export default function Settings() {
   });
 
   const [localIP, setLocalIP] = useState("localhost");
-  const [loadingConfig, setLoadingConfig] = useState(true);
   const [ipMode, setIpMode] = useState("dhcp");
   const [status, setStatus] = useState({
     orientation: "vertical",
@@ -37,14 +34,14 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    const fetchConfig = async () => {
+    const getDisplayConfig = async () => {
       try {
-        const response = await fetch("/api/update-config");
+        const response = await fetch("/api/display-config");
         if (!response.ok) {
           throw new Error("Failed to fetch config");
         }
         const configData = await response.json();
-        console.log(configData);
+
         setStatus({
           orientation: configData.orientation,
           chassis: configData.chassis,
@@ -61,18 +58,15 @@ export default function Settings() {
       }
     };
 
-    fetchConfig();
-    fetchLocalIP().then(setLocalIP);
+    getDisplayConfig();
+    getSelfIP().then(setLocalIP);
   }, []);
 
-  {
-    /*디스플레이 모드 설정 api 점검*/
-  }
   const handleApply = async () => {
     setLoadingApply(true);
     const payload = { status, rotationTime };
     try {
-      const response = await fetch("/api/update-config", {
+      const response = await fetch("/api/display-config", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -119,7 +113,7 @@ export default function Settings() {
         : { mode: "dhcp" };
 
     try {
-      const response = await fetch("/api/setip", {
+      const response = await fetch("/api/ip/self", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

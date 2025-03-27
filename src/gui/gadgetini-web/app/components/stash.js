@@ -8,7 +8,7 @@ import {
   ExternalLinkIcon,
 } from "@heroicons/react/solid";
 import LoadingSpinner from "../utils/LoadingSpinner";
-import { fetchLocalIP } from "../utils/fetchLocalIP";
+import { fetchLocalIP } from "../utils/ip/fetchLocalIP";
 
 export default function Settings() {
   const [loadingApply, setLoadingApply] = useState(false);

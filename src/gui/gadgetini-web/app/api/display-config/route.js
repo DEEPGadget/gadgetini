@@ -6,10 +6,9 @@ export async function POST(request) {
     const { status, rotationTime } = await request.json();
 
     const updateLocalConfig = async (status, rotationTime) => {
+      // read existing config
       const homeDir = "/home/gadgetini/gadgetini/src/display";
-      const configPath = path.join(homeDir, "config.ini"); // Path to config.ini in home directory
-      console.log(status);
-      // Read the existing config file
+      const configPath = path.join(homeDir, "config.ini");
       let config = await fs.promises.readFile(configPath, "utf-8");
 
       // Update the relevant lines in the config file

@@ -1,9 +1,35 @@
 import { NextResponse } from "next/server";
 import { exec } from "child_process";
+import os from "os";
 
-const connectionName = "Wired connection 1";
+export async function GET() {
+  const interfaces = os.networkInterfaces();
+  let ipv4Address = "localhost";
+
+  for (let iface in interfaces) {
+    if (
+      iface.toLowerCase().includes("wifi") ||
+      iface.toLowerCase().includes("wi-fi") ||
+      iface.toLowerCase().includes("wlan") ||
+      iface.toLowerCase().includes("eth") ||
+      iface.toLowerCase().includes("VMnet")
+    ) {
+      for (let alias of interfaces[iface]) {
+        if (alias.family === "IPv4" && !alias.internal) {
+          ipv4Address = alias.address;
+          break;
+        }
+      }
+    }
+    if (ipv4Address !== "localhost") break;
+  }
+
+  return NextResponse.json({ ipv4: ipv4Address });
+}
 
 export async function POST(req) {
+  const connectionName = "Wired connection 1";
+
   try {
     const payload = await req.json();
     console.log("Received IP Configuration Payload:", payload);
