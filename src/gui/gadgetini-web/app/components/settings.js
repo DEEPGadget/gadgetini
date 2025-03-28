@@ -158,7 +158,7 @@ export default function Settings() {
                 type="radio"
                 value="static"
                 checked={IPMode === "static"}
-                onChange={() => () => setIPMode("static")}
+                onChange={() => setIPMode("static")}
                 className="w-4 h-4 text-blue-500"
               />
               <span>Static</span>
