@@ -9,8 +9,9 @@ export async function GET() {
 
     // Check if file exist & read
     if (!fs.existsSync(configPath)) {
-      return new Response(JSON.stringify({ error: "Config file not found" }), {
-        status: 404,
+      return new Response({
+        error: "Config file not found",
+        status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -39,6 +40,7 @@ export async function GET() {
   } catch (error) {
     console.error("[display/GET]", error);
     return new Response(JSON.stringify({ error: "Failed to read config." }), {
+      error: "Internal server error",
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

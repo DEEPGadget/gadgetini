@@ -74,10 +74,10 @@ export default function Settings() {
         );
       } else {
         const message = await response.json();
-        alert(`Failed to update IP \n ${message}`);
+        alert(`Failed to update IP \n ${message.error}`);
       }
     } catch (error) {
-      alert("Error updating IP");
+      console.log(error);
     } finally {
       setLoadingState({ ...loadingState, updateIP: false });
     }
@@ -98,10 +98,11 @@ export default function Settings() {
       if (response.ok) {
         console.log("Config updated successfully");
       } else {
-        console.error("Failed to update config");
+        const message = await response.json();
+        alert(`Failed to update config \n ${message.error}`);
       }
     } catch (error) {
-      console.error("Error applying config:", error);
+      console.error(error);
     } finally {
       setLoadingState({ ...loadingState, applyDisplayConfig: false });
     }
