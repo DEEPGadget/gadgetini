@@ -48,7 +48,10 @@ export async function POST(req) {
 
       exec(command, (error, stdout, stderr) => {
         if (error) {
-          throw new Error("POST/exec dhcp");
+          return NextResponse.json(
+            { error: "Failed to execute dhcp IP config" },
+            { status: 500 }
+          );
         }
       });
     } else if (payload.mode === "static") {
@@ -58,7 +61,6 @@ export async function POST(req) {
           { status: 400 }
         );
       }
-
       const address = `${payload.ip}/${payload.netmask}`;
       const gateway = payload.gateway;
       const dns = `${payload.dns1}${payload.dns2 ? `,${payload.dns2}` : ""}`;
@@ -67,7 +69,10 @@ export async function POST(req) {
 
       exec(command, (error, stdout, stderr) => {
         if (error) {
-          throw new Error("POST/exec static");
+          return NextResponse.json(
+            { error: "Failed to execute static IP config" },
+            { status: 500 }
+          );
         }
       });
     }

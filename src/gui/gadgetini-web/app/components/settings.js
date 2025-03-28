@@ -58,7 +58,14 @@ export default function Settings() {
     if (!window.confirm("Are you sure you want to change the IP?")) {
       return;
     }
-    const payload = { ...IPRefs.current };
+    const payload = {
+      ip: IPRefs.current.ip?.value || "",
+      netmask: IPRefs.current.netmask?.value || "",
+      gateway: IPRefs.current.gateway?.value || "",
+      dns1: IPRefs.current.dns1?.value || "",
+      dns2: IPRefs.current.dns2?.value || "",
+      mode: IPMode,
+    };
 
     try {
       const response = await fetch("/api/ip/self", {
