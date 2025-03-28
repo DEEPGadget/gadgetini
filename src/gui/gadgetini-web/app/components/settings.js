@@ -166,7 +166,7 @@ export default function Settings() {
           </div>
 
           {/* Input when set IP as static mode */}
-          {IPRefs.current.mode === "static" && (
+          {IPMode === "static" && (
             <div className="flex items-center gap-2">
               <input
                 type="text"
