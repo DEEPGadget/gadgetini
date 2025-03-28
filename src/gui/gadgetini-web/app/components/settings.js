@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/24/solid";
 import LoadingSpinner from "../utils/LoadingSpinner";
 import { getSelfIP } from "../utils/ip/getSelfIP";
+import { getDisplayConfig } from "../utils/display/getDisplayConfig";
 
 export default function Settings() {
   //Current IP Info
@@ -43,27 +44,7 @@ export default function Settings() {
 
   // API: Get current IP and display config
   useEffect(() => {
-    const getDisplayConfig = async () => {
-      try {
-        const response = await fetch("/api/display-config");
-        if (!response.ok) {
-          throw new Error("Failed to fetch config");
-        }
-        const configData = await response.json();
-        setDisplayMode({
-          orientation: configData.orientation,
-          chassis: configData.chassis,
-          cpu: configData.cpu,
-          gpu: configData.gpu,
-          memory: configData.memory,
-          psu: configData.psu,
-          rotationTime: configData.rotationTime,
-        });
-      } catch (error) {
-        console.error("Error loading config:", error);
-      }
-    };
-    getDisplayConfig();
+    getDisplayConfig().then(setDisplayMode);
     getSelfIP().then(setCurrentIP);
   }, []);
 
