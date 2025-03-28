@@ -34,8 +34,11 @@ export default function Settings() {
     gateway: null,
     dns1: null,
     dns2: null,
-    mode: IPModeMode,
+    mode: IPMode,
   });
+  useEffect(() => {
+    IPRefs.current.mode = IPMode;
+  }, [IPMode]);
 
   // Loading Info
   const [loadingState, setLoadingState] = useState({
