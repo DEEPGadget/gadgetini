@@ -73,7 +73,8 @@ export default function Settings() {
           `IP updated\nmethod:${data.mode}\naddress:${data.ip}/${data.netmask}\ngateway: ${data.gateway}\ndns1: ${data.dns1}\ndns2: ${data.dns2} `
         );
       } else {
-        alert("Failed to update IP");
+        const message = await response.json();
+        alert(`Failed to update IP \n ${message}`);
       }
     } catch (error) {
       alert("Error updating IP");

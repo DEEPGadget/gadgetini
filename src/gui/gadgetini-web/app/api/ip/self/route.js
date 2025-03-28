@@ -40,33 +40,34 @@ export async function POST(req) {
   try {
     const payload = await req.json();
     console.log("Received IP Configuration Payload:", payload);
-
+    let command = ``;
     // Change to DHCP or static
     if (payload.mode === "dhcp") {
       // USE 'nmcli' command
-      const command = `sudo nmcli connection modify "${connectionName}" ipv4.method auto && sudo nmcli connection up "${connectionName}"`;
+      command = `sudo nmcli connection modify "${connectionName}" ipv4.method auto && sudo nmcli connection up "${connectionName}"`;
 
       exec(command, (error, stdout, stderr) => {
         if (error) {
-          console.error("exec DHCP mode change", error);
-          throw new Error("IP update fail");
+          throw new Error("POST/exec dhcp");
         }
       });
     } else if (payload.mode === "static") {
       if (!payload.ip || !payload.netmask || !payload.gateway) {
-        throw new Error("Missing required static IP parameters");
+        return NextResponse.json(
+          { error: "Missing paramters ip, netmask, gateway are required" },
+          { status: 400 }
+        );
       }
 
       const address = `${payload.ip}/${payload.netmask}`;
       const gateway = payload.gateway;
       const dns = `${payload.dns1}${payload.dns2 ? `,${payload.dns2}` : ""}`;
       // USE 'nmcli' command
-      const command = `sudo nmcli connection modify "${connectionName}" ipv4.method manual ipv4.addresses "${address}" ipv4.gateway "${gateway}" ipv4.dns "${dns}" && sudo nmcli connection up "${connectionName}"`;
+      command = `sudo nmcli connection modify "${connectionName}" ipv4.method manual ipv4.addresses "${address}" ipv4.gateway "${gateway}" ipv4.dns "${dns}" && sudo nmcli connection up "${connectionName}"`;
 
       exec(command, (error, stdout, stderr) => {
         if (error) {
-          console.error("exec Static mode change", error);
-          return;
+          throw new Error("POST/exec static");
         }
       });
     }
@@ -74,7 +75,7 @@ export async function POST(req) {
   } catch (error) {
     console.error("[ip/self/POST]]", error);
     return NextResponse.json(
-      { error: "Failed to process request" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
