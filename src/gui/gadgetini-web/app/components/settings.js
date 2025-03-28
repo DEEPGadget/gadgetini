@@ -27,13 +27,14 @@ export default function Settings() {
   });
 
   // Input IP Config Info
-  const ipRefs = useRef({
+  const [IPMode, setIPMode] = useState("dhcp");
+  const IPRefs = useRef({
     ip: null,
     netmask: null,
     gateway: null,
     dns1: null,
     dns2: null,
-    mode: "dhcp",
+    mode: IPModeMode,
   });
 
   // Loading Info
@@ -54,7 +55,7 @@ export default function Settings() {
     if (!window.confirm("Are you sure you want to change the IP?")) {
       return;
     }
-    const payload = { ...ipRefs.current };
+    const payload = { ...IPRefs.current };
 
     try {
       const response = await fetch("/api/ip/self", {
@@ -143,10 +144,8 @@ export default function Settings() {
               <input
                 type="radio"
                 value="dhcp"
-                checked={ipRefs.current.mode === "dhcp"}
-                onChange={() => {
-                  ipRefs.current.mode = "dhcp";
-                }}
+                checked={IPMode === "dhcp"}
+                onChange={() => setIPMode("dhcp")}
                 className="w-4 h-4 text-blue-500"
               />
               <span>DHCP</span>
@@ -155,10 +154,8 @@ export default function Settings() {
               <input
                 type="radio"
                 value="static"
-                checked={ipRefs.current.mode === "static"}
-                onChange={() => {
-                  ipRefs.current.mode = "static";
-                }}
+                checked={IPMode === "static"}
+                onChange={() => () => setIPMode("static")}
                 className="w-4 h-4 text-blue-500"
               />
               <span>Static</span>
@@ -166,36 +163,36 @@ export default function Settings() {
           </div>
 
           {/* Input when set IP as static mode */}
-          {ipRefs.current.mode === "static" && (
+          {IPRefs.current.mode === "static" && (
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 placeholder="IP Address"
-                ref={(el) => (ipRefs.current.ip = el)}
+                ref={(el) => (IPRefs.current.ip = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="Netmask"
-                ref={(el) => (ipRefs.current.netmask = el)}
+                ref={(el) => (IPRefs.current.netmask = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="Gateway"
-                ref={(el) => (ipRefs.current.gateway = el)}
+                ref={(el) => (IPRefs.current.gateway = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="DNS 1 (Option)"
-                ref={(el) => (ipRefs.current.dns1 = el)}
+                ref={(el) => (IPRefs.current.dns1 = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="DNS 2 (Option)"
-                ref={(el) => (ipRefs.current.dns2 = el)}
+                ref={(el) => (IPRefs.current.dns2 = el)}
                 className="border p-2 rounded w-36 text-left"
               />
             </div>
