@@ -1,7 +1,7 @@
 export const getSelfIP = async () => {
   try {
-    const reponse = await fetch("/api/ip/self");
-    if (!reponse.ok) {
+    const response = await fetch("/api/ip/self");
+    if (!response.ok) {
       throw new Error("response error from /api/ip/self");
     }
     const ip = await response.json();
