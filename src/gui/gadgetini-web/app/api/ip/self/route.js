@@ -49,7 +49,7 @@ export async function POST(req) {
       exec(command, (error, stdout, stderr) => {
         if (error) {
           console.error("exec DHCP mode change", error);
-          return;
+          throw new Error("IP update fail");
         }
       });
     } else if (payload.mode === "static") {
