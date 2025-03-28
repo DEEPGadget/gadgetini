@@ -35,7 +35,31 @@ export async function GET() {
 
 // Update IPv4 address from user input
 export async function POST(req) {
-  const connectionName = "Wired connection 1";
+  // Get connected eth connection name
+  function getActiveConnectionName() {
+    try {
+      const output = execSync(
+        "nmcli -t -f NAME,DEVICE,STATE connection show --active"
+      )
+        .toString()
+        .trim();
+
+      const lines = output.split("\n");
+      for (const line of lines) {
+        const [name, device, state] = line.split(":");
+        if (device?.startsWith("eth") && state === "activated") {
+          return name;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("[getActiveEthernetConnectionName]", error);
+      return null;
+    }
+  }
+
+  const connectionName = getActiveConnectionName();
 
   try {
     const payload = await req.json();
