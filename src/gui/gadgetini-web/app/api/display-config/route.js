@@ -48,7 +48,7 @@ export async function GET() {
 // Update display config at 'config.ini' file
 export async function POST(request) {
   try {
-    const { displayMode } = await request.json();
+    const displayMode = await request.json();
     const updateDisplayConfig = async (displayMode) => {
       // Read existing config
       const homeDir = "/home/gadgetini/gadgetini/src/display";
