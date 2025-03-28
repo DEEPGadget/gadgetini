@@ -29,11 +29,11 @@ export default function Settings() {
   // Input IP Config Info
   const [IPMode, setIPMode] = useState("dhcp");
   const IPRefs = useRef({
-    ip: null,
-    netmask: null,
-    gateway: null,
-    dns1: null,
-    dns2: null,
+    ip: "",
+    netmask: "",
+    gateway: "",
+    dns1: "",
+    dns2: "",
     mode: IPMode,
   });
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function Settings() {
     } catch (error) {
       alert("Error updating IP");
     } finally {
-      setLoadingState({ ...loadingState, updateIP: true });
+      setLoadingState({ ...loadingState, updateIP: false });
     }
   };
 
