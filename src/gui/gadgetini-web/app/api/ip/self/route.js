@@ -72,7 +72,7 @@ export async function POST(req) {
       const { ip, netmask, gateway, dns1, dns2 } = payload;
       const address = `${ip}/${netmask}`;
       const dns = dns2 ? `${dns1},${dns2}` : dns1;
-      if (ip || netmask || gateway) {
+      if (!ip || !netmask || !gateway) {
         return NextResponse.json(
           { error: "Missing paramters ip, netmask, gateway are required" },
           { status: 400 }
