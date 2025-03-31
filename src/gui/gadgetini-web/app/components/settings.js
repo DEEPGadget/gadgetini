@@ -80,7 +80,7 @@ export default function Settings() {
           `IP updated\nmethod:${data.mode}\naddress:${data.ip}/${data.netmask}\ngateway: ${data.gateway}\ndns1: ${data.dns1}\ndns2: ${data.dns2} `
         );
       } else {
-        const message = await response.json();
+        const message = await response.json().then(console.log(message));
         alert(`Failed to update IP \n ${message.error}`);
       }
     } catch (error) {
@@ -105,7 +105,7 @@ export default function Settings() {
       if (response.ok) {
         console.log("Config updated successfully");
       } else {
-        const message = await response.json();
+        const message = await response.json().then(console.log(message));
         alert(`Failed to update config \n ${message.error}`);
       }
     } catch (error) {

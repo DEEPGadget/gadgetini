@@ -39,7 +39,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("[display/GET]", error);
-    return new Response(JSON.stringify({ error: "Failed to read config." }), {
+    return new Response({
       error: "Internal server error",
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -79,18 +79,16 @@ export async function POST(request) {
       await fs.promises.writeFile(configPath, config, "utf-8");
     };
     await updateDisplayConfig(displayMode);
-    return new Response(JSON.stringify({ message: "Modes updated" }), {
+    return new Response({
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("[display/POST]", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to update display modes." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response({
+      error: "Failed to update display modes.",
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

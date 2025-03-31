@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { exec } from "child_process";
+import { exec, execSync } from "child_process";
 import os from "os";
 
 // Read IPv4 address and Return
@@ -10,11 +10,8 @@ export async function GET() {
 
     for (let iface in interfaces) {
       if (
-        iface.toLowerCase().includes("wifi") ||
-        iface.toLowerCase().includes("wi-fi") ||
         iface.toLowerCase().includes("wlan") ||
-        iface.toLowerCase().includes("eth") ||
-        iface.toLowerCase().includes("VMnet")
+        iface.toLowerCase().includes("eth")
       ) {
         for (let alias of interfaces[iface]) {
           if (alias.family === "IPv4" && !alias.internal) {
@@ -51,11 +48,12 @@ export async function POST(req) {
           return name;
         }
       }
-
       return null;
     } catch (error) {
-      console.error("[getActiveEthernetConnectionName]", error);
-      return null;
+      return NextResponse.json(
+        { error: "Failed to get activated connection name" },
+        { status: 400 }
+      );
     }
   }
 
