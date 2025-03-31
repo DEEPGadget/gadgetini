@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
@@ -7,17 +8,15 @@ export async function GET() {
     const homeDir = "/home/gadgetini/gadgetini/src/display";
     const configPath = path.join(homeDir, "config.ini");
 
-    // Check if file exist & read
     if (!fs.existsSync(configPath)) {
-      return new Response({
-        error: "Config file not found",
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return NextResponse.json(
+        { error: "Config file not found" },
+        { status: 500 }
+      );
     }
+
     const config = await fs.promises.readFile(configPath, "utf-8");
 
-    // Returns the value of a given key from the config string
     const getConfigValue = (key) => {
       const match = config.match(new RegExp(`^${key}\\s*=\\s*(.*)`, "m"));
       return match ? match[1].trim() : null;
@@ -33,17 +32,13 @@ export async function GET() {
       rotationTime: parseInt(getConfigValue("time") || "5", 10),
     };
 
-    return new Response({
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json(configData);
   } catch (error) {
     console.error("[display/GET]", error);
-    return new Response({
-      error: "Internal server error",
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -51,13 +46,12 @@ export async function GET() {
 export async function POST(request) {
   try {
     const displayMode = await request.json();
+
     const updateDisplayConfig = async (displayMode) => {
-      // Read existing config
       const homeDir = "/home/gadgetini/gadgetini/src/display";
       const configPath = path.join(homeDir, "config.ini");
       let config = await fs.promises.readFile(configPath, "utf-8");
 
-      // Change the relevant lines in the config file
       config = config
         .replace(
           /^orientation\s*=\s*.*/m,
@@ -75,20 +69,18 @@ export async function POST(request) {
         )
         .replace(/^psu\s*=\s*.*/m, `psu=${displayMode.psu ? "on" : "off"}`)
         .replace(/^time\s*=\s*.*/m, `time=${displayMode.rotationTime}`);
-      // Write Config
+
       await fs.promises.writeFile(configPath, config, "utf-8");
     };
+
     await updateDisplayConfig(displayMode);
-    return new Response({
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+
+    return NextResponse.json({ message: "Display config updated" });
   } catch (error) {
     console.error("[display/POST]", error);
-    return new Response({
-      error: "Failed to update display modes.",
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json(
+      { error: "Failed to update display modes." },
+      { status: 500 }
+    );
   }
 }
