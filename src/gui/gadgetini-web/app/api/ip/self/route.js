@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import { exec, execSync } from "child_process";
+import { exec as _exec } from "child_process";
+import { promisify } from "util";
 import os from "os";
+
+const exec = promisify(_exec);
 
 // Read IPv4 address and Return
 export async function GET() {
@@ -25,78 +28,59 @@ export async function GET() {
 
     return NextResponse.json(ipv4Address);
   } catch (error) {
-    console.error("[ip/self/GET]]", error);
+    console.error("[ip/self/GET]", error);
     return NextResponse.json({ error: "Failed to fetch IP" }, { status: 500 });
+  }
+}
+
+// Get connected eth connection name
+async function getActiveConnectionName() {
+  try {
+    const { stdout } = await exec(
+      "nmcli -t -f NAME,DEVICE,STATE connection show --active"
+    );
+
+    const lines = stdout.trim().split("\n");
+    for (const line of lines) {
+      const [name, device, state] = line.split(":");
+      if (device?.startsWith("eth") && state === "activated") {
+        return name;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("[ip/self/POST]", error);
+    return NextResponse.json(
+      { error: "Failed to get activated connection name" },
+      { status: 400 }
+    );
   }
 }
 
 // Update IPv4 address from user input
 export async function POST(req) {
-  // Get connected eth connection name
-  function getActiveConnectionName() {
-    try {
-      const output = execSync(
-        "nmcli -t -f NAME,DEVICE,STATE connection show --active"
-      )
-        .toString()
-        .trim();
-
-      const lines = output.split("\n");
-      for (const line of lines) {
-        const [name, device, state] = line.split(":");
-        if (device?.startsWith("eth") && state === "activated") {
-          return name;
-        }
-      }
-      return null;
-    } catch (error) {
-      return NextResponse.json(
-        { error: "Failed to get activated connection name" },
-        { status: 400 }
-      );
-    }
-  }
-
-  const connectionName = getActiveConnectionName();
-
   try {
     const payload = await req.json();
-    console.log("Received IP Configuration Payload:", payload);
+    const connectionName = await getActiveConnectionName();
+
     let command = ``;
     // Change to DHCP or static
     if (payload.mode === "dhcp") {
-      // USE 'nmcli' command
-      command = `sudo nmcli connection modify "${connectionName}" ipv4.method auto && sudo nmcli connection up "${connectionName}"`;
-
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          return NextResponse.json(
-            { error: "Failed to execute dhcp IP config" },
-            { status: 500 }
-          );
-        }
-      });
+      const command = `sudo nmcli connection modify "${connectionName}" ipv4.method auto && sudo nmcli connection up "${connectionName}"`;
+      await exec(command);
     } else if (payload.mode === "static") {
-      if (!payload.ip || !payload.netmask || !payload.gateway) {
+      const { ip, netmask, gateway, dns1, dns2 } = payload;
+      const address = `${ip}/${netmask}`;
+      const dns = dns2 ? `${dns1},${dns2}` : dns1;
+      if (ip || netmask || gateway) {
         return NextResponse.json(
           { error: "Missing paramters ip, netmask, gateway are required" },
           { status: 400 }
         );
       }
-      const address = `${payload.ip}/${payload.netmask}`;
-      const gateway = payload.gateway;
-      const dns = `${payload.dns1}${payload.dns2 ? `,${payload.dns2}` : ""}`;
       // USE 'nmcli' command
-      command = `sudo nmcli connection modify "${connectionName}" ipv4.method manual ipv4.addresses "${address}" ipv4.gateway "${gateway}" ipv4.dns "${dns}" && sudo nmcli connection up "${connectionName}"`;
-
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          return NextResponse.json(
-            { error: "Failed to execute static IP config" },
-            { status: 500 }
-          );
-        }
-      });
+      const command = `sudo nmcli connection modify "${connectionName}" ipv4.method manual ipv4.addresses "${address}" ipv4.gateway "${gateway}" ipv4.dns "${dns}" && sudo nmcli connection up "${connectionName}"`;
+      await exec(command);
     }
     return NextResponse.json(payload);
   } catch (error) {

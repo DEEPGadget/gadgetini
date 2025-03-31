@@ -33,7 +33,7 @@ export async function GET() {
       rotationTime: parseInt(getConfigValue("time") || "5", 10),
     };
 
-    return new Response(JSON.stringify(configData), {
+    return new Response({
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
