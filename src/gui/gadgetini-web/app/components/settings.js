@@ -1,125 +1,74 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ArrowUpIcon,
   ArrowRightIcon,
   CheckIcon,
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/solid";
-
 import LoadingSpinner from "../utils/LoadingSpinner";
-import { fetchLocalIP } from "../utils/fetchLocalIP";
+import { getSelfIP } from "../utils/ip/getSelfIP";
+import { getDisplayConfig } from "../utils/display/getDisplayConfig";
 
 export default function Settings() {
-  const [loadingApply, setLoadingApply] = useState(false);
-  const [rotationTime, setRotationTime] = useState(5);
-  const [newIP, setNewIP] = useState("");
-  const [loadingIP, setLoadingIP] = useState(false);
-  const [staticConfig, setStaticConfig] = useState({
-    ip: "",
-    netmask: "",
-    gateway: "",
-    dns1: "",
-    dns2: "",
-  });
+  //Current IP Info
+  const [currentIP, setCurrentIP] = useState("localhost");
 
-  const [localIP, setLocalIP] = useState("localhost");
-  const [loadingConfig, setLoadingConfig] = useState(true);
-  const [ipMode, setIpMode] = useState("dhcp");
-  const [status, setStatus] = useState({
+  // Display Config Info
+  const [displayMode, setDisplayMode] = useState({
     orientation: "vertical",
     chassis: true,
     cpu: false,
     gpu: false,
     memory: false,
     psu: false,
+    rotationTime: 5,
   });
 
+  // Input IP Config Info
+  const [IPMode, setIPMode] = useState("dhcp");
+  const IPRefs = useRef({
+    ip: "",
+    netmask: "",
+    gateway: "",
+    dns1: "",
+    dns2: "",
+    mode: IPMode,
+  });
   useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        const response = await fetch("/api/update-config");
-        if (!response.ok) {
-          throw new Error("Failed to fetch config");
-        }
-        const configData = await response.json();
-        console.log(configData);
-        setStatus({
-          orientation: configData.orientation,
-          chassis: configData.chassis,
-          cpu: configData.cpu,
-          gpu: configData.gpu,
-          memory: configData.memory,
-          psu: configData.psu,
-        });
-        setRotationTime(configData.rotationTime);
-      } catch (error) {
-        console.error("Error loading config:", error);
-      } finally {
-        setLoadingConfig(false);
-      }
-    };
+    IPRefs.current.mode = IPMode;
+  }, [IPMode]);
 
-    fetchConfig();
-    fetchLocalIP().then(setLocalIP);
+  // Loading Info
+  const [loadingState, setLoadingState] = useState({
+    updateIP: false,
+    applyDisplayConfig: false,
+  });
+
+  // API: Get current IP and display config
+  useEffect(() => {
+    getDisplayConfig().then(setDisplayMode);
+    getSelfIP().then(setCurrentIP);
   }, []);
 
-  {
-    /*디스플레이 모드 설정 api 점검*/
-  }
-  const handleApply = async () => {
-    setLoadingApply(true);
-    const payload = { status, rotationTime };
-    try {
-      const response = await fetch("/api/update-config", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        console.log("Config updated successfully");
-      } else {
-        console.error("Failed to update config");
-      }
-    } catch (error) {
-      console.error("Error applying config:", error);
-    } finally {
-      setLoadingApply(false);
-    }
-  };
-
-  const toggleStatus = (key) => {
-    const lowercaseKey = key.toLowerCase();
-    setStatus((prevStatus) => ({
-      ...prevStatus,
-      [lowercaseKey]: !prevStatus[lowercaseKey],
-    }));
-  };
-
+  // API: Handle IP Update
   const handleIPChange = async () => {
+    setLoadingState({ ...loadingState, updateIP: true });
     if (!window.confirm("Are you sure you want to change the IP?")) {
       return;
     }
-
-    setLoadingIP(true);
-    const payload =
-      ipMode === "static"
-        ? {
-            mode: "static",
-            ip: staticConfig.ip,
-            netmask: staticConfig.netmask,
-            gateway: staticConfig.gateway,
-            dns1: staticConfig.dns1,
-            dns2: staticConfig.dns2,
-          }
-        : { mode: "dhcp" };
+    const payload = {
+      ip: IPRefs.current.ip?.value || "",
+      netmask: IPRefs.current.netmask?.value || "",
+      gateway: IPRefs.current.gateway?.value || "",
+      dns1: IPRefs.current.dns1?.value || "",
+      dns2: IPRefs.current.dns2?.value || "",
+      mode: IPMode,
+    };
 
     try {
-      const response = await fetch("/api/setip", {
+      const response = await fetch("/api/ip/self", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -128,30 +77,65 @@ export default function Settings() {
       if (response.ok) {
         const data = await response.json();
         alert(
-          `IP updated\nmethod:${ipMode}\naddress:${staticConfig.ip}/${staticConfig.netmask}\ngateway: ${staticConfig.gateway}\ndns1: ${staticConfig.dns1}\ndns2: ${staticConfig.dns2} `
+          `IP updated\nmethod:${data.mode}\naddress:${data.ip}/${data.netmask}\ngateway: ${data.gateway}\ndns1: ${data.dns1}\ndns2: ${data.dns2} `
         );
       } else {
-        alert("Failed to update IP");
+        const message = await response.json().then();
+        alert(`Failed to update IP \n ${message.error}`);
       }
     } catch (error) {
-      alert("Error updating IP");
+      console.log(error);
     } finally {
-      setLoadingIP(false);
+      setLoadingState({ ...loadingState, updateIP: false });
     }
+  };
+
+  // API: Handle Display Config Update
+  const handleDisplayMode = async () => {
+    setLoadingState({ ...loadingState, applyDisplayConfig: true });
+    try {
+      const response = await fetch("/api/display-config", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(displayMode),
+      });
+
+      if (response.ok) {
+        console.log("Config updated successfully");
+      } else {
+        const message = await response.json().then(console.log(message));
+        alert(`Failed to update config \n ${message.error}`);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingState({ ...loadingState, applyDisplayConfig: false });
+    }
+  };
+
+  // FE: Toggle display config
+  const toggleStatus = (key) => {
+    const lowercaseKey = key.toLowerCase();
+    setDisplayMode((prev) => ({
+      ...prev,
+      [lowercaseKey]: !prev[lowercaseKey],
+    }));
   };
 
   return (
     <div className="p-4">
-      {/* 그라파나 접속 버튼, IP 설정 */}
       <div className="mb-6">
         <h2 className="text-xl font-bold">System Configuration</h2>
+        {/* Display Cureent IP, Button accessing Grafana Dashboard */}
         <div className="flex gap-2 flex-row items-center mt-4">
           <div className="flex items-center">
             <p className="text-base">
-              Current IP :<strong> {localIP}</strong>
+              Current IP :<strong> {currentIP}</strong>
             </p>
             <a
-              href={`http://${localIP}/dashboard`}
+              href={`http://${currentIP}/dashboard`}
               target="_blank"
               rel="noopener noreferrer"
               className="ml-2 flex items-center px-4 py-2 text-white rounded-lg transition-all 
@@ -166,95 +150,77 @@ export default function Settings() {
         <div className="flex items-center gap-4 mt-4">
           <span className="whitespace-nowrap">Set IP :</span>
 
-          {/* DHCP / Static 선택 라디오 버튼 */}
+          {/* Button selecting IP as DHCP or static */}
           <div className="flex items-center gap-4">
             <label className="flex items-center space-x-2">
               <input
                 type="radio"
                 value="dhcp"
-                checked={ipMode === "dhcp"}
-                onChange={() => setIpMode("dhcp")}
+                checked={IPMode === "dhcp"}
+                onChange={() => setIPMode("dhcp")}
                 className="w-4 h-4 text-blue-500"
               />
               <span>DHCP</span>
             </label>
-
             <label className="flex items-center space-x-2">
               <input
                 type="radio"
                 value="static"
-                checked={ipMode === "static"}
-                onChange={() => setIpMode("static")}
+                checked={IPMode === "static"}
+                onChange={() => setIPMode("static")}
                 className="w-4 h-4 text-blue-500"
               />
               <span>Static</span>
             </label>
           </div>
 
-          {/* Static 선택 시 IP / Gateway / DNS 입력 필드 표시 */}
-          {ipMode === "static" && (
+          {/* Input when set IP as static mode */}
+          {IPMode === "static" && (
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 placeholder="IP Address"
-                value={staticConfig.ip}
-                onChange={(e) =>
-                  setStaticConfig({ ...staticConfig, ip: e.target.value })
-                }
+                ref={(el) => (IPRefs.current.ip = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="Netmask"
-                value={staticConfig.netmask}
-                onChange={(e) =>
-                  setStaticConfig({ ...staticConfig, netmask: e.target.value })
-                }
+                ref={(el) => (IPRefs.current.netmask = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="Gateway"
-                value={staticConfig.gateway}
-                onChange={(e) =>
-                  setStaticConfig({ ...staticConfig, gateway: e.target.value })
-                }
+                ref={(el) => (IPRefs.current.gateway = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="DNS 1 (Option)"
-                value={staticConfig.dns1}
-                onChange={(e) =>
-                  setStaticConfig({ ...staticConfig, dns1: e.target.value })
-                }
+                ref={(el) => (IPRefs.current.dns1 = el)}
                 className="border p-2 rounded w-36 text-left"
               />
               <input
                 type="text"
                 placeholder="DNS 2 (Option)"
-                value={staticConfig.dns2}
-                onChange={(e) =>
-                  setStaticConfig({ ...staticConfig, dns2: e.target.value })
-                }
+                ref={(el) => (IPRefs.current.dns2 = el)}
                 className="border p-2 rounded w-36 text-left"
               />
             </div>
           )}
-
-          {/* Update 버튼 */}
           <button
             onClick={handleIPChange}
             className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
-            disabled={loadingIP}
+            disabled={loadingState.updateIP}
           >
-            {loadingIP ? "Updating..." : "Update"}
+            {loadingState.updateIP ? "Updating..." : "Update"}
             <CheckIcon className="w-5 h-5 ml-2" />
           </button>
         </div>
       </div>
 
-      {/* 컨트롤 테이블 */}
+      {/* Display mode control table */}
       <h2 className="text-xl font-bold mb-4">Control Info</h2>
       <div className="overflow-x-auto w-full">
         <table className="w-full bg-white border-separate border-spacing-0 table-auto">
@@ -272,7 +238,6 @@ export default function Settings() {
             </tr>
           </thead>
           <tbody>
-            {/* 디스플레이 설정화면 재구성 */}
             <tr className="border-b border-gray-300">
               <td className="py-2 px-4 border border-gray-300 text-center">
                 Orientation
@@ -283,13 +248,13 @@ export default function Settings() {
               <td className="py-2 px-4 border border-gray-300 flex justify-center gap-2">
                 <button
                   onClick={() =>
-                    setStatus((prevStatus) => ({
-                      ...prevStatus,
+                    setDisplayMode((prev) => ({
+                      ...prev,
                       orientation: "vertical",
                     }))
                   }
                   className={`flex items-center bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition-all ${
-                    status.orientation === "vertical"
+                    displayMode.orientation === "vertical"
                       ? "border-2 border-black"
                       : ""
                   }`}
@@ -299,13 +264,13 @@ export default function Settings() {
                 </button>
                 <button
                   onClick={() =>
-                    setStatus((prevStatus) => ({
+                    setDisplayMode((prevStatus) => ({
                       ...prevStatus,
                       orientation: "horizontal",
                     }))
                   }
                   className={`flex items-center bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition-all ${
-                    status.orientation === "horizontal"
+                    displayMode.orientation === "horizontal"
                       ? "border-2 border-black"
                       : ""
                   }`}
@@ -315,7 +280,6 @@ export default function Settings() {
                 </button>
               </td>
             </tr>
-
             {Object.entries({
               Chassis:
                 "Front display shows internal temperature and humidity, water leakage detection, and coolant level",
@@ -323,44 +287,43 @@ export default function Settings() {
               GPU: "Front display shows GPU temperature and utilization.",
               Memory: "Front display shows memory usage.",
               PSU: "Front display shows power consumption, PSU temperature",
-            }).map(([key, description]) => (
-              <tr key={key} className="border-b border-gray-300 ">
-                <td className="py-2 px-4 border border-gray-300 text-center">
-                  {key}
-                </td>
-                <td className="py-2 px-4 border border-gray-300">
-                  {description}
-                </td>
-                <td className="py-2 px-4 border border-gray-300">
-                  <div className="flex flex-col items-center justify-center ">
-                    <button
-                      onClick={() => toggleStatus(key)}
-                      className={`relative flex items-center w-20 h-8 rounded-full border-2 border-gray-400 transition-colors duration-300 ${
-                        status[key.toLowerCase()]
-                          ? "bg-green-500"
-                          : "bg-red-500"
-                      }`}
-                      disabled={key !== "Chassis"}
-                    >
-                      <span
-                        className={`absolute left-1 transition-transform duration-300 transform ${
-                          status[key.toLowerCase()]
-                            ? "translate-x-11"
-                            : "translate-x-0"
-                        } bg-white rounded-full w-6 h-6`}
-                      />
-                      <span
-                        className={`text-white font-bold transition-all duration-300 ${
-                          status[key.toLowerCase()] ? "ml-2" : "ml-10"
+            }).map(([key, description]) => {
+              const status = displayMode[key.toLowerCase()];
+              return (
+                <tr key={key} className="border-b border-gray-300 ">
+                  <td className="py-2 px-4 border border-gray-300 text-center">
+                    {key}
+                  </td>
+                  <td className="py-2 px-4 border border-gray-300">
+                    {description}
+                  </td>
+                  <td className="py-2 px-4 border border-gray-300">
+                    <div className="flex flex-col items-center justify-center ">
+                      <button
+                        onClick={() => toggleStatus(key)}
+                        className={`relative flex items-center w-20 h-8 rounded-full border-2 border-gray-400 transition-colors duration-300 ${
+                          status ? "bg-green-500" : "bg-red-500"
                         }`}
+                        disabled={key !== "Chassis"}
                       >
-                        {status[key.toLowerCase()] ? "On" : "Off"}
-                      </span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                        <span
+                          className={`absolute left-1 transition-transform duration-300 transform ${
+                            status ? "translate-x-11" : "translate-x-0"
+                          } bg-white rounded-full w-6 h-6`}
+                        />
+                        <span
+                          className={`text-white font-bold transition-all duration-300 ${
+                            status ? "ml-2" : "ml-10"
+                          }`}
+                        >
+                          {status ? "On" : "Off"}
+                        </span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         <div className="mt-6 flex justify-end items-center">
@@ -374,24 +337,24 @@ export default function Settings() {
             type="number"
             placeholder="5"
             min="1"
-            value={rotationTime}
+            value={displayMode.rotationTime}
             onChange={(e) => {
               const value = Math.floor(Number(e.target.value));
               if (value < 1) {
-                setRotationTime(1);
+                setDisplayMode({ ...displayMode, rotationTime: 1 });
               } else {
-                setRotationTime(value);
+                setDisplayMode({ ...displayMode, rotationTime: value });
               }
             }}
             className="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500 
                border-gray-600 w-16"
           />
           <button
-            onClick={handleApply}
+            onClick={handleDisplayMode}
             className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all ml-2"
-            disabled={loadingApply}
+            disabled={loadingState.applyDisplayConfig}
           >
-            {loadingApply ? (
+            {loadingState.applyDisplayConfig ? (
               <LoadingSpinner />
             ) : (
               <>
