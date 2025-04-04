@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import Database from "better-sqlite3/lib/database";
+
 export async function GET() {
   //TODO DB에서 ip, alias 정보를 꺼냄
   const nodeList = [
@@ -15,7 +17,7 @@ export async function PATCH() {
 
 // TODO DB에 nodetable 업데이트
 export async function PUT() {
-  return NextResponse.json({ message: "Edit success" });
+  return NextResponse.json({ message: "DB put success" });
 }
 // TODO DB에서 일부 노드 삭제 및 일부 노드 display config
 export async function POST() {
