@@ -19,7 +19,7 @@ export default function Cluster() {
   //TODO node 한개의 status check 하여 상태 return
   const checkNodeStatus = async (node) => {
     let status;
-    return {};
+    return { ip: node.ip, alias: node.alias, status: status };
   };
   //TODO nodeTable에 ip 를 기반으로 node들의 상태 return 후 nodeTable에 추가가
   const checkAllNodeStatus = async (nodeTable) => {
@@ -37,10 +37,22 @@ export default function Cluster() {
   // TODO cluster ADD 버튼
   const handleClusterAdd = async () => {};
   // TODO nodeTable 에서 node 에 어떤 key를 수정할건지 전달 후 response 처리리
-  const handleEdit = async (node) => {
+  const handleEditIP = async (node) => {
     const payload = {
       ip: node.ip,
-      key: node.key,
+      key: "ip",
+      value: node.value,
+    };
+    const response = await fetch("/api/nodelist", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  }; // TODO nodeTable 에서 node 에 어떤 key를 수정할건지 전달 후 response 처리리
+  const handleEditAlias = async (node) => {
+    const payload = {
+      ip: node.ip,
+      key: "alias",
       value: node.value,
     };
     const response = await fetch("/api/nodelist", {
@@ -76,7 +88,7 @@ export default function Cluster() {
       }),
     });
   }; // TODO nodetable에서 일부 노드 display config
-  const handleDisplayConfigNodes = async (selectedNode) => {
+  const handleConfigNodesDisplay = async (selectedNode) => {
     const response = await fetch("/api/nodelist", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
