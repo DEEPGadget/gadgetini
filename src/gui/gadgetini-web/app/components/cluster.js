@@ -16,6 +16,10 @@ export default function Cluster() {
   ]);
   // Nodes that selected ad node table
   const [selectedNode, setSelectedNode] = useState([]);
+  const [loadingState, setLoadingState] = useState({
+    loadingNodeTable: false,
+    loadingNodesStatus: false,
+  });
   //TODO node 한개의 status check 하여 상태 return
   const checkNodeStatus = async (node) => {
     let status;
@@ -37,22 +41,10 @@ export default function Cluster() {
   // TODO cluster ADD 버튼
   const handleClusterAdd = async () => {};
   // TODO nodeTable 에서 node 에 어떤 key를 수정할건지 전달 후 response 처리리
-  const handleEditIP = async (node) => {
+  const handleEdit = async (node, key) => {
     const payload = {
       ip: node.ip,
-      key: "ip",
-      value: node.value,
-    };
-    const response = await fetch("/api/nodelist", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  }; // TODO nodeTable 에서 node 에 어떤 key를 수정할건지 전달 후 response 처리리
-  const handleEditAlias = async (node) => {
-    const payload = {
-      ip: node.ip,
-      key: "alias",
+      key,
       value: node.value,
     };
     const response = await fetch("/api/nodelist", {
@@ -100,9 +92,8 @@ export default function Cluster() {
   };
   return (
     <div className="p-4 ">
-      {nodeTable.map((node, index) => (
-        <div key={index}>{node.ip}</div>
-      ))}
+      {nodeTable.length !== 0 &&
+        nodeTable.map((node, index) => <div key={index}>{node.ip}</div>)}
     </div>
   );
 }

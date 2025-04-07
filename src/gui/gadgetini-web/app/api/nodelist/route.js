@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import Database from "better-sqlite3/lib/database";
+import db from "@/database/db";
 
 export async function GET() {
   //TODO DB에서 ip, alias 정보를 꺼냄
-  const nodeList = [
-    { ip: "192.168.1.100", alias: "worker" },
-    { ip: "192.168.1.101", alias: "worker1" },
-  ];
-  return NextResponse.json(nodeList);
+  const nodelist = db.prepare("SELECT * FROM nodelist").all();
+  return NextResponse.json(nodelist);
 }
 
 // TODO DB에서 ip 수정

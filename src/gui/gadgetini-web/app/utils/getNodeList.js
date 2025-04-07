@@ -4,7 +4,7 @@ export const getNodeList = async () => {
     if (!response.ok) {
       throw new Error("Failed to fetch NodeList");
     }
-    const nodeList = await response.json();
-    return nodeList;
+    const nodelist = await response.json();
+    return nodelist;
   } catch (error) {}
 };
