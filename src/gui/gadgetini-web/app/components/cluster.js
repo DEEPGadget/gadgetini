@@ -2,6 +2,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { getNodeList } from "../utils/getNodeList";
 import DisplayConfigModal from "./DisplayConfigModal";
+import {
+  ArrowUpIcon,
+  ArrowRightIcon,
+  CheckIcon,
+  ArrowTopRightOnSquareIcon,
+} from "@heroicons/react/24/solid";
 
 export default function Cluster() {
   // TODO node add 할때 사용
@@ -11,12 +17,11 @@ export default function Cluster() {
     alias: "",
   });
   // TODO node table fetch할때 사용용
-  const [nodeTable, setNodeTable] = useState([
-    { ip: "192.168.1.100", alias: "worker" },
-  ]);
+  const [nodeTable, setNodeTable] = useState([]);
   // Nodes that selected ad node table
   const [selectedNode, setSelectedNode] = useState([]);
   const [loadingState, setLoadingState] = useState({
+    loadingHandleClusterAdd: false,
     loadingNodeTable: false,
     loadingNodesStatus: false,
   });
@@ -27,6 +32,7 @@ export default function Cluster() {
   };
   //TODO nodeTable에 ip 를 기반으로 node들의 상태 return 후 nodeTable에 추가가
   const checkAllNodeStatus = async (nodeTable) => {
+    if (nodeTable.length == 0) return;
     nodeTable.map((node) => {
       checkNodeStatus(node);
     });
@@ -35,7 +41,7 @@ export default function Cluster() {
 
   useEffect(() => {
     getNodeList().then(setNodeTable);
-    checkNodeStatus();
+    checkAllNodeStatus;
   }, []);
 
   // TODO cluster ADD 버튼
@@ -92,8 +98,82 @@ export default function Cluster() {
   };
   return (
     <div className="p-4 ">
-      {nodeTable.length !== 0 &&
-        nodeTable.map((node, index) => <div key={index}>{node.ip}</div>)}
+      <div className="mb-6">
+        <h2 className="text-xl font-bold">Cluster Setup</h2>
+        <div className="flex items-center gap-4 mt-4">
+          <span className="whitespace-nowrap">Set IP :</span>
+          {/* Input when set IP as static mode */}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Number of nodes"
+              ref={(el) => (nodeInputInfo.current.num = el)}
+              className="border p-2 rounded w-36 text-left"
+            />
+            <input
+              type="text"
+              placeholder="IP Address"
+              ref={(el) => (nodeInputInfo.current.ip = el)}
+              className="border p-2 rounded w-36 text-left"
+            />
+            <input
+              type="text"
+              placeholder="Alias"
+              ref={(el) => (nodeInputInfo.current.alias = el)}
+              className="border p-2 rounded w-36 text-left"
+            />
+          </div>
+          <button
+            onClick={handleClusterAdd}
+            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+            disabled={loadingState.loadingHandleClusterAdd}
+          >
+            {loadingState.loadingHandleClusterAdd ? "Updating..." : "Update"}
+            <CheckIcon className="w-5 h-5 ml-2" />
+          </button>
+        </div>
+      </div>
+
+      {/* Display mode control table */}
+      <h2 className="text-xl font-bold mb-4">Cluster Table</h2>
+      <div className="overflow-x-auto w-full">
+        <table className="w-full bg-white border-separate border-spacing-0 table-auto">
+          <thead>
+            <tr className="border-b-2 border-gray-400">
+              <th className="py-2 px-4 border border-gray-300 text-center w-full">
+                IP Address
+              </th>
+              <th className="py-2 px-4 border border-gray-300 text-center w-full">
+                Alias
+              </th>
+              <th className="py-2 px-4 border border-gray-300 text-center w-auto">
+                Config
+              </th>
+              <th className="py-2 px-4 border border-gray-300 text-center w-auto">
+                Dashboard
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {nodeTable.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="py-2 px-4 text-center text-gray-500">
+                  No nodes available.
+                </td>
+              </tr>
+            ) : (
+              nodeTable.map((node) => (
+                <tr key={idx} className="border-b border-gray-300">
+                  <td className="py-2 px-4 border border-gray-300 "></td>
+                  <td className="py-2 px-4 border border-gray-300"></td>
+                  <td className="py-2 px-4 border border-gray-300"></td>
+                  <td className="py-2 px-4 border border-gray-300"></td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
