@@ -74,6 +74,7 @@ export default function Cluster() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nodes),
       });
+      console.log(response);
       if (!response.ok) {
         throw new Error("Node Table DB Input Error");
       }
@@ -204,7 +205,9 @@ export default function Cluster() {
                   <td className="py-2 px-4 border border-gray-300 ">
                     {node.ip}
                   </td>
-                  <td className="py-2 px-4 border border-gray-300"></td>
+                  <td className="py-2 px-4 border border-gray-300">
+                    {node.alias}
+                  </td>
                   <td className="py-2 px-4 border border-gray-300"></td>
                   <td className="py-2 px-4 border border-gray-300"></td>
                 </tr>
