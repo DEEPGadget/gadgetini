@@ -13,9 +13,30 @@ export async function PATCH() {
 }
 
 // TODO DB에 nodetable 업데이트
-export async function PUT() {
-  return NextResponse.json({ message: "DB put success" });
+export async function PUT(req) {
+  const nodes = await req.json();
+  try {
+    const insert = db.prepare(`
+      INSERT OR REPLACE INTO nodelist (ip, alias)
+      VALUES (?, ?)
+    `);
+    const insertMany = db.transaction((nodes) => {
+      for (const node of nodes) {
+        insert.run(node.ip, node.alias || null); // alias는 옵션이므로 null 허용
+      }
+    });
+    insertMany(nodes);
+
+    return NextResponse.json({
+      message: "DB put success",
+      count: nodes.length,
+    });
+  } catch (error) {
+    console.error("/api/nodelist/PUT", error);
+    return NextResponse.json({ error: "DB insert failed" }, { status: 500 });
+  }
 }
+
 // TODO DB에서 일부 노드 삭제 및 일부 노드 display config
 export async function POST() {
   const body = await request.json();

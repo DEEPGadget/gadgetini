@@ -36,16 +36,54 @@ export default function Cluster() {
     nodeTable.map((node) => {
       checkNodeStatus(node);
     });
-    setNodeTable(nodeTable);
   };
 
   useEffect(() => {
-    getNodeList().then(setNodeTable);
-    checkAllNodeStatus;
+    // getNodeList().then((nodes) => {
+    //   setNodeTable(nodes);
+    // });
   }, []);
+  useEffect(() => {
+    //checkAllNodeStatus(nodes);
+  }, [nodeTable]);
 
   // TODO cluster ADD 버튼
-  const handleClusterAdd = async () => {};
+  const handleClusterAdd = async () => {
+    setLoadingState({ ...loadingState, loadingHandleClusterAdd: true });
+    try {
+      // Create Node Table
+      const num = parseInt(nodeInputInfo.current.num?.value);
+      const startIp = nodeInputInfo.current.ip?.value;
+      const aliasBase = nodeInputInfo.current.alias?.value || "";
+      const nodes = [];
+      if (!num || !startIp) {
+        alert("Invalid Input. Please input num of nodes and IP");
+        return;
+      }
+      const ipParts = startIp.split(".");
+      let lastOctet = parseInt(ipParts[3]);
+      for (let i = 0; i < num; i++) {
+        const ip = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.${lastOctet + i}`;
+        const alias = aliasBase ? `${aliasBase}${i}` : undefined;
+        nodes.push(alias ? { ip, alias } : { ip });
+      }
+
+      // PUT DB Api Call
+      const response = await fetch("/api/nodelist", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nodes),
+      });
+      if (!response.ok) {
+        throw new Error("Node Table DB Input Error");
+      }
+      setNodeTable((prev) => [...prev, ...nodes]);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingState({ ...loadingState, loadingHandleClusterAdd: false });
+    }
+  };
   // TODO nodeTable 에서 node 에 어떤 key를 수정할건지 전달 후 response 처리리
   const handleEdit = async (node, key) => {
     const payload = {
@@ -101,26 +139,25 @@ export default function Cluster() {
       <div className="mb-6">
         <h2 className="text-xl font-bold">Cluster Setup</h2>
         <div className="flex items-center gap-4 mt-4">
-          <span className="whitespace-nowrap">Set IP :</span>
           {/* Input when set IP as static mode */}
           <div className="flex items-center gap-2">
             <input
               type="text"
               placeholder="Number of nodes"
               ref={(el) => (nodeInputInfo.current.num = el)}
-              className="border p-2 rounded w-36 text-left"
+              className="border p-2 rounded w-40 text-left"
             />
             <input
               type="text"
               placeholder="IP Address"
               ref={(el) => (nodeInputInfo.current.ip = el)}
-              className="border p-2 rounded w-36 text-left"
+              className="border p-2 rounded w-40 text-left"
             />
             <input
               type="text"
               placeholder="Alias"
               ref={(el) => (nodeInputInfo.current.alias = el)}
-              className="border p-2 rounded w-36 text-left"
+              className="border p-2 rounded w-40 text-left"
             />
           </div>
           <button
@@ -157,14 +194,16 @@ export default function Cluster() {
           <tbody>
             {nodeTable.length === 0 ? (
               <tr>
-                <td colSpan={3} className="py-2 px-4 text-center text-gray-500">
+                <td colSpan={4} className="py-2 px-4 text-center text-gray-500">
                   No nodes available.
                 </td>
               </tr>
             ) : (
               nodeTable.map((node) => (
-                <tr key={idx} className="border-b border-gray-300">
-                  <td className="py-2 px-4 border border-gray-300 "></td>
+                <tr key={node.ip} className="border-b border-gray-300">
+                  <td className="py-2 px-4 border border-gray-300 ">
+                    {node.ip}
+                  </td>
                   <td className="py-2 px-4 border border-gray-300"></td>
                   <td className="py-2 px-4 border border-gray-300"></td>
                   <td className="py-2 px-4 border border-gray-300"></td>
