@@ -1,8 +1,21 @@
 #!/bin/bash
 
-DIR=/home/gadgetini/gadgetini/src
+#-------------------------------------------------------------------------------
+# All relate path base working directory 'DIR'
+#-------------------------------------------------------------------------------
+
+DIR="/home/deepgadget/gadgetini/src"
+
 #echo "$DIR/util"
-#print help option
+
+#-------------------------------------------------------------------------------
+# Print print_help()
+# Display ggtntool command-line tool
+# Show usage guide for ggtntool
+# Use '--help' option 
+# If input invalid or unknown argument, print print_help() 
+#-------------------------------------------------------------------------------
+
 print_help() {
     echo "Usage: ggtntool command [options]"
     echo "Commands:"
@@ -20,79 +33,58 @@ print_help() {
     echo "    tt              Import tt dashboard json"
 }
 
-# Subnet Mask to CIDR Conversion
-subnet_to_cidr() {
-    local subnet_mask=$1
-    local -i cidr=0
-    IFS='.' read -ra ADDR <<< "$subnet_mask"
-    for octet in "${ADDR[@]}"; do
-        while [ $octet -gt 0 ]; do
-            cidr=$((cidr + (octet & 1)))
-            octet=$((octet >> 1))
-        done
-    done
-    echo $cidr
-}
-
-# Validate IP Address
-validate_ip() {
-    local ip=$1
-    if [[ $ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
-        IFS='.' read -ra ADDR <<< "$ip"
-        for octet in "${ADDR[@]}"; do
-            if ((octet < 0 || octet > 255)); then
-                echo "Error: '$ip' is not a valid IP address."
-                return 1
-            fi
-        done
-        return 0
-    else
-        echo "Error: '$ip' is not a valid IP address."
-        return 1
-    fi
-}
-
-#get current server ip
-network_interface=$(ip link show | awk '$9 == "UP" {print $2}' | sed 's/://g' | head -n 1)
-server_ip_address=$(ip -4 addr show $network_interface | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+#-------------------------------------------------------------------------------
+# Set ggtn ip dhcp or static
+# Supports two modes:
+#   - dhcp : enables DHCP on eth0
+#   - static : sets a static IP with netmask, gateway, and DNS
+# *secondary_dns is optional
+# Usage:
+#   ggtntool set network dhcp
+#   ggtntool set network static <ip_address> <netmask> <gateway> <primary_dns> [secondary_dns]
+#-------------------------------------------------------------------------------
 
 set_network() {
     if [[ $1 == "dhcp" ]]; then
         echo "Setting DHCP configuration..."
-        #/home/gadgetini/gadgetini/src/util/GGTN_set_ip.sh $1 $server_ip_address
-        $DIR/util/GGTN_set_ip.sh $1 $server_ip_address  
+        python3 $DIR/util/GGTN_set_ip.py dhcp
         return
-    else
-        if [[ $# -eq 4 ]] || [[ $# -eq 5 ]]; then
-            local ip_address=$1
-            local subnet_mask=$2
-            local gateway=$3
-            local dns_primary=$4
-            local dns_secondary=${5:-""}  # Optional secondary DNS
+    elif [[ $1 == "static" ]]; then
+        IP_ADDR=$2
+        NETMASK=$3
+        GATEWAY=$4
+        DNS1=$5
+        DNS2=$6
 
-            echo "Setting static IP configuration..."
-            if ! validate_ip "$ip_address" || ! validate_ip "$gateway" || ! validate_ip "$dns_primary" || ( [[ -n $dns_secondary ]] && ! validate_ip "$dns_secondary" ); then
-                echo "Validation failed for one or more IP addresses."
-                return 1
-            fi
-
-            local cidr=$(subnet_to_cidr $subnet_mask)
-            echo "IP address set to $ip_address/$cidr"
-            echo "Gateway set to $gateway"
-            echo "Primary DNS set to $dns_primary"
-            [[ -n $dns_secondary ]] && echo "Secondary DNS set to $dns_secondary"
-            echo "current server IP address : $server_ip_address"
-            #/home/gadgetini/gadgetini/src/util/GGTN_set_ip.sh "$server_ip_address" "$ip_address/$cidr" "$gateway" "$dns_primary" "$dns_secondary"
-	    $DIR/util/GGTN_set_ip.sh "$server_ip_address" "$ip_address/$cidr" "$gateway" "$dns_primary" "$dns_secondary"
-            return
-        else
-            echo "Invalid arguments for setting network."
+        if [[ -z "$IP_ADDR" || -z "$NETMASK" || -z "$GATEWAY" || -z "$DNS1" ]]; then
+            echo "Error: Missing arguments for static IP configuration."
+            echo "Usage: ggtntool set network static <ip_address> <netmask> <gateway> <primary_dns> [secondary_dns]"
             return 1
         fi
+
+        echo "Setting Static IP configuration..."
+        if [[ -n "$DNS2" ]]; then
+            echo "With Secondary DNS: $DNS2"
+            python3 $DIR/util/GGTN_set_ip.py static "$IP_ADDR" "$NETMASK" "$GATEWAY" "$DNS1" "$DNS2"
+        else
+            python3 $DIR/util/GGTN_set_ip.py static "$IP_ADDR" "$NETMASK" "$GATEWAY" "$DNS1"
+        fi
+        return
+    else
+        echo "Invalid network mode. Use 'dhcp' or 'static'."
+        return 1
     fi
 }
 
-#change display mode
+#-------------------------------------------------------------------------------
+# Set display mode (orientation) for ggtn screen
+# - Input argument 'v' (vertical) or 'h' (horizontal)
+# - Passes the argument to GGTN_set_displaymode.py script for actual update
+# Example usage:
+# - ggtntool set displaymode v  → set to vertical mode
+# - ggtntool set displaymode h  → set to horizontal mode
+# If input invalid or unknown argument, print print_help()
+#-------------------------------------------------------------------------------
 set_displaymode() {
     #/home/gadgetini/gadgetini_monitoring_tool/service_scripts/config.ini
     #config_file="/home/deepgadget/config.ini"
