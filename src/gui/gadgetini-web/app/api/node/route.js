@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import { exec as _exec } from "child_process";
+import { promisify } from "util";
+
+const exec = promisify(_exec);
 
 export async function POST(req) {
   try {
@@ -13,9 +17,9 @@ export async function POST(req) {
 
     try {
       await exec(pingCommand);
-      return NextResponse.json({ status: "online" });
+      return NextResponse.json({ status: "active" });
     } catch (err) {
-      return NextResponse.json({ status: "offline" });
+      return NextResponse.json({ status: "inactive" });
     }
   } catch (error) {
     return NextResponse.json(
