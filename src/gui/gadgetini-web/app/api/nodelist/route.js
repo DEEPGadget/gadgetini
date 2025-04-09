@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import db from "@/database/db";
 
 export async function GET() {
-  //TODO DB에서 ip, alias 정보를 꺼냄
   const nodelist = db.prepare("SELECT * FROM nodelist").all();
   return NextResponse.json(nodelist);
 }

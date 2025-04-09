@@ -39,9 +39,9 @@ export default function Cluster() {
   };
 
   useEffect(() => {
-    // getNodeList().then((nodes) => {
-    //   setNodeTable(nodes);
-    // });
+    getNodeList().then((nodes) => {
+      setNodeTable(nodes);
+    });
   }, []);
   useEffect(() => {
     //checkAllNodeStatus(nodes);
