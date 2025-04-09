@@ -50,24 +50,8 @@ export default function Cluster() {
   // TODO cluster ADD 버튼
   const handleClusterAdd = async () => {
     setLoadingState({ ...loadingState, loadingHandleClusterAdd: true });
+    const nodes = createIPTable();
     try {
-      // Create Node Table
-      const num = parseInt(nodeInputInfo.current.num?.value);
-      const startIp = nodeInputInfo.current.ip?.value;
-      const aliasBase = nodeInputInfo.current.alias?.value || "";
-      const nodes = [];
-      if (!num || !startIp) {
-        alert("Invalid Input. Please input num of nodes and IP");
-        return;
-      }
-      const ipParts = startIp.split(".");
-      let lastOctet = parseInt(ipParts[3]);
-      for (let i = 0; i < num; i++) {
-        const ip = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.${lastOctet + i}`;
-        const alias = aliasBase ? `${aliasBase}${i}` : undefined;
-        nodes.push(alias ? { ip, alias } : { ip });
-      }
-
       // PUT DB Api Call
       const response = await fetch("/api/nodelist", {
         method: "PUT",
@@ -85,6 +69,42 @@ export default function Cluster() {
       setLoadingState({ ...loadingState, loadingHandleClusterAdd: false });
     }
   };
+
+  // Create IP Table by user input and return the table
+  const createIPTable = () => {
+    const num = parseInt(nodeInputInfo.current.num?.value);
+    const startIp = nodeInputInfo.current.ip?.value;
+    const aliasBase = nodeInputInfo.current.alias?.value || "";
+    const nodes = [];
+    if (!num || !startIp) {
+      alert("Invalid Input. Please input num of nodes and IP");
+      return;
+    }
+
+    // IPv4 format check
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (!ipRegex.test(startIp)) {
+      alert(
+        "Invalid IP format. Please use a valid IPv4 address (e.g., 192.168.1.1)"
+      );
+      return;
+    }
+    const ipParts = startIp.split(".");
+    if (ipParts.some((part) => parseInt(part) > 255 || parseInt(part) < 0)) {
+      alert("Invalid IP format. Each octet must be between 0 and 255.");
+      return;
+    }
+
+    // Generate IP addresses in ascending order.
+    let lastOctet = parseInt(ipParts[3]);
+    for (let i = 0; i < num; i++) {
+      const ip = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.${lastOctet + i}`;
+      const alias = aliasBase ? `${aliasBase}${i}` : undefined;
+      nodes.push(alias ? { ip, alias } : { ip });
+    }
+    return nodes;
+  };
+
   // TODO nodeTable 에서 node 에 어떤 key를 수정할건지 전달 후 response 처리리
   const handleEdit = async (node, key) => {
     const payload = {
