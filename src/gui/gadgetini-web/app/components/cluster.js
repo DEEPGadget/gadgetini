@@ -7,6 +7,8 @@ import {
   ArrowRightIcon,
   CheckIcon,
   ArrowTopRightOnSquareIcon,
+  TrashIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/solid";
 
 export default function Cluster() {
@@ -118,7 +120,8 @@ export default function Cluster() {
       body: JSON.stringify(payload),
     });
   };
-  // TODO nodetable 선택 에 적용
+
+  // Toggle one node at Cluster Table
   const toggleNodeSelection = (node) => {
     setSelectedNode((prev) =>
       prev.includes(node)
@@ -126,10 +129,10 @@ export default function Cluster() {
         : [...prev, node]
     );
   };
-  // TODO nodetable 선택 에 적용
+  // Toggle all nodes at Cluster Table
   const toggleSelectAll = () => {
     if (selectedNode.length === nodeTable.length) {
-      setSelectedNode({});
+      setSelectedNode([]);
     } else {
       setSelectedNode(nodeTable);
     }
@@ -160,7 +163,6 @@ export default function Cluster() {
       <div className="mb-6">
         <h2 className="text-xl font-bold">Cluster Setup</h2>
         <div className="flex items-center gap-4 mt-4">
-          {/* Input when set IP as static mode */}
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -192,12 +194,36 @@ export default function Cluster() {
         </div>
       </div>
 
-      {/* Display mode control table */}
       <h2 className="text-xl font-bold mb-4">Cluster Table</h2>
+      <div className="flex flex-col">
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => handleDeleteNodes(selectedNode)}
+            className="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all mr-2"
+          >
+            Delete
+            <TrashIcon className="w-5 h-5 ml-2" />
+          </button>
+          <button
+            onClick={() => handleConfigNodesDisplay(selectedNode)}
+            className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all"
+          >
+            Config
+            <Cog6ToothIcon className="w-5 h-5 ml-2" />
+          </button>
+        </div>
+      </div>
       <div className="overflow-x-auto w-full">
         <table className="w-full bg-white border-separate border-spacing-0 table-auto">
           <thead>
             <tr className="border-b-2 border-gray-400">
+              <th className="py-2 px-4 border border-gray-300 text-center w-auto">
+                <input
+                  type="checkbox"
+                  onChange={toggleSelectAll}
+                  checked={selectedNode.length === nodeTable.length}
+                />
+              </th>
               <th className="py-2 px-4 border border-gray-300 text-center w-full">
                 IP Address
               </th>
@@ -222,6 +248,13 @@ export default function Cluster() {
             ) : (
               nodeTable.map((node) => (
                 <tr key={node.ip} className="border-b border-gray-300">
+                  <td className="py-2 px-4 border border-gray-300 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedNode.includes(node)}
+                      onChange={() => toggleNodeSelection(node)}
+                    />
+                  </td>
                   <td className="py-2 px-4 border border-gray-300 ">
                     {node.ip}
                   </td>
