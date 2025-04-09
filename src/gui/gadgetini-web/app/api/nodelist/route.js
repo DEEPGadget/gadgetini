@@ -17,21 +17,23 @@ export async function PUT(req) {
   const nodes = await req.json();
 
   try {
-    const insert = db.prepare(`
-      INSERT OR REPLACE INTO nodelist (ip, alias)
-      VALUES (?, ?)
-    `);
-
+    const insertStmt = db.prepare(
+      "INSERT INTO nodelist (ip, alias) VALUES (@ip, @alias)"
+    );
     const insertMany = db.transaction((nodes) => {
       for (const node of nodes) {
-        insert.run(node.ip, node.alias || null);
+        insertStmt.run(node);
       }
     });
 
     insertMany(nodes);
 
-    return NextResponse.json({ message: "Success" });
+    return NextResponse.json(
+      { message: "Nodes added successfully" },
+      { status: 200 }
+    );
   } catch (error) {
+    console.error("Database insertion error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
