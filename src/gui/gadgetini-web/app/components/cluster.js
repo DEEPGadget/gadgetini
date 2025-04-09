@@ -58,13 +58,13 @@ export default function Cluster() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nodes),
       });
-      console.log(response);
       if (!response.ok) {
+        console.log(response.json());
         throw new Error("Node Table DB Input Error");
       }
       setNodeTable((prev) => [...prev, ...nodes]);
     } catch (error) {
-      console.error(error);
+      alert(error);
     } finally {
       setLoadingState({ ...loadingState, loadingHandleClusterAdd: false });
     }

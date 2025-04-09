@@ -33,8 +33,8 @@ export async function PUT(req) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Database insertion error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.log(error);
+    return NextResponse.json({}, { status: 500 });
   }
 }
 
