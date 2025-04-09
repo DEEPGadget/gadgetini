@@ -3,12 +3,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { getNodeList } from "../utils/getNodeList";
 import DisplayConfigModal from "./DisplayConfigModal";
 import {
-  ArrowUpIcon,
-  ArrowRightIcon,
   CheckIcon,
   ArrowTopRightOnSquareIcon,
   TrashIcon,
   Cog6ToothIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  QuestionMarkCircleIcon,
 } from "@heroicons/react/24/solid";
 import { getSelfIP } from "../utils/ip/getSelfIP";
 
@@ -32,26 +33,28 @@ export default function Cluster() {
   const [currentIP, setCurrentIP] = useState("localhost");
   //TODO node 한개의 status check 하여 상태 return
   const checkNodeStatus = async (node) => {
-    let status;
-    return { ip: node.ip, alias: node.alias, status: status };
-  };
-  //TODO nodeTable에 ip 를 기반으로 node들의 상태 return 후 nodeTable에 추가가
-  const checkAllNodeStatus = async (nodeTable) => {
-    if (nodeTable.length == 0) return;
-    nodeTable.map((node) => {
-      checkNodeStatus(node);
-    });
+    try {
+      const response = await fetch("/api/node", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(node),
+      });
+      const data = await response.json();
+      return { ...node, status: data.status };
+    } catch (error) {
+      return { ...node, status: "unknown" };
+    }
   };
 
   useEffect(() => {
-    getNodeList().then((nodes) => {
-      setNodeTable(nodes);
+    getNodeList().then(async (nodes) => {
+      const statusCheckedNodeTable = await Promise.all(
+        nodes.map(checkNodeStatus)
+      );
+      setNodeTable(statusCheckedNodeTable);
     });
     getSelfIP().then(setCurrentIP);
   }, []);
-  useEffect(() => {
-    //checkAllNodeStatus(nodes);
-  }, [nodeTable]);
 
   // TODO cluster ADD 버튼
   const handleClusterAdd = async () => {
@@ -68,7 +71,10 @@ export default function Cluster() {
         console.log(response.json());
         throw new Error("Node Table DB Input Error");
       }
-      setNodeTable((prev) => [...prev, ...nodes]);
+      const statusCheckedNodeTable = await Promise.all(
+        nodes.map(checkNodeStatus)
+      );
+      setNodeTable((prev) => [...prev, ...statusCheckedNodeTable]);
     } catch (error) {
       alert(error);
     } finally {
@@ -290,7 +296,16 @@ export default function Cluster() {
                     />
                   </td>
                   <td className="py-2 px-4 border border-gray-300 ">
-                    {node.ip}
+                    <div className="flex items-center gap-2">
+                      <span>{node.ip}</span>
+                      {node.status === "active" ? (
+                        <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                      ) : node.status === "inactive" ? (
+                        <XCircleIcon className="w-5 h-5 text-red-500" />
+                      ) : (
+                        <QuestionMarkCircleIcon className="w-5 h-5 text-gray-700" />
+                      )}
+                    </div>
                   </td>
                   <td className="py-2 px-4 border border-gray-300">
                     {node.alias}

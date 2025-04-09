@@ -38,8 +38,8 @@ export async function PUT(req) {
 }
 
 // TODO DB에서 일부 노드 삭제 및 일부 노드 display config
-export async function POST(request) {
-  const body = await request.json();
+export async function POST(req) {
+  const body = await req.json();
   const { action, nodes } = body;
 
   if (action === "delete") {
