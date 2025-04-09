@@ -66,7 +66,7 @@ export async function POST(req) {
     let command = ``;
     // Change to DHCP or static
     if (payload.mode === "dhcp") {
-      const command = `sudo nmcli connection modify "${connectionName}" ipv4.method auto && sudo nmcli connection up "${connectionName}"`;
+      const command = `nmcli connection modify "${connectionName}" ipv4.method auto && nmcli connection up "${connectionName}"`;
       await exec(command);
     } else if (payload.mode === "static") {
       const { ip, netmask, gateway, dns1, dns2 } = payload;
@@ -79,7 +79,7 @@ export async function POST(req) {
         );
       }
       // USE 'nmcli' command
-      const command = `sudo nmcli connection modify "${connectionName}" ipv4.method manual ipv4.addresses "${address}" ipv4.gateway "${gateway}" ipv4.dns "${dns}" && sudo nmcli connection up "${connectionName}"`;
+      const command = `nmcli connection modify "${connectionName}" ipv4.method manual ipv4.addresses "${address}" ipv4.gateway "${gateway}" ipv4.dns "${dns}" && nmcli connection up "${connectionName}"`;
       await exec(command);
     }
     return NextResponse.json(payload);
