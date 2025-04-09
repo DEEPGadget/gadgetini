@@ -38,12 +38,28 @@ export async function PUT(req) {
 }
 
 // TODO DB에서 일부 노드 삭제 및 일부 노드 display config
-export async function POST() {
+export async function POST(request) {
   const body = await request.json();
   const { action, nodes } = body;
+
   if (action === "delete") {
-    // TODO: DB에서 nodes에 해당하는 노드 삭제
-    return NextResponse.json({ message: "Nodes deleted" });
+    try {
+      const ipsToDelete = nodes.map((node) => node.ip);
+      const deleteStmt = db.prepare(`DELETE FROM nodelist WHERE ip = ?`);
+      const deleteMany = db.transaction((ips) => {
+        for (const ip of ips) {
+          deleteStmt.run(ip);
+        }
+      });
+      deleteMany(ipsToDelete);
+      return NextResponse.json({ message: "Nodes deleted successfully." });
+    } catch (error) {
+      console.error("Error deleting nodes:", error);
+      return NextResponse.json(
+        { message: "Failed to delete nodes.", error: error.message },
+        { status: 500 }
+      );
+    }
   }
 
   if (action === "configDisplay") {

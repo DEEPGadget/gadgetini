@@ -10,6 +10,7 @@ import {
   TrashIcon,
   Cog6ToothIcon,
 } from "@heroicons/react/24/solid";
+import { getSelfIP } from "../utils/ip/getSelfIP";
 
 export default function Cluster() {
   // TODO node add 할때 사용
@@ -24,9 +25,11 @@ export default function Cluster() {
   const [selectedNode, setSelectedNode] = useState([]);
   const [loadingState, setLoadingState] = useState({
     loadingHandleClusterAdd: false,
+    loaddingDeleteNodes: false,
     loadingNodeTable: false,
     loadingNodesStatus: false,
   });
+  const [currentIP, setCurrentIP] = useState("localhost");
   //TODO node 한개의 status check 하여 상태 return
   const checkNodeStatus = async (node) => {
     let status;
@@ -44,6 +47,7 @@ export default function Cluster() {
     getNodeList().then((nodes) => {
       setNodeTable(nodes);
     });
+    getSelfIP().then(setCurrentIP);
   }, []);
   useEffect(() => {
     //checkAllNodeStatus(nodes);
@@ -134,20 +138,43 @@ export default function Cluster() {
     if (selectedNode.length === nodeTable.length) {
       setSelectedNode([]);
     } else {
-      setSelectedNode(nodeTable);
+      setSelectedNode([...nodeTable]);
     }
   };
+
   // TODO table에서 제거및 db 삭제
   const handleDeleteNodes = async (selectedNode) => {
-    const response = await fetch("/api/nodelist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "delete",
-        nodes: selectedNode.map((node) => ({ ip: node.ip })),
-      }),
-    });
-  }; // TODO nodetable에서 일부 노드 display config
+    setLoadingState({ ...setLoadingState, loaddingDeleteNodes: true });
+    if (selectedNode.length == 0) return;
+    if (!window.confirm("Are you sure you want to Delete the Nodes?")) {
+      return;
+    }
+    try {
+      const response = await fetch("/api/nodelist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete",
+          nodes: selectedNode,
+        }),
+      });
+      if (response.ok) {
+        setNodeTable((prevNodes) =>
+          prevNodes.filter((node) => !selectedNode.includes(node))
+        );
+        setSelectedNode([]);
+      } else {
+        console.error("Failed to delete nodes:", await response.json());
+        alert("Failed to delete nodes. Please check the console for details.");
+      }
+    } catch (error) {
+      console.error("Error deleting nodes:", error);
+      alert("Error occurred while deleting nodes");
+    } finally {
+      setLoadingState({ ...setLoadingState, loaddingDeleteNodes: false });
+    }
+  };
+  // TODO nodetable에서 일부 노드 display config
   const handleConfigNodesDisplay = async (selectedNode) => {
     const response = await fetch("/api/nodelist", {
       method: "POST",
@@ -208,9 +235,19 @@ export default function Cluster() {
             onClick={() => handleConfigNodesDisplay(selectedNode)}
             className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all"
           >
-            Config
+            Display Config
             <Cog6ToothIcon className="w-5 h-5 ml-2" />
           </button>
+          <a
+            href={`http://${currentIP}/dashboard`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-2 flex items-center px-4 py-2 text-white rounded-lg transition-all 
+                       bg-gradient-to-br from-orange-600 to-yellow-500 hover:from-orange-700 hover:to-yellow-600 shadow-md hover:shadow-lg"
+          >
+            Cluster Dashboard
+            <ArrowTopRightOnSquareIcon className="w-5 h-5 ml-2" />
+          </a>
         </div>
       </div>
       <div className="overflow-x-auto w-full">
@@ -231,10 +268,7 @@ export default function Cluster() {
                 Alias
               </th>
               <th className="py-2 px-4 border border-gray-300 text-center w-auto">
-                Config
-              </th>
-              <th className="py-2 px-4 border border-gray-300 text-center w-auto">
-                Dashboard
+                Settings
               </th>
             </tr>
           </thead>
@@ -261,8 +295,17 @@ export default function Cluster() {
                   <td className="py-2 px-4 border border-gray-300">
                     {node.alias}
                   </td>
-                  <td className="py-2 px-4 border border-gray-300"></td>
-                  <td className="py-2 px-4 border border-gray-300"></td>
+                  <td className="py-2 px-4 border border-gray-300">
+                    <a
+                      href={`http://${node.ip}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:opacity-80 transition-opacity"
+                    >
+                      Setting
+                      <Cog6ToothIcon className="w-5 h-5 ml-2" />
+                    </a>
+                  </td>
                 </tr>
               ))
             )}
