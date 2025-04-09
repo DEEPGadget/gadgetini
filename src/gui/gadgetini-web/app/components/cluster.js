@@ -264,7 +264,10 @@ export default function Cluster() {
                 <input
                   type="checkbox"
                   onChange={toggleSelectAll}
-                  checked={selectedNode.length === nodeTable.length}
+                  checked={
+                    nodeTable.length > 0 &&
+                    selectedNode.length === nodeTable.length
+                  }
                 />
               </th>
               <th className="py-2 px-4 border border-gray-300 text-center w-full">
