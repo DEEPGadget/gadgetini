@@ -6,12 +6,40 @@ export async function GET() {
   return NextResponse.json(nodelist);
 }
 
-// TODO DB에서 ip 수정
-export async function PATCH() {
-  return NextResponse.json({ message: "Edit success" });
+// Cluster edit API
+export async function PATCH(req) {
+  try {
+    const payload = await req.json();
+    const { ip, key, value } = payload;
+
+    let sql;
+    if (key === "ip") {
+      const selectAliasStmt = db.prepare(
+        "SELECT alias FROM nodelist WHERE ip = ?"
+      );
+      const alias = selectAliasStmt.get(ip)?.alias;
+      const deleteStmt = db.prepare("DELETE FROM nodelist WHERE ip = ?");
+      deleteStmt.run(ip);
+      const insertStmt = db.prepare(
+        "INSERT INTO nodelist (ip, alias) VALUES (?,  ?)"
+      );
+      insertStmt.run(value, alias);
+    } else if (key === "alias") {
+      sql = "UPDATE nodelist SET alias = ? WHERE ip = ?";
+      const stmt = db.prepare(sql);
+      stmt.run(value, ip);
+    }
+    return NextResponse.json({ message: "Node updated successfully" });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
 
-// TODO DB에 nodetable 업데이트
+// Cluster add API
 export async function PUT(req) {
   const nodes = await req.json();
 

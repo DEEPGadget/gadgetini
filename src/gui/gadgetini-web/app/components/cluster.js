@@ -28,10 +28,6 @@ export default function Cluster() {
   const [nodeTable, setNodeTable] = useState([]);
   // Nodes that selected ad node table
   const [selectedNode, setSelectedNode] = useState([]);
-  const [editActiveState, setEditActiveState] = useState({
-    ip: false,
-    alias: false,
-  });
   const [loadingState, setLoadingState] = useState({
     loadingHandleClusterAdd: false,
     loaddingDeleteNodes: false,
@@ -152,7 +148,7 @@ export default function Cluster() {
     return nodes;
   };
 
-  // TODO nodeTable 에서 node 에 어떤 key를 수정할건지 전달 후 response 처리리
+  // Edit IP address or Alias
   const handleEdit = async (node, key) => {
     setNodeTable((prevNodes) =>
       prevNodes.map((item) =>
@@ -167,30 +163,48 @@ export default function Cluster() {
   };
 
   const handleApply = async (node, key) => {
+    setLoadingState({ ...loadingState, loadingEditStatus: true });
+    const value =
+      key === "ip"
+        ? editNodeInputInfo.current.ip?.value
+        : editNodeInputInfo.current.alias?.value;
+    if (!value) {
+      alert(`Please enter a value for ${key}.`);
+      return;
+    }
     const payload = {
       ip: node.ip,
       key,
-      value: node.value,
+      value,
     };
-    const response = await fetch("/api/nodelist", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (response.ok) {
-      setNodeTable((prevNodes) =>
-        prevNodes.map((item) =>
-          item.ip === node.ip
-            ? {
-                ...item,
-                editActive: {
-                  ...item.editActive,
-                  [key]: !item.editActive[key],
-                },
-              }
-            : item
-        )
-      );
+    try {
+      const response = await fetch("/api/nodelist", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setNodeTable((prevNodes) =>
+          prevNodes.map((item) =>
+            item.ip === node.ip
+              ? {
+                  ...item,
+                  [key]: value,
+                  editActive: {
+                    ...item.editActive,
+                    [key]: false,
+                  },
+                }
+              : item
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error updating node:", error);
+      alert("Error occurred while updating node.");
+    } finally {
+      setLoadingState({ ...loadingState, loadingEditStatus: false });
     }
   };
 
