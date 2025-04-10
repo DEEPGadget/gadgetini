@@ -20,15 +20,24 @@ export default function Cluster() {
     ip: "",
     alias: "",
   });
+  const editNodeInputInfo = useRef({
+    ip: "",
+    alias: "",
+  });
   // TODO node table fetch할때 사용용
   const [nodeTable, setNodeTable] = useState([]);
   // Nodes that selected ad node table
   const [selectedNode, setSelectedNode] = useState([]);
+  const [editActiveState, setEditActiveState] = useState({
+    ip: false,
+    alias: false,
+  });
   const [loadingState, setLoadingState] = useState({
     loadingHandleClusterAdd: false,
     loaddingDeleteNodes: false,
     loadingNodeTable: false,
     loadingNodesStatus: false,
+    loadingEditStatus: false,
   });
   const [currentIP, setCurrentIP] = useState("localhost");
   //TODO node 한개의 status check 하여 상태 return
@@ -51,7 +60,12 @@ export default function Cluster() {
       const statusCheckedNodeTable = await Promise.all(
         nodes.map(checkNodeStatus)
       );
-      setNodeTable(statusCheckedNodeTable);
+      setNodeTable(
+        statusCheckedNodeTable.map((node) => ({
+          ...node,
+          editActive: { ip: false, alias: false },
+        }))
+      );
     });
     getSelfIP().then(setCurrentIP);
   }, []);
@@ -74,6 +88,13 @@ export default function Cluster() {
       const statusCheckedNodeTable = await Promise.all(
         nodes.map(checkNodeStatus)
       );
+      setNodeTable((prev) => [
+        ...prev,
+        ...statusCheckedNodeTable.map((node) => ({
+          ...node,
+          editActive: { ip: false, alias: false },
+        })),
+      ]);
       setNodeTable((prev) => [...prev, ...statusCheckedNodeTable]);
     } catch (error) {
       alert(error);
@@ -133,6 +154,19 @@ export default function Cluster() {
 
   // TODO nodeTable 에서 node 에 어떤 key를 수정할건지 전달 후 response 처리리
   const handleEdit = async (node, key) => {
+    setNodeTable((prevNodes) =>
+      prevNodes.map((item) =>
+        item.ip === node.ip
+          ? {
+              ...item,
+              editActive: { ...item.editActive, [key]: !item.editActive[key] },
+            }
+          : item
+      )
+    );
+  };
+
+  const handleApply = async (node, key) => {
     const payload = {
       ip: node.ip,
       key,
@@ -143,6 +177,21 @@ export default function Cluster() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    if (response.ok) {
+      setNodeTable((prevNodes) =>
+        prevNodes.map((item) =>
+          item.ip === node.ip
+            ? {
+                ...item,
+                editActive: {
+                  ...item.editActive,
+                  [key]: !item.editActive[key],
+                },
+              }
+            : item
+        )
+      );
+    }
   };
 
   // Toggle one node at Cluster Table
@@ -306,8 +355,6 @@ export default function Cluster() {
               nodeTable.map((node) => (
                 <tr key={node.ip} className="border-b border-gray-300">
                   <td className="py-2 px-4 border border-gray-300 text-center ">
-                    {" "}
-                    {/* 체크박스 열 너비 지정 */}
                     <input
                       type="checkbox"
                       checked={selectedNode.includes(node)}
@@ -316,18 +363,68 @@ export default function Cluster() {
                   </td>
                   <td className="py-2 px-4 border border-gray-300 ">
                     <div className="flex items-center gap-2">
-                      <span>{node.ip}</span>
-                      {node.status === "active" ? (
-                        <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                      ) : node.status === "inactive" ? (
-                        <XCircleIcon className="w-5 h-5 text-red-500" />
+                      {node.editActive.ip ? (
+                        <>
+                          <input
+                            type="text"
+                            ref={(el) => (editNodeInputInfo.current.ip = el)}
+                            className="border border-gray-500 rounded-md p-2 w-40 text-left"
+                          />
+                          <button
+                            onClick={() => handleApply(node, "ip")}
+                            className="flex items-center ml-2 px-4 py-1 bg-white text-black border border-gray-500 hover:text-white rounded-lg hover:bg-gray-500 transition-all"
+                          >
+                            Apply
+                          </button>
+                        </>
                       ) : (
-                        <QuestionMarkCircleIcon className="w-5 h-5 text-gray-700" />
+                        <>
+                          <span>{node.ip}</span>
+                          {node.status === "active" ? (
+                            <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                          ) : node.status === "inactive" ? (
+                            <XCircleIcon className="w-5 h-5 text-red-500" />
+                          ) : (
+                            <QuestionMarkCircleIcon className="w-5 h-5 text-gray-700" />
+                          )}
+                          <button
+                            onClick={() => handleEdit(node, "ip")}
+                            className="flex items-center ml-3 px-4 py-1 bg-white text-black border border-gray-500 hover:text-white rounded-lg hover:bg-gray-500 transition-all"
+                          >
+                            Edit
+                          </button>
+                        </>
                       )}
                     </div>
                   </td>
                   <td className="py-2 px-4 border border-gray-300 ">
-                    {node.alias}
+                    <div className="flex items-center gap-2">
+                      {node.editActive.alias ? (
+                        <>
+                          <input
+                            type="text"
+                            ref={(el) => (editNodeInputInfo.current.alias = el)}
+                            className="border border-gray-500 rounded-md p-2 w-40 text-left"
+                          />
+                          <button
+                            onClick={() => handleApply(node, "alias")}
+                            className="flex items-center ml-2 px-4 py-1 bg-white text-black border border-gray-500 hover:text-white rounded-lg hover:bg-gray-500 transition-all"
+                          >
+                            Apply
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span>{node.alias}</span>
+                          <button
+                            onClick={() => handleEdit(node, "alias")}
+                            className="flex items-center ml-2 px-4 py-1 bg-white text-black border border-gray-500 hover:text-white rounded-lg hover:bg-gray-500 transition-all"
+                          >
+                            Edit
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                   <td className="py-2 px-4 border border-gray-300 ">
                     <a
