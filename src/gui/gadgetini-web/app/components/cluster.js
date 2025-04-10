@@ -275,8 +275,6 @@ export default function Cluster() {
           <thead>
             <tr className="border-b-2 border-gray-400">
               <th className="py-2 px-4 border border-gray-300 text-center w-12">
-                {" "}
-                {/* 체크박스 열 너비 지정 */}
                 <input
                   type="checkbox"
                   onChange={toggleSelectAll}
@@ -293,8 +291,6 @@ export default function Cluster() {
                 Alias
               </th>
               <th className="py-2 px-4 border border-gray-300 text-center w-36">
-                {" "}
-                {/* Settings 열 너비 지정 */}
                 Settings
               </th>
             </tr>
