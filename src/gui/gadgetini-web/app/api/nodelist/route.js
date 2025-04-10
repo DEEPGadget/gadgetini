@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import db from "@/database/db";
 
+// Cluster get API
 export async function GET() {
   const nodelist = db.prepare("SELECT * FROM nodelist").all();
   return NextResponse.json(nodelist);
@@ -65,7 +66,7 @@ export async function PUT(req) {
   }
 }
 
-// TODO DB에서 일부 노드 삭제 및 일부 노드 display config
+// Cluster delete api
 export async function POST(req) {
   const body = await req.json();
   const { action, nodes } = body;
