@@ -271,10 +271,12 @@ export default function Cluster() {
         </div>
       </div>
       <div className="overflow-x-auto w-full">
-        <table className="w-full bg-white border-separate border-spacing-0 table-auto">
+        <table className="w-full bg-white border-separate border-spacing-0 table-fixed">
           <thead>
             <tr className="border-b-2 border-gray-400">
-              <th className="py-2 px-4 border border-gray-300 text-center w-auto">
+              <th className="py-2 px-4 border border-gray-300 text-center w-12">
+                {" "}
+                {/* 체크박스 열 너비 지정 */}
                 <input
                   type="checkbox"
                   onChange={toggleSelectAll}
@@ -284,13 +286,15 @@ export default function Cluster() {
                   }
                 />
               </th>
-              <th className="py-2 px-4 border border-gray-300 text-center w-full">
+              <th className="py-2 px-4 border border-gray-300 text-center flex-[4_1_0%]">
                 IP Address
               </th>
-              <th className="py-2 px-4 border border-gray-300 text-center w-full">
+              <th className="py-2 px-4 border border-gray-300 text-center flex-[3_1_0%]">
                 Alias
               </th>
-              <th className="py-2 px-4 border border-gray-300 text-center w-auto">
+              <th className="py-2 px-4 border border-gray-300 text-center w-36">
+                {" "}
+                {/* Settings 열 너비 지정 */}
                 Settings
               </th>
             </tr>
@@ -305,7 +309,9 @@ export default function Cluster() {
             ) : (
               nodeTable.map((node) => (
                 <tr key={node.ip} className="border-b border-gray-300">
-                  <td className="py-2 px-4 border border-gray-300 text-center">
+                  <td className="py-2 px-4 border border-gray-300 text-center ">
+                    {" "}
+                    {/* 체크박스 열 너비 지정 */}
                     <input
                       type="checkbox"
                       checked={selectedNode.includes(node)}
@@ -324,15 +330,15 @@ export default function Cluster() {
                       )}
                     </div>
                   </td>
-                  <td className="py-2 px-4 border border-gray-300">
+                  <td className="py-2 px-4 border border-gray-300 ">
                     {node.alias}
                   </td>
-                  <td className="py-2 px-4 border border-gray-300">
+                  <td className="py-2 px-4 border border-gray-300 ">
                     <a
                       href={`http://${node.ip}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:opacity-80 transition-opacity"
+                      className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:opacity-80 transition-opacity "
                     >
                       Setting
                       <Cog6ToothIcon className="w-5 h-5 ml-2" />
