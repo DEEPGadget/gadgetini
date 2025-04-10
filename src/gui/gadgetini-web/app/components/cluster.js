@@ -86,14 +86,14 @@ export default function Cluster() {
   const createIPTable = () => {
     const num = parseInt(nodeInputInfo.current.num?.value);
     const startIp = nodeInputInfo.current.ip?.value;
-    const aliasBase = nodeInputInfo.current.alias?.value || "";
+    const aliasInput = nodeInputInfo.current.alias?.value || "";
     const nodes = [];
     if (!num || !startIp) {
       alert("Invalid Input. Please input num of nodes and IP");
       return;
     }
 
-    // IPv4 format check
+    // Get IPv4 format
     const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
     if (!ipRegex.test(startIp)) {
       alert(
@@ -106,12 +106,26 @@ export default function Cluster() {
       alert("Invalid IP format. Each octet must be between 0 and 255.");
       return;
     }
+    // Get Alias format
+    const aliasMatch = aliasInput.match(/^(.*?)(\d+)?$/);
+    const aliasBase = aliasMatch?.[1] || "";
+    const startAliasIndex = aliasMatch?.[2] ? parseInt(aliasMatch[2]) : 0;
+    const maxIndex = startAliasIndex + num - 1;
+    const paddingLength = Math.max(
+      aliasMatch?.[2]?.length || 0,
+      String(maxIndex).length
+    );
 
     // Generate IP addresses in ascending order.
     let lastOctet = parseInt(ipParts[3]);
     for (let i = 0; i < num; i++) {
       const ip = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.${lastOctet + i}`;
-      const alias = aliasBase ? `${aliasBase}${i}` : undefined;
+      const alias = aliasInput
+        ? `${aliasBase}${String(startAliasIndex + i).padStart(
+            paddingLength,
+            "0"
+          )}`
+        : undefined;
       nodes.push(alias ? { ip, alias } : { ip });
     }
     return nodes;
