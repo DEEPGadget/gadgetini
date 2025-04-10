@@ -91,7 +91,6 @@ export default function Cluster() {
           editActive: { ip: false, alias: false },
         })),
       ]);
-      setNodeTable((prev) => [...prev, ...statusCheckedNodeTable]);
     } catch (error) {
       alert(error);
     } finally {
