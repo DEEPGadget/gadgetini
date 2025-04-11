@@ -184,11 +184,15 @@ export default function Cluster() {
       });
 
       if (response.ok) {
+        const updatedNode = { ...node, [key]: value };
+        const updatedNodeStatus = await checkNodeStatus(updatedNode).then(
+          console.log
+        );
         setNodeTable((prevNodes) =>
           prevNodes.map((item) =>
             item.ip === node.ip
               ? {
-                  ...item,
+                  ...updatedNodeStatus,
                   [key]: value,
                   editActive: {
                     ...item.editActive,
