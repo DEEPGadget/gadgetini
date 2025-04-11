@@ -13,7 +13,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "IP not provided" }, { status: 400 });
     }
 
-    const pingCommand = `ping -c 1 -W 1 ${ip}`;
+    const pingCommand = `ping -c 3 -W 1 ${ip}`;
 
     try {
       await exec(pingCommand);
