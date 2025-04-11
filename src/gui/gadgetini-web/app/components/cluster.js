@@ -36,6 +36,7 @@ export default function Cluster() {
     loadingEditStatus: false,
   });
   const [currentIP, setCurrentIP] = useState("localhost");
+  const [reloadTrigger, setReloadTrigger] = useState(0);
   //TODO node 한개의 status check 하여 상태 return
   const checkNodeStatus = async (node) => {
     try {
@@ -64,7 +65,7 @@ export default function Cluster() {
       );
     });
     getSelfIP().then(setCurrentIP);
-  }, []);
+  }, [reloadTrigger]);
 
   // TODO cluster ADD 버튼
   const handleClusterAdd = async () => {
@@ -184,24 +185,7 @@ export default function Cluster() {
       });
 
       if (response.ok) {
-        const updatedNode = { ...node, [key]: value };
-        const updatedNodeStatus = await checkNodeStatus(updatedNode).then(
-          console.log
-        );
-        setNodeTable((prevNodes) =>
-          prevNodes.map((item) =>
-            item.ip === node.ip
-              ? {
-                  ...updatedNodeStatus,
-                  [key]: value,
-                  editActive: {
-                    ...item.editActive,
-                    [key]: false,
-                  },
-                }
-              : item
-          )
-        );
+        setReloadTrigger((prev) => prev + 1);
       }
     } catch (error) {
       console.error("Error updating node:", error);
