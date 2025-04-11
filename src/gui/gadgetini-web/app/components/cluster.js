@@ -15,7 +15,7 @@ import { getSelfIP } from "../utils/ip/getSelfIP";
 import LoadingSpinner from "../utils/LoadingSpinner";
 
 export default function Cluster() {
-  // TODO node add 할때 사용
+  // Input refs
   const nodeInputInfo = useRef({
     num: 1,
     ip: "",
@@ -38,7 +38,8 @@ export default function Cluster() {
   });
   const [currentIP, setCurrentIP] = useState("localhost");
   const [reloadTrigger, setReloadTrigger] = useState(0);
-  //TODO node 한개의 status check 하여 상태 return
+
+  // Check node connection status and return
   const checkNodeStatus = async (node) => {
     try {
       const response = await fetch("/api/node", {
@@ -86,13 +87,7 @@ export default function Cluster() {
       const statusCheckedNodeTable = await Promise.all(
         nodes.map(checkNodeStatus)
       );
-      setNodeTable((prev) => [
-        ...prev,
-        ...statusCheckedNodeTable.map((node) => ({
-          ...node,
-          editActive: { ip: false, alias: false },
-        })),
-      ]);
+      setReloadTrigger((prev) => prev + 1);
     } catch (error) {
       alert(error);
     } finally {
