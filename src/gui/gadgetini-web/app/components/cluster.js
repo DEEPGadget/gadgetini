@@ -12,6 +12,7 @@ import {
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/solid";
 import { getSelfIP } from "../utils/ip/getSelfIP";
+import LoadingSpinner from "../utils/LoadingSpinner";
 
 export default function Cluster() {
   // TODO node add 할때 사용
@@ -375,7 +376,11 @@ export default function Cluster() {
                             onClick={() => handleApply(node, "ip")}
                             className="flex items-center ml-2 px-4 py-1 bg-white text-black border border-gray-500 hover:text-white rounded-lg hover:bg-gray-500 transition-all"
                           >
-                            Apply
+                            {loadingState.loadingEditStatus ? (
+                              <LoadingSpinner />
+                            ) : (
+                              <>Apply</>
+                            )}
                           </button>
                         </>
                       ) : (
