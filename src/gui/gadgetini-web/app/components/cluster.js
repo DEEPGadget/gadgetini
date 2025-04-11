@@ -408,7 +408,11 @@ export default function Cluster() {
                             onClick={() => handleApply(node, "alias")}
                             className="flex items-center ml-2 px-4 py-1 bg-white text-black border border-gray-500 hover:text-white rounded-lg hover:bg-gray-500 transition-all"
                           >
-                            Apply
+                            {loadingState.loadingEditStatus ? (
+                              <LoadingSpinner />
+                            ) : (
+                              <>Apply</>
+                            )}
                           </button>
                         </>
                       ) : (
