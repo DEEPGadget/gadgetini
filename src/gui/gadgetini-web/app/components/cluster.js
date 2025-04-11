@@ -84,9 +84,6 @@ export default function Cluster() {
         console.log(response.json());
         throw new Error("Node Table DB Input Error");
       }
-      const statusCheckedNodeTable = await Promise.all(
-        nodes.map(checkNodeStatus)
-      );
       setReloadTrigger((prev) => prev + 1);
     } catch (error) {
       alert(error);
