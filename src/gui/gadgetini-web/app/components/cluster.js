@@ -56,32 +56,41 @@ export default function Cluster() {
   };
 
   useEffect(() => {
-    setLoadingState({
-      ...ArrowTopRightOnSquareIcon,
-      loadingTableRefreshStatus: true,
-    });
-    getNodeList().then(async (nodes) => {
-      const statusCheckedNodeTable = await Promise.all(
-        nodes.map(checkNodeStatus)
-      );
-      setNodeTable(
-        statusCheckedNodeTable.map((node) => ({
-          ...node,
-          editActive: { ip: false, alias: false },
-        }))
-      );
-    });
-    setLoadingState({
-      ...ArrowTopRightOnSquareIcon,
-      loadingTableRefreshStatus: false,
-    });
+    const fetchAndUpdateTable = async () => {
+      setLoadingState((prev) => ({
+        ...prev,
+        loadingTableRefreshStatus: true,
+      }));
+
+      try {
+        const nodes = await getNodeList();
+        const statusCheckedNodeTable = await Promise.all(
+          nodes.map(checkNodeStatus)
+        );
+        setNodeTable(
+          statusCheckedNodeTable.map((node) => ({
+            ...node,
+            editActive: { ip: false, alias: false },
+          }))
+        );
+      } catch (err) {
+        console.error("Error loading table:", err);
+      } finally {
+        setLoadingState((prev) => ({
+          ...prev,
+          loadingTableRefreshStatus: false,
+        }));
+      }
+    };
+
+    fetchAndUpdateTable();
   }, [reloadTrigger]);
 
   useEffect(() => {
     getSelfIP().then(setCurrentIP);
   }, []);
 
-  // TODO cluster ADD 버튼
+  // Add nodes to cluster table
   const handleClusterAdd = async () => {
     setLoadingState({ ...loadingState, loadingHandleClusterAdd: true });
     const nodes = createIPTable();
@@ -167,6 +176,7 @@ export default function Cluster() {
     );
   };
 
+  // Apply edited content at Cluster table
   const handleApply = async (node, key) => {
     setLoadingState({ ...loadingState, loadingEditStatus: true });
     const value =
@@ -217,7 +227,7 @@ export default function Cluster() {
     }
   };
 
-  // TODO table에서 제거및 db 삭제
+  // Delete Nodes at Cluster Table
   const handleDeleteNodes = async (selectedNode) => {
     setLoadingState({ ...setLoadingState, loaddingDeleteNodes: true });
     if (selectedNode.length == 0) return;
@@ -296,12 +306,14 @@ export default function Cluster() {
         </div>
       </div>
 
-      <h2 className="text-xl font-bold mb-4 flex-row">
-        Cluster Table
-        {loadingState.loadingTableRefreshStatus ? (
-          <LoadingSpinner color={"black"} />
-        ) : null}
-      </h2>
+      <div className="mb-4">
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          Cluster Table
+          {loadingState.loadingTableRefreshStatus && (
+            <LoadingSpinner color={"black"} />
+          )}
+        </h2>
+      </div>
       <div className="flex flex-col">
         <div className="flex justify-end mb-2">
           <button
