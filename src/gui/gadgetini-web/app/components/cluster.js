@@ -35,6 +35,7 @@ export default function Cluster() {
     loadingNodeTable: false,
     loadingNodesStatus: false,
     loadingEditStatus: false,
+    loadingTableRefreshStatus: false,
   });
   const [currentIP, setCurrentIP] = useState("localhost");
   const [reloadTrigger, setReloadTrigger] = useState(0);
@@ -55,6 +56,10 @@ export default function Cluster() {
   };
 
   useEffect(() => {
+    setLoadingState({
+      ...ArrowTopRightOnSquareIcon,
+      loadingTableRefreshStatus: true,
+    });
     getNodeList().then(async (nodes) => {
       const statusCheckedNodeTable = await Promise.all(
         nodes.map(checkNodeStatus)
@@ -66,8 +71,15 @@ export default function Cluster() {
         }))
       );
     });
-    getSelfIP().then(setCurrentIP);
+    setLoadingState({
+      ...ArrowTopRightOnSquareIcon,
+      loadingTableRefreshStatus: false,
+    });
   }, [reloadTrigger]);
+
+  useEffect(() => {
+    getSelfIP().then(setCurrentIP);
+  }, []);
 
   // TODO cluster ADD 버튼
   const handleClusterAdd = async () => {
@@ -284,7 +296,12 @@ export default function Cluster() {
         </div>
       </div>
 
-      <h2 className="text-xl font-bold mb-4">Cluster Table</h2>
+      <h2 className="text-xl font-bold mb-4 flex-row">
+        Cluster Table
+        {loadingState.loadingTableRefreshStatus ? (
+          <LoadingSpinner color={"black"} />
+        ) : null}
+      </h2>
       <div className="flex flex-col">
         <div className="flex justify-end mb-2">
           <button
@@ -369,7 +386,7 @@ export default function Cluster() {
                             className="flex items-center ml-2 px-4 py-1 bg-white text-black border border-gray-500 hover:text-white rounded-lg hover:bg-gray-500 transition-all"
                           >
                             {loadingState.loadingEditStatus ? (
-                              <LoadingSpinner />
+                              <LoadingSpinner color={"white"} />
                             ) : (
                               <>Apply</>
                             )}
@@ -409,7 +426,7 @@ export default function Cluster() {
                             className="flex items-center ml-2 px-4 py-1 bg-white text-black border border-gray-500 hover:text-white rounded-lg hover:bg-gray-500 transition-all"
                           >
                             {loadingState.loadingEditStatus ? (
-                              <LoadingSpinner />
+                              <LoadingSpinner color={"white"} />
                             ) : (
                               <>Apply</>
                             )}
