@@ -54,34 +54,34 @@ export default function Cluster() {
       return { ...node, status: "unknown" };
     }
   };
-  const fetchAndUpdateTable = async () => {
-    setLoadingState((prev) => ({
-      ...prev,
-      loadingTableRefreshStatus: true,
-    }));
-
-    try {
-      const nodes = await getNodeList();
-      const statusCheckedNodeTable = await Promise.all(
-        nodes.map(checkNodeStatus)
-      );
-      setNodeTable(
-        statusCheckedNodeTable.map((node) => ({
-          ...node,
-          editActive: { ip: false, alias: false },
-        }))
-      );
-    } catch (err) {
-      console.error("Error loading table:", err);
-    } finally {
-      setLoadingState((prev) => ({
-        ...prev,
-        loadingTableRefreshStatus: false,
-      }));
-    }
-  };
 
   useEffect(() => {
+    const fetchAndUpdateTable = async () => {
+      setLoadingState((prev) => ({
+        ...prev,
+        loadingTableRefreshStatus: true,
+      }));
+
+      try {
+        const nodes = await getNodeList();
+        const statusCheckedNodeTable = await Promise.all(
+          nodes.map(checkNodeStatus)
+        );
+        setNodeTable(
+          statusCheckedNodeTable.map((node) => ({
+            ...node,
+            editActive: { ip: false, alias: false },
+          }))
+        );
+      } catch (err) {
+        console.error("Error loading table:", err);
+      } finally {
+        setLoadingState((prev) => ({
+          ...prev,
+          loadingTableRefreshStatus: false,
+        }));
+      }
+    };
     fetchAndUpdateTable();
   }, [reloadTrigger]);
 
