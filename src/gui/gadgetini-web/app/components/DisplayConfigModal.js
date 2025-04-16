@@ -30,7 +30,7 @@ export default function DisplayConfigModal({
     }));
   };
 
-  const handleConfigNodesDisplay = async (selectedNodes) => {
+  const handleConfigNodesDisplay = async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/nodelist", {
@@ -42,6 +42,8 @@ export default function DisplayConfigModal({
           displayMode,
         }),
       });
+      const data = await response.json();
+      console.log(data);
     } catch (error) {
     } finally {
       setLoading(false);
@@ -186,7 +188,7 @@ export default function DisplayConfigModal({
                     onClick={handleConfigNodesDisplay}
                     className="flex items-center px-4 py-2 mr-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
                   >
-                    {loading ? "Update" : "Updating..."}
+                    {loading ? "Updating..." : "Update"}
                   </button>
                   <button
                     onClick={() => setIsOpen(false)}

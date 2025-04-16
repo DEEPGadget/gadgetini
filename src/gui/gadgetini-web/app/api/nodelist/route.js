@@ -92,7 +92,33 @@ export async function POST(req) {
   }
 
   if (action === "configDisplay") {
-    // TODO: display config 작업
-    return NextResponse.json({ message: "Display configured" });
+    const results = await Promise.allSettled(
+      selectedNodes.map(async (node) => {
+        try {
+          const res = await fetch(`http://${node.ip}:3001/api/display-config`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(displayMode),
+          });
+
+          if (!res.ok) {
+            throw new Error(`Failed on ${node.ip}`);
+          }
+
+          const data = await res.json();
+          console.log(` ${node.ip} display config COMPELETED`, data);
+          return { ip: node.ip, status: "success", response: data };
+        } catch (error) {
+          console.error(`${node.ip} display config FAILED`, error.message);
+          return { ip: node.ip, status: "failed", error: error.message };
+        }
+      })
+    );
+    return NextResponse.json({
+      message: "Display config dispatched to nodes",
+      results,
+    });
   }
 }
