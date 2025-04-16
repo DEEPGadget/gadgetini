@@ -261,16 +261,7 @@ export default function Cluster() {
     }
   };
   // TODO nodetable에서 일부 노드 display config
-  const handleConfigNodesDisplay = async (selectedNode) => {
-    const response = await fetch("/api/nodelist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "configDisplay",
-        nodes: selectedNode.map((node) => ({ ip: node.ip })),
-      }),
-    });
-  };
+
   return (
     <div className="p-4 ">
       <div className="mb-6">

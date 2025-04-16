@@ -69,7 +69,7 @@ export async function PUT(req) {
 // Cluster delete api
 export async function POST(req) {
   const body = await req.json();
-  const { action, nodes } = body;
+  const { action, nodes, selectedNodes, displayMode } = body;
 
   if (action === "delete") {
     try {
