@@ -1,5 +1,5 @@
-# gagetini
-gagetini is a comprehensive server monitoring system especially specialized for Direct Liquid Cooling(DLC) system in [DeepGadget](https://deepgadget.com/)
+# gadgetini
+gadgetini is a comprehensive server monitoring system especially specialized for Direct Liquid Cooling(DLC) system in [DeepGadget](https://deepgadget.com/)
 
 
 
@@ -11,7 +11,7 @@ gagetini is a comprehensive server monitoring system especially specialized for 
   * 10k NTC themistor
   * MPU6050 Gyro sensor
   * liquid detection sensor
-  * liquid guage sensor
+  * liquid gauge sensor
   * waterflow sensor
   * [Adafruit 1.9" 320x170 Color IPS TFT Display - ST7789](https://www.adafruit.com/product/5394)
 * S/W
@@ -24,12 +24,12 @@ gagetini is a comprehensive server monitoring system especially specialized for 
   * Prometheus
 
 # Installation and Usage
-gagetini network configuration
+gadgetini network configuration
 
-![network_config](https://github.com/user-attachments/assets/850adc16-877a-486c-9431-875418af8b74)
+![image](https://github.com/user-attachments/assets/28a54f83-a609-4705-a78c-6fc5cf9fba4a)
 ## Node exporter setting
 
-## gagetini device exporter setting
+## gadgetini device exporter setting
 
 Clone the project
 
