@@ -40,6 +40,8 @@ export default function Cluster() {
   const [currentIP, setCurrentIP] = useState("localhost");
   const [reloadTrigger, setReloadTrigger] = useState(0);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // Check node connection status and return
   const checkNodeStatus = async (node) => {
     try {
@@ -323,7 +325,7 @@ export default function Cluster() {
             <TrashIcon className="w-5 h-5 ml-2" />
           </button>
           <button
-            onClick={() => handleConfigNodesDisplay(selectedNode)}
+            onClick={() => setIsModalOpen(true)}
             className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all"
           >
             Display Config
@@ -473,6 +475,11 @@ export default function Cluster() {
           </tbody>
         </table>
       </div>
+      <DisplayConfigModal
+        isOpen={isModalOpen}
+        setIsOpen={setIsModalOpen}
+        selectedNodes={selectedNode}
+      />
     </div>
   );
 }

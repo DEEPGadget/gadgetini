@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.1",
     "@heroicons/react": "^2.2.0",
     "better-sqlite3": "^11.9.1",
     "mysql2": "^3.12.0",
