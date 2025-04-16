@@ -24,7 +24,7 @@ gagetini is a comprehensive server monitoring system especially specialized for 
   * Prometheus
 
 # Installation and Usage
-gagetini network configuration
+gadgetini network configuration
 
 ![network_config](https://github.com/user-attachments/assets/850adc16-877a-486c-9431-875418af8b74)
 ## Node exporter setting
