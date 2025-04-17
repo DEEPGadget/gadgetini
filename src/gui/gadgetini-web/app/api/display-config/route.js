@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import os from "os";
+
+let homeDir;
+if (os.platform() === "win32") {
+  // at windows => TODO erase at final code
+  homeDir = "C:\\Users\\yjeon\\OneDrive\\바탕 화면\\gadgetini\\src\\display\\";
+} else {
+  // at Linux
+  homeDir = "/home/gadgetini/gadgetini/src/display";
+}
 
 // Read display config at 'config.ini' file and return
 export async function GET() {
   try {
-    const homeDir = "/home/gadgetini/gadgetini/src/display";
     const configPath = path.join(homeDir, "config.ini");
 
     if (!fs.existsSync(configPath)) {
@@ -48,7 +57,6 @@ export async function POST(request) {
     const displayMode = await request.json();
 
     const updateDisplayConfig = async (displayMode) => {
-      const homeDir = "/home/gadgetini/gadgetini/src/display";
       const configPath = path.join(homeDir, "config.ini");
       let config = await fs.promises.readFile(configPath, "utf-8");
 
