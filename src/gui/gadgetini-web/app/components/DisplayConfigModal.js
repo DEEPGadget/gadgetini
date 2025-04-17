@@ -184,12 +184,14 @@ export default function DisplayConfigModal({
                   )}
                 </div>
                 <div className="mt-6 flex justify-end">
-                  <button
-                    onClick={handleConfigNodesDisplay}
-                    className="flex items-center px-4 py-2 mr-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
-                  >
-                    {loading ? "Updating..." : "Update"}
-                  </button>
+                  {selectedNodes > 0 && (
+                    <button
+                      onClick={handleConfigNodesDisplay}
+                      className="flex items-center px-4 py-2 mr-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                    >
+                      {loading ? "Updating..." : "Update"}
+                    </button>
+                  )}
                   <button
                     onClick={() => setIsOpen(false)}
                     className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-700 transition-all"
