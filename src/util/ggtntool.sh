@@ -47,7 +47,9 @@ print_help() {
 set_network() {
     if [[ $1 == "dhcp" ]]; then
         echo "Setting DHCP configuration..."
-        python3 $DIR/util/GGTN_set_ip.py dhcp
+        #python3 $DIR/util/Server_ip.py
+        #python3 $DIR/util/GGTN_set_ip.py $1
+        python3 $DIR/util/GGTN_publish_redis.py $1
         return
     elif [[ $1 == "static" ]]; then
         IP_ADDR=$2
@@ -65,9 +67,13 @@ set_network() {
         echo "Setting Static IP configuration..."
         if [[ -n "$DNS2" ]]; then
             echo "With Secondary DNS: $DNS2"
-            python3 $DIR/util/GGTN_set_ip.py static "$IP_ADDR" "$NETMASK" "$GATEWAY" "$DNS1" "$DNS2"
+            #python3 $DIR/util/Server_ip.py
+            #python3 $DIR/util/GGTN_set_ip.py $1 "$IP_ADDR" "$NETMASK" "$GATEWAY" "$DNS1" "$DNS2"
+            python3 $DIR/util/GGTN_publish_redis.py $1 "$IP_ADDR" "$NETMASK" "$GATEWAY" "$DNS1" "$DNS2"
         else
-            python3 $DIR/util/GGTN_set_ip.py static "$IP_ADDR" "$NETMASK" "$GATEWAY" "$DNS1"
+            #python3 $DIR/util/Server_ip.py
+            #python3 $DIR/util/GGTN_set_ip.py $1 "$IP_ADDR" "$NETMASK" "$GATEWAY" "$DNS1"
+            python3 $DIR/util/GGTN_publish_redis.py $1 "$IP_ADDR" "$NETMASK" "$GATEWAY" "$DNS1"
         fi
         return
     else

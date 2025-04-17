@@ -93,42 +93,9 @@ def get_eth0_ip():
 # - User selects their server IP from the list and sends it to the Redis file
 #-------------------------------------------------------------------------------
 
-def get_all_valid_ipv4():
-    ip_list = []
-    try:
-        net_if_stats = psutil.net_if_addrs()
-        for interface, addrs in net_if_stats.items():
-            for addr in addrs:
-                if addr.family == 2 and not addr.address.startswith("127."):
-                    ip_list.append(addr.address)
-        return ip_list
-    except Exception as e:
-        print(f"Error getting IP addresses: {e}")
-        return []
-
-def select_ip_interactively(ip_list):
-    if not ip_list:
-        print("No valid IP addresses found.")
-        return None
-
-    print("Valid IPv4 addresses found:")
-    for idx, server_ip in enumerate(ip_list, 1):
-        print(f"{idx}. {server_ip}")
-
-    try:
-        choice = int(input("Select the IP to use by number: "))
-        if 1 <= choice <= len(ip_list):
-            return ip_list[choice - 1]
-        else:
-            print("Invalid selection.")
-            return None
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
 
 #-------------------------------------------------------------------------------
 # Restart essential services after updating network configuration
-# - Reexecs and reloads systemd to apply new unit file changes
 # - Restarts systemd-networkd to apply new eth0.network settings
 # - Restarts Prometheus for monitoring integration
 # - Restarts custom display_pannel.service (for GGTTN display updates)
@@ -157,13 +124,10 @@ def main():
     if len(sys.argv) < 2:
         print("Usage:")
         print("  GGTN_set_ip.py dhcp")
-        print("  GGTN_set_ip.py static <ip> <gateway> <dns1> [dns2]")
+        print("  GGTN_set_ip.py static <ip> <netmask> <gateway> <dns1> [dns2]")
         sys.exit(1)
 
     mode = sys.argv[1]
-
-    server_ip_address = select_ip_interactively(get_all_valid_ipv4())
-    print(f"Selected Server IP: {server_ip_address}")
 
     if mode == "dhcp":
         write_dhcp_config()
@@ -178,7 +142,7 @@ def main():
     elif mode == "static":
         if len(sys.argv) < 6:
             print("Missing arguments for static mode.")
-            print("Usage: static <ip> <gateway> <dns1> [dns2]")
+            print("Usage: static <ip> <netmask> <gateway> <dns1> [dns2]")
             sys.exit(1)
         ip = sys.argv[2]
         netmask = sys.argv[3]
