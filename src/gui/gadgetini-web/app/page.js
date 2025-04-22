@@ -1,9 +1,19 @@
 "use client";
-import React from "react";
-import { CogIcon } from "@heroicons/react/24/solid";
+import React, { useState, useEffect } from "react";
+import { CogIcon, ServerStackIcon } from "@heroicons/react/24/solid";
 import Settings from "./components/settings";
+import Cluster from "./components/cluster";
 
 export default function Home() {
+  const [selectedMenu, setSelectedMenu] = useState("settings");
+  const [activeComponent, setActiveComponent] = useState(<Settings />);
+  useEffect(() => {
+    if (selectedMenu === "settings") {
+      setActiveComponent(<Settings />);
+    } else if (selectedMenu === "cluster") {
+      setActiveComponent(<Cluster />);
+    }
+  }, [selectedMenu]);
   return (
     <div className="h-screen flex flex-col">
       <header className="flex items-center justify-between p-4 bg-gray-200">
@@ -14,16 +24,30 @@ export default function Home() {
       </header>
       <div className="flex flex-1">
         <aside className=" p-3 bg-gray-100">
-          <ul>
-            <li className="cursor-pointer p-4 bg-gray-300">
+          <ul className="space-y-2">
+            <li
+              className={`cursor-pointer p-4 rounded ${
+                selectedMenu === "settings"
+                  ? "bg-gray-300"
+                  : "hover:bg-gray-200"
+              }`}
+              onClick={() => setSelectedMenu("settings")}
+            >
               <CogIcon className="inline-block w-5 h-5 mr-2" />
               Settings
             </li>
+            <li
+              className={`cursor-pointer p-4 rounded ${
+                selectedMenu === "cluster" ? "bg-gray-300" : "hover:bg-gray-200"
+              }`}
+              onClick={() => setSelectedMenu("cluster")}
+            >
+              <ServerStackIcon className="inline-block w-5 h-5 mr-2" />
+              Cluster
+            </li>
           </ul>
         </aside>
-        <main className="flex-[1] p-2 overflow-y-auto">
-          <Settings />
-        </main>
+        <main className="flex-[1] p-2 overflow-y-auto">{activeComponent}</main>
       </div>
     </div>
   );
