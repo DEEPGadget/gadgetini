@@ -1,24 +1,97 @@
 #!/bin/bash
 
-DIR=/home/gadgetini/gadgetini/src
-#echo "$DIR/util"
-#print help option
+#-------------------------------------------------------------------------------
+# All relate path base working directory 'DIR'
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Print print_help()
+# Display ggtntool command-line tool
+# Show usage guide for ggtntool
+# Use '--help' option 
+# If input invalid or unknown argument, print print_help() 
+#-------------------------------------------------------------------------------
+
 print_help() {
-    echo "Usage: ggtntool command [options]"
-    echo "Commands:"
-    echo "  --help            Display ggtn command help message"
-    echo "  set               Set system configurations"
-    echo "    network         Set IP address (dhcp, static)"
-    echo "    displaymode     Set ggtn display mode, v : vertical, h : horizontal"
-    echo "    time            Set ggtn time"
-    echo "  get               Get system information"
-    echo "    monitoring      Get grafana monitoring link"
-    echo "    time            Get ggtn time"
-    echo "    network         Get ggtn ip"
-    echo "  import            Import configuration"
-    echo "    gpu             Import gpu dashboard json"
-    echo "    tt              Import tt dashboard json"
+    echo "Usage: ggtntool <command> [options]"
+    echo ""
+    echo "Available Commands:"
+    echo "  --help"
+    echo "      Display this help message"
+    echo ""
+    echo "  set                Configure system settings"
+    echo "    network"
+    echo "        Set IP address mode (dhcp or static)"
+    echo "        Usage: ggtntool set network dhcp"
+    echo "               ggtntool set network static [ipaddress] [netmask] [gateway] [dns1] [dns2]"
+    echo ""
+    echo "    displaymode"
+    echo "        Set display mode (v: vertical, h: horizontal)"
+    echo "        Usage: ggtntool set displaymode v"
+    echo "               ggtntool set displaymode h"
+    echo ""
+    echo "    time"
+    echo "        Set current system time"
+    echo "        Usage: ggtntool set time"
+    echo ""
+    echo "  get                Get system information"
+    echo "    monitoring"
+    echo "        Get Grafana monitoring link"
+    echo "        Usage: ggtntool get monitoring"
+    echo ""
+    echo "    ip"
+    echo "        Get Server IP, GGtN IP address"
+    echo "        Usage: ggtntool get ip"
+    echo ""
+    echo "    displaymode"
+    echo "        Get current display mode"
+    echo "        Usage: ggtntool get displaymode"
+    echo ""
+    echo "    time"
+    echo "        Get current system time"
+    echo "        Usage: ggtntool get time"
+    echo ""
+    echo "  import             Import dashboard configuration"
+    echo "    gpu"
+    echo "        Import GPU dashboard JSON"
+    echo "        Usage: ggtntool import gpu"
+    echo ""
+    echo "    tt"
+    echo "        Import Tenstorrent dashboard JSON"
+    echo "        Usage: ggtntool import tt"
 }
+
+# select server IP
+select_server_ip() {
+    local ips=()
+    local i=1
+
+    echo "Available IPv4 addresses:"
+
+    for ip in $(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v "^127"); do
+        echo "$i) $ip"
+        ips+=("$ip")
+        ((i++))
+    done
+
+    if [[ ${#ips[@]} -eq 0 ]]; then
+        echo "No valid IPv4 addresses found."
+        exit 1
+    fi
+
+    read -p "Select the IP to use by number: " choice
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#ips[@]} )); then
+        echo "Invalid selection."
+        exit 1
+    fi
+
+    selected_ip="${ips[$((choice-1))]}"
+    echo "Selected Server IP: $selected_ip"
+    redis-cli set server_ip "$selected_ip"
+    
+}
+
+
 
 # Subnet Mask to CIDR Conversion
 subnet_to_cidr() {
@@ -52,65 +125,85 @@ validate_ip() {
     fi
 }
 
-#get current server ip
-network_interface=$(ip link show | awk '$9 == "UP" {print $2}' | sed 's/://g' | head -n 1)
-server_ip_address=$(ip -4 addr show $network_interface | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+#-------------------------------------------------------------------------------
+# Set ggtn ip dhcp or static
+# Supports two modes:
+#   - dhcp : enables DHCP on eth0
+#   - static : sets a static IP with netmask, gateway, and DNS
+# *secondary_dns is optional
+# Usage:
+#   ggtntool set network dhcp
+#   ggtntool set network static <ip_address> <netmask> <gateway> <primary_dns> [secondary_dns]
+#-------------------------------------------------------------------------------
 
 set_network() {
+
+select_server_ip
+
     if [[ $1 == "dhcp" ]]; then
         echo "Setting DHCP configuration..."
-        #/home/gadgetini/gadgetini/src/util/GGTN_set_ip.sh $1 $server_ip_address
-        $DIR/util/GGTN_set_ip.sh $1 $server_ip_address  
+        #python3 $DIR/util/Server_ip.py
+        #python3 $DIR/util/GGTN_set_ip.py $1
+        #python3 $DIR/util/GGTN_publish_redis.py $1
+        redis-cli set ggtn_ip_mode "$1"
+        redis-cli set ggtn_netmask ""
+        redis-cli set ggtn_gateway ""
+        redis-cli set ggtn_dns1 ""
+        redis-cli set ggtn_dns2 ""
         return
-    else
-        if [[ $# -eq 4 ]] || [[ $# -eq 5 ]]; then
-            local ip_address=$1
-            local subnet_mask=$2
-            local gateway=$3
-            local dns_primary=$4
-            local dns_secondary=${5:-""}  # Optional secondary DNS
+    elif [[ $1 == "static" ]]; then
+        IP_ADDR=$2
+        NETMASK=$3
+        GATEWAY=$4
+        DNS1=$5
+        DNS2=$6
 
-            echo "Setting static IP configuration..."
-            if ! validate_ip "$ip_address" || ! validate_ip "$gateway" || ! validate_ip "$dns_primary" || ( [[ -n $dns_secondary ]] && ! validate_ip "$dns_secondary" ); then
-                echo "Validation failed for one or more IP addresses."
-                return 1
-            fi
-
-            local cidr=$(subnet_to_cidr $subnet_mask)
-            echo "IP address set to $ip_address/$cidr"
-            echo "Gateway set to $gateway"
-            echo "Primary DNS set to $dns_primary"
-            [[ -n $dns_secondary ]] && echo "Secondary DNS set to $dns_secondary"
-            echo "current server IP address : $server_ip_address"
-            #/home/gadgetini/gadgetini/src/util/GGTN_set_ip.sh "$server_ip_address" "$ip_address/$cidr" "$gateway" "$dns_primary" "$dns_secondary"
-	    $DIR/util/GGTN_set_ip.sh "$server_ip_address" "$ip_address/$cidr" "$gateway" "$dns_primary" "$dns_secondary"
-            return
-        else
-            echo "Invalid arguments for setting network."
+        if [[ -z "$IP_ADDR" || -z "$NETMASK" || -z "$GATEWAY" || -z "$DNS1" ]]; then
+            echo "Error: Missing arguments for static IP configuration."
+            echo "Usage: ggtntool set network static <ip_address> <netmask> <gateway> <primary_dns> [secondary_dns]"
             return 1
         fi
+
+        for ip in "$IP_ADDR" "$NETMASK" "$GATEWAY" "$DNS1" "$DNS2"; do
+            if [[ -n "$ip" ]]; then
+                validate_ip "$ip" || return 1
+            fi
+        done
+
+        CIDR=$(subnet_to_cidr "$NETMASK")
+        echo "Converted $NETMASK to CIDR: /$CIDR"
+
+        echo "Setting Static IP configuration..."
+        redis-cli set ggtn_ip_mode "static"
+        redis-cli set ggtn_ip_address "$IP_ADDR/$CIDR"
+        redis-cli set ggtn_netmask "$NETMASK"
+        redis-cli set ggtn_gateway "$GATEWAY"
+        redis-cli set ggtn_dns1 "$DNS1"
+        [[ -n "$DNS2" ]] && redis-cli set ggtn_dns2 "$DNS2"
+
+        return
+    else
+        echo "Invalid network mode. Use 'dhcp' or 'static'."
+        return 1
     fi
 }
 
-#change display mode
+#-------------------------------------------------------------------------------
+# Set display mode (orientation) for ggtn screen
+# - Input argument 'v' (vertical) or 'h' (horizontal)
+# - Passes the argument to GGTN_set_displaymode.py script for actual update
+# Example usage:
+# - ggtntool set displaymode v  → set to vertical mode
+# - ggtntool set displaymode h  → set to horizontal mode
+# If input invalid or unknown argument, print print_help()
+#-------------------------------------------------------------------------------
 set_displaymode() {
-    #/home/gadgetini/gadgetini_monitoring_tool/service_scripts/config.ini
-    #config_file="/home/deepgadget/config.ini"
-
     if [[ "$1" == "v" ]]; then
         echo "Setting display mode to vertical..."
-        #sed -i 's/orientation=horizontal/orientation=vertical/' $config_file
-        #./GGTN_set_displaymode.sh $1
-        #/home/gadgetini/gadgetini/src/util/GGTN_set_displaymode.sh $1
-        $DIR/util/GGTN_set_displaymode.sh $1
-        #echo "Display mode set to vertical."
+        redis-cli set ggtn_displaymode "vertical"
     elif [[ "$1" == "h" ]]; then
         echo "Setting display mode to horizontal..."
-        #sed -i 's/orientation=vertical/orientation=horizontal/' $config_file
-        #./GGTN_set_displaymode.sh $1
-        #/home/gadgetini/gadgetini/src/util/GGTN_set_displaymode.sh $1
-        $DIR/util/GGTN_set_displaymode.sh $1	
-        #echo "Display mode set to horizontal."
+        redis-cli set ggtn_displaymode "horizontal"
     else
         echo "Invalid option: $1"
         print_help
@@ -118,36 +211,56 @@ set_displaymode() {
 }
 
 set_time() {
-    current_server_time=$(date '+%Y-%m-%d %H:%M:%S')
-    $DIR/util/set_time.sh $current_server_time
+    server_time=$(date -Iseconds)
+    redis-cli set ggtntime "$server_time"
+    echo "ggtn time : $server_time"
+    easy_read_time=$(date -d "$server_time" +"%Y-%m-%d %H:%M:%S") 
+    echo "ggtn time : $easy_read_time"
 }
  
 get_monitoring() {
-    $DIR/util/send_monitoring.sh
+    monitoring_ip=$(redis-cli get ggtn_ip_address)
+    get_monitoring_ip=$(echo "$monitoring_ip" | cut -d'/' -f1)
+    echo "monitoring dashboard url : http://$get_monitoring_ip"
 }
 
 get_time() {
-    $DIR/util/send_time.sh 
+    get_ggtn_time=$(redis-cli get ggtntime)
+    echo "ggtn time : $get_ggtn_time"
 }
 
 get_network() {
-    $DIR/util/send_ip.sh
+    get_server_ip=$(redis-cli get server_ip)
+    raw_ggtn_ip=$(redis-cli get ggtn_ip_address)
+    get_ggtn_ip=$(echo "$raw_ggtn_ip" | cut -d'/' -f1)
+    
+    echo "Server IP : $get_server_ip"
+    echo "ggtn IP : $get_ggtn_ip"
+}
+
+get_displaymode() {
+    get_display_arg=$(redis-cli get ggtn_displaymode)
+    echo "ggtn displaymode : $get_display_arg"
 }
 
 import() {
     if [[ "$1" == "tt" ]]; then
         echo "Set dashboard.json..."
-	cp "$DIR/configure/tt-dashboard.json" /etc/grafana/provisioning/dashboards/
-	cp "$DIR/configure/change_json.yaml" /etc/grafana/provisioning/dashboards/
+        import_tt_dashboard=$(redis-cli set import "$1")
+        get_tt_dashboard=$(redis-cli get import)
+        echo "wait...import_tt_dashboard.."
+        echo "state dashboard : $get_tt_dashboard" 
     elif [[ "$1" == "gpu" ]]; then
-        cp "$DIR/configure/gpu-dashboard.json" /etc/grafana/provisioning/dashboards/
-	cp "$DIR/configure/change_json.yaml" /etc/grafana/provisioning/dashboards/
+        echo "Set dashboard.json..."
+        import_gpu_dashboard=$(redis-cli set import "$1")
+        get_gpu_dashboard=$(redis-cli get import)
+        echo "wait...import_gpu_dashboard.."
+        echo "state dashboard : $get_gpu_dashboard"
     else
         echo "Invalid option: $1"
 	print_help
     fi
 }
-
 
 case "$1" in
     --help)
@@ -182,6 +295,9 @@ case "$1" in
             ip)
                 get_network
                 ;;
+            displaymode)
+                get_displaymode
+                ;; 
             *)
                 echo "Invalid get option: $2"
                 print_help
@@ -191,10 +307,10 @@ case "$1" in
     import)
         case "$2" in
             gpu)
-                import_gpu
+                import "$2"
                 ;;
             tt)
-                import_tt
+                import "$2"
                 ;;
             *)
                 echo "Invalid import option: $2"
