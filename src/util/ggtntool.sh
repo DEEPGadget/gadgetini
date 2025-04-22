@@ -13,30 +13,52 @@
 #-------------------------------------------------------------------------------
 
 print_help() {
-    echo "Usage: ggtntool command [options]"
-    echo "Commands:"
-    echo "  --help            Display ggtn command help message"
-    echo "  set               Set system configurations"
-    echo "    network         Set IP address (dhcp, static)"
-    echo "    Usage : ggtntool set network dhcp"
-    echo "    Usage : ggtntool set network static"
-    echo "    displaymode     Set ggtn display mode, v : vertical, h : horizontal"
-    echo "    Usage : ggtntool set displaymode v"
-    echo "    Usage : ggtntool set displaymode h"
-    echo "    time            Set ggtn time"
-    echo "    Usage : ggtntool set time"
-    echo "  get               Get system information"
-    echo "    monitoring      Get grafana monitoring link"
-    echo "    Usage : ggtntool get monitoring"
-    echo "    ip              Get ggtn ip"
-    echo "    Usage : ggtntool get ip"
-    echo "    displaymode     Get ggtn displaymode"
-    echo "    Usage : ggtntool get displaymode"
-    echo "    time            Get ggtn time"
-    echo "    Usage : ggtntool get time"
-    echo "  import            Import configuration dashboard json file tt or gpu!"
-    echo "    Usage : ggtntool import gpu"
-    echo "    Usage : ggtntool import tt"
+    echo "Usage: ggtntool <command> [options]"
+    echo ""
+    echo "Available Commands:"
+    echo "  --help"
+    echo "      Display this help message"
+    echo ""
+    echo "  set                Configure system settings"
+    echo "    network"
+    echo "        Set IP address mode (dhcp or static)"
+    echo "        Usage: ggtntool set network dhcp"
+    echo "               ggtntool set network static [ipaddress] [netmask] [gateway] [dns1] [dns2]"
+    echo ""
+    echo "    displaymode"
+    echo "        Set display mode (v: vertical, h: horizontal)"
+    echo "        Usage: ggtntool set displaymode v"
+    echo "               ggtntool set displaymode h"
+    echo ""
+    echo "    time"
+    echo "        Set current system time"
+    echo "        Usage: ggtntool set time"
+    echo ""
+    echo "  get                Get system information"
+    echo "    monitoring"
+    echo "        Get Grafana monitoring link"
+    echo "        Usage: ggtntool get monitoring"
+    echo ""
+    echo "    ip"
+    echo "        Get Server IP, GGtN IP address"
+    echo "        Usage: ggtntool get ip"
+    echo ""
+    echo "    displaymode"
+    echo "        Get current display mode"
+    echo "        Usage: ggtntool get displaymode"
+    echo ""
+    echo "    time"
+    echo "        Get current system time"
+    echo "        Usage: ggtntool get time"
+    echo ""
+    echo "  import             Import dashboard configuration"
+    echo "    gpu"
+    echo "        Import GPU dashboard JSON"
+    echo "        Usage: ggtntool import gpu"
+    echo ""
+    echo "    tt"
+    echo "        Import Tenstorrent dashboard JSON"
+    echo "        Usage: ggtntool import tt"
 }
 
 # select server IP
@@ -197,7 +219,9 @@ set_time() {
 }
  
 get_monitoring() {
-    echo "not yet.."
+    monitoring_ip=$(redis-cli get ggtn_ip_address)
+    get_monitoring_ip=$(echo "$monitoring_ip" | cut -d'/' -f1)
+    echo "monitoring dashboard url : http://$get_monitoring_ip"
 }
 
 get_time() {
@@ -226,16 +250,12 @@ import() {
         get_tt_dashboard=$(redis-cli get import)
         echo "wait...import_tt_dashboard.."
         echo "state dashboard : $get_tt_dashboard" 
-	#cp "$DIR/configure/tt-dashboard.json" /etc/grafana/provisioning/dashboards/
-	#cp "$DIR/configure/change_json.yaml" /etc/grafana/provisioning/dashboards/
     elif [[ "$1" == "gpu" ]]; then
         echo "Set dashboard.json..."
         import_gpu_dashboard=$(redis-cli set import "$1")
         get_gpu_dashboard=$(redis-cli get import)
         echo "wait...import_gpu_dashboard.."
         echo "state dashboard : $get_gpu_dashboard"
-        #cp "$DIR/configure/gpu-dashboard.json" /etc/grafana/provisioning/dashboards/
-	#cp "$DIR/configure/change_json.yaml" /etc/grafana/provisioning/dashboards/
     else
         echo "Invalid option: $1"
 	print_help
