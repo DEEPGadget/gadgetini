@@ -1,6 +1,7 @@
 # gadgetini
 gadgetini is a comprehensive server monitoring system especially specialized for Direct Liquid Cooling(DLC) system in [DeepGadget](https://deepgadget.com/)
 
+![manycore_logo_black (3)](https://github.com/user-attachments/assets/2e65773a-b1cc-46ee-8831-7d3d95a5b798)
 
 
 ## Prerequisite
