@@ -132,7 +132,7 @@ export default function Settings() {
         <div className="flex gap-2 flex-row items-center mt-4">
           <div className="flex items-center">
             <p className="text-base">
-              Current IP :<strong> {currentIP}</strong>
+              Current Gadgetini IP :<strong> {currentIP}</strong>
             </p>
             <a
               href={`http://${currentIP}/dashboard`}
@@ -148,7 +148,7 @@ export default function Settings() {
         </div>
 
         <div className="flex items-center gap-4 mt-4">
-          <span className="whitespace-nowrap">Set IP :</span>
+          <span className="whitespace-nowrap">Set Gadgetini IP :</span>
 
           {/* Button selecting IP as DHCP or static */}
           <div className="flex items-center gap-4">
