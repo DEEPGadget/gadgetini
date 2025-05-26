@@ -179,9 +179,9 @@ export default function Settings() {
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="IP Address"
+                placeholder="Gadgetini IP Address"
                 ref={(el) => (IPRefs.current.ip = el)}
-                className="border p-2 rounded w-36 text-left"
+                className="border p-2 rounded w-42 text-left"
               />
               <input
                 type="text"
