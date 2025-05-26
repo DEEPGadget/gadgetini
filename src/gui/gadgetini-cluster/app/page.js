@@ -1,11 +1,11 @@
 "use client";
 import React, { useState } from "react";
-import { CogIcon } from "@heroicons/react/24/solid";
-import Settings from "./components/settings";
+import { ServerStackIcon } from "@heroicons/react/24/solid";
+import Cluster from "./components/cluster";
 
 export default function Home() {
-  const [selectedMenu, setSelectedMenu] = useState("settings");
-  const [activeComponent, setActiveComponent] = useState(<Settings />);
+  const [selectedMenu, setSelectedMenu] = useState("cluster");
+  const [activeComponent, setActiveComponent] = useState(<Cluster />);
   return (
     <div className="h-screen flex flex-col">
       <header className="flex items-center justify-between p-4 bg-gray-200">
@@ -19,14 +19,12 @@ export default function Home() {
           <ul className="space-y-2">
             <li
               className={`cursor-pointer p-4 rounded ${
-                selectedMenu === "settings"
-                  ? "bg-gray-300"
-                  : "hover:bg-gray-200"
+                selectedMenu === "cluster" ? "bg-gray-300" : "hover:bg-gray-200"
               }`}
-              onClick={() => setSelectedMenu("settings")}
+              onClick={() => setSelectedMenu("cluster")}
             >
-              <CogIcon className="inline-block w-5 h-5 mr-2" />
-              Settings
+              <ServerStackIcon className="inline-block w-5 h-5 mr-2" />
+              Cluster
             </li>
           </ul>
         </aside>

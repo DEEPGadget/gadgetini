@@ -1,0 +1,12 @@
+[Unit]
+Description=Run npm start for gadgetini web ui service:3002
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/gadgetini/gadgetini/src/gui/gadgetini-cluster
+ExecStart=/usr/bin/npm start -- --port 3002
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
