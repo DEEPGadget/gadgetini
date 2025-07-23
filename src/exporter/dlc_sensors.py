@@ -43,7 +43,7 @@ def get_air_humit():
     try:
         bias = random.random()
         bias_trim = round(bias, 1)
-        curr_temp = dhtDevice.humidity + bias_trim
+        curr_humit = dhtDevice.humidity + bias_trim
     except Exception as e:
         print(e)
         print("dht sensing error")
