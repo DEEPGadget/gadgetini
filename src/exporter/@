@@ -18,10 +18,11 @@ class DLC_sensor_Collector(object):
 
     def collect(self):
         gauge_metric = GaugeMetricFamily("DLC_sensors_gauge", "deepgadget DLC sensors telemetry", labels=['server_name','metric','description'])
-        #7 = leak detection leak = 1
-        gauge_metric.add_metric(["dg5W","LEAK detection","if leak: value = 1"], int(client.get("coolant_leak")))
-        #6 = water level full = 1
-        gauge_metric.add_metric(["dg5W","Coolant level", "if full: value = 1"], int(client.get("coolant_level")))
+        #7 = leak detection leak = < 4.2
+        print(int(client.get("coolant_level")))
+        gauge_metric.add_metric(["dg5W","LEAK detection","if leak: value < 4.1"], round(client.get("coolant_leak")))
+        #6 = water level LOW > 1
+        gauge_metric.add_metric(["dg5W","Coolant level", "if empty: value > 1"], int(client.get("coolant_level")))
         #4 = water temp 34.3 = 1.386 35 = 1.360 35.6 = 1.346 37.6 = 1.282 35.7 = 1.348
         gauge_metric.add_metric(["dg5W","Coolant temperature", "degree celcious"], float(client.get("coolant_temp")))
         gauge_metric.add_metric(["dg5W","Air temperature", "degree celcious"], float(client.get("air_temp")))
@@ -30,23 +31,23 @@ class DLC_sensor_Collector(object):
         for keys in client.keys("9070XT_asic_temp*"):
             number = str(keys).split("_")[3]
             print(number)
-            gauge_metric.add_metric(["dg5W","RX9070XT_" + str(number) +" asic temperature", "degree celcious"], float(client.get(keys)))
+            gauge_metric.add_metric(["dg5W","RX9070XT_" + str(number) +" asic temperature", "degree celcious"], int(client.get(keys)))
 
         for keys in client.keys("9070XT_pwr*"):
             number = str(keys).split("_")[2]
             print(number)
-            gauge_metric.add_metric(["dg5W","RX9070XT_" + str(number) +" power usage", "W"], float(client.get(keys)))
+            gauge_metric.add_metric(["dg5W","RX9070XT_" + str(number) +" power usage", "W"], int(client.get(keys)))
 
         for keys in client.keys("9070XT_mem_temp*"):
             number = str(keys).split("_")[3]
             print(number)
-            gauge_metric.add_metric(["dg5W","RX9070XT_" + str(number) +" memory temperature", "degree celcious"], float(client.get(keys)))
+            gauge_metric.add_metric(["dg5W","RX9070XT_" + str(number) +" memory temperature", "degree celcious"], int(client.get(keys)))
         
-        gauge_metric.add_metric(["dg5W","CPU temperature", "degree celcious"], float(client.get("cpu_temp_0")))
-        gauge_metric.add_metric(["dg5W","CPU Usage", "%"], float(client.get("cpu_usage")))
-        gauge_metric.add_metric(["dg5W","Memory_total","GB"], float(client.get("mem_total")))
-        gauge_metric.add_metric(["dg5W","Memory_usage","GB"], float(client.get("mem_usage")))
-        gauge_metric.add_metric(["dg5W","Memory_available","GB"], float(client.get("mem_available")))
+        gauge_metric.add_metric(["dg5W","CPU temperature", "degree celcious"], int(client.get("cpu_temp_0")))
+        gauge_metric.add_metric(["dg5W","CPU Usage", "%"], int(client.get("cpu_usage")))
+        gauge_metric.add_metric(["dg5W","Memory_total","GB"], int(client.get("mem_total")))
+        gauge_metric.add_metric(["dg5W","Memory_usage","GB"], int(client.get("mem_usage")))
+        gauge_metric.add_metric(["dg5W","Memory_available","GB"], int(client.get("mem_available")))
 
         yield gauge_metric
 

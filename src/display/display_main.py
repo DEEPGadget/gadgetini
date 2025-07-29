@@ -238,9 +238,7 @@ class XPUTemperatureData(SensorData):
     def __init__(self, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE, redis=None):
         super().__init__(title_str, unit_str, min_val, max_val, read_rate, max_buffer_size)
         self.redis = redis
-        self.keys = ["wormhole_0_asic_temp", "wormhole_1_asic_temp", "wormhole_2_asic_temp", "wormhole_3_asic_temp", "wormhole_4_asic_temp", "wormhole_5_asic_temp", "wormhole_6_asic_temp",
-                     "gpu_0_gpu_temp", "gpu_1_gpu_temp", "gpu_2_gpu_temp", "gpu_3_gpu_temp", "gpu_4_gpu_temp", "gpu_5_gpu_temp", "gpu_6_gpu_temp"]
-
+        self.keys = ["9070XT_asic_temp_0","9070XT_asic_temp_1","9070XT_asic_temp_2","9070XT_asic_temp_3","9070XT_asic_temp_4","9070XT_asic_temp_5"]
 
     def read_sensor(self):
         if not USE_REAL_DATA:
@@ -260,14 +258,11 @@ class XPUTemperatureData(SensorData):
                 continue
         return max_temp
 
-
 class XPUPowerData(SensorData):
     def __init__(self, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE, redis=None):
         super().__init__(title_str, unit_str, min_val, max_val, read_rate, max_buffer_size)
         self.redis = redis
-        self.keys = ["wormhole_0_power", "wormhole_1_power", "wormhole_2_power", "wormhole_3_power", "wormhole_4_power", "wormhole_5_power", "wormhole_6_power",
-                     "gpu_0_gpu_power", "gpu_1_gpu_power", "gpu_2_gpu_power", "gpu_3_gpu_power", "gpu_4_gpu_power", "gpu_5_gpu_power", "gpu_6_gpu_power"]
-
+        self.keys = ["9070XT_pwr_0","9070XT_pwr_1","9070XT_pwr_2","9070XT_pwr_3","9070XT_pwr_4","9070XT_pwr_5"]
 
     def read_sensor(self):
         if not USE_REAL_DATA:
@@ -292,7 +287,7 @@ class CPUTemperatureData(SensorData):
     def __init__(self, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE, redis=None):
         super().__init__(title_str, unit_str, min_val, max_val, read_rate, max_buffer_size)
         self.redis = redis
-        self.keys = ["cpu_0_temp", "cpu_1_temp"]
+        self.keys = ["cpu_temp_0", "cpu_temp_1"]
     def read_sensor(self):
         if not USE_REAL_DATA:
             return self.read_sensor_fake()
@@ -315,7 +310,7 @@ class CPUUtilData(SensorData):
     def __init__(self, title_str, unit_str, min_val, max_val, read_rate=30, max_buffer_size=GRAPH_SIZE, redis=None):
         super().__init__(title_str, unit_str, min_val, max_val, read_rate, max_buffer_size)
         self.redis = redis
-        self.keys = ["cpu_util"]
+        self.keys = ["cpu_usage"]
     def read_sensor(self):
         if not USE_REAL_DATA:
             return self.read_sensor_fake()
@@ -345,8 +340,8 @@ class MEMUtilData(SensorData):
         return self.get_mem_util()
 
     def get_mem_util(self):
-        used_mem = float(self.redis.get('used_mem'))
-        total_mem = float(self.redis.get('total_mem'))
+        used_mem = float(self.redis.get('mem_usage'))
+        total_mem = float(self.redis.get('mem_total'))
         util = float(used_mem)/float(total_mem)*100
         return util
 
@@ -361,7 +356,7 @@ class MEMUsedData(SensorData):
         return self.get_used_mem()
 
     def get_used_mem(self):
-        used_mem = float(self.redis.get('used_mem'))
+        used_mem = float(self.redis.get('mem_usage'))
         return used_mem
 
 class MEMFreeData(SensorData):
@@ -375,7 +370,7 @@ class MEMFreeData(SensorData):
         return self.get_free_mem()
 
     def get_free_mem(self):
-        free_mem = float(self.redis.get('avail_mem'))
+        free_mem = float(self.redis.get('mem_available'))
         return free_mem
 
 

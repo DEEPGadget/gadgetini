@@ -43,9 +43,8 @@ def get_air_humit():
     try:
         bias = random.random()
         bias_trim = round(bias, 1)
-        curr_humit = dhtDevice.humidity + bias_trim
+        curr_temp = dhtDevice.humidity + bias_trim
     except Exception as e:
-        print(e)
         print("dht sensing error")
         # Error happen fairly often, DHT's are hard to read, just keep going 
         pass
@@ -54,33 +53,42 @@ def get_air_humit():
         
 # Coolant temperature fomula generate by several measured data using linear regression. 
 # x: Raw sensing data(ADC_Value, y: Degree celcisous)
+'''
+def get_coolant_temp():
+    ADC_Value = ADC.ADS1256_GetAll()
+    coeff_a = 50.453
+    coeff_b = -1.177
+    raw = 0
+    celcious = 0
+    if float(ADC_Value[4]*5.0/0x7fffff) < 1:
+        raw = 1.282
+        celcious = coeff_a * raw ** coeff_b
+    else:
+        celcious = coeff_a * float(ADC_Value[4]*5.0/0x7fffff) ** coeff_b
+    celcious = round(celcious, 1)
+    return celcious
+'''
+
 def get_coolant_temp():
     sample_buf = []
     raw_val = 0
-    celcious = 32.4
-    try:
-        for i in range(5):
-            ADC_Value = ADC.ADS1256_GetAll()
-            sample_buf.append(float(ADC_Value[4]*5.0/0x7fffff))
-        np.abs(sample_buf)
-        sample_buf.sort()
-        if sample_buf[0] - sample_buf[-1] > 0.0001:
-            raw_val = sample_buf[0]
-        else:
-            raw_val = sample_buf[1]
-        coeff_a = 50.393
-        coeff_b = -1.177
-        raw = 0
-        celcious = 0
-        celcious = coeff_a * raw_val ** coeff_b
-        celcious = round(celcious, 1)
-    except Exception as e:
-        celcious = 32.4
-        exit()
-    finally:
-        return celcious
-        exit()
-
+    for i in range(5):
+        ADC_Value = ADC.ADS1256_GetAll()
+        sample_buf.append( float(ADC_Value[4]*5.0/0x7fffff))
+    np.abs(sample_buf)
+    sample_buf.sort()
+    if sample_buf[0] - sample_buf[-1] > 2.5:
+        raw_val = sample_buf[-1]
+    else:
+        raw_val = sample_buf[0]
+    coeff_a = 50.393
+    coeff_b = -1.177
+    raw = 0
+    celcious = 0
+    
+    celcious = coeff_a * raw_val ** coeff_b
+    celcious = round(celcious, 1)
+    return celcious
 
 
 # is_stable 1 is stable, 0 is unstable.
@@ -113,15 +121,21 @@ def get_coolant_leak_detection():
 # is_full = 0 is coolant tank empty, 1 is full
 def get_coolant_level_detection():
     ADC_Value = ADC.ADS1256_GetAll()
-    is_full = 1 
+    is_full = 0 
     curr_level = round(float(ADC_Value[6]*5.0/0x7fffff),3)
-    if curr_level > 1.2:
-        is_full = 0
+    if curr_level > 2.2:
+        is_full = 1
     return is_full
 
-print(get_coolant_level_detection())
-print(get_coolant_leak_detection())
-print(get_coolant_temp())
-print(get_air_temp())
-print(get_air_humit())
-print(get_chassis_stabil())
+
+
+# test 
+'''
+while True:
+    print(get_coolant_temp_sampling())
+    print(get_chassis_stabil())
+    print(get_coolant_leak_detection())
+    print(get_coolant_level_detection())
+    print(get_air_temp())
+    print(get_air_humit())
+'''
