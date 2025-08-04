@@ -30,13 +30,13 @@ class InputChunkProtocol(asyncio.Protocol):
     # Receive data from gadgetini
     def data_received(self, data):
         self.buffer.extend(data)
-        print('data received', repr(self.buffer))
+        #print('data received', repr(self.buffer))
         # buffer iteration
         while b'\n' in self.buffer:
             # pop data using '\n' in buffer 
             line, _, self.buffer = self.buffer.partition(b'\n')
             data = line.decode(errors='ignore').strip()
-            print("Sender received data: {data}")
+            #print("Sender received data: {data}")
             self.handle_data(data)
 
     # Handle received data from gadgetini
@@ -59,8 +59,9 @@ class InputChunkProtocol(asyncio.Protocol):
                 key = wildkey.decode('utf-8')
                 print("getting data using key: ",key)
                 buf = rd.get(key).decode('utf-8')
+                #print("buf", buf)
                 data = data + key + ':' + buf + '\n'
-            print(data)
+            #print(data)
             self.send(data)
             self.counter += 1
             await asyncio.sleep(3)
