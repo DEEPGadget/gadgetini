@@ -349,7 +349,7 @@ export default function Cluster() {
                 />
               </th>
               <th className="py-2 px-4 border border-gray-300 text-center flex-[4_1_0%]">
-                IP Address
+                Gadgetini IP Address
               </th>
               <th className="py-2 px-4 border border-gray-300 text-center flex-[3_1_0%]">
                 Alias
