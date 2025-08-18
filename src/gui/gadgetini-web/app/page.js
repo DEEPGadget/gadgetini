@@ -15,7 +15,7 @@ export default function Home() {
         </h1>
       </header>
       <div className="flex flex-1">
-        <aside className=" p-3 bg-gray-100">
+        <aside className=" p-3 bg-gray-100 hidden md:block">
           <ul className="space-y-2">
             <li
               className={`cursor-pointer p-4 rounded ${
