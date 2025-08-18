@@ -24,6 +24,7 @@ export default function Settings() {
     memory: false,
     psu: false,
     rotationTime: 5,
+    display: true,
   });
 
   // Input IP Config Info
@@ -117,10 +118,11 @@ export default function Settings() {
 
   // FE: Toggle display config
   const toggleStatus = (key) => {
-    const lowercaseKey = key.toLowerCase();
+    const targetKey = key === "On/Off" ? "display" : key.toLowerCase();
+
     setDisplayMode((prev) => ({
       ...prev,
-      [lowercaseKey]: !prev[lowercaseKey],
+      [targetKey]: !prev[targetKey],
     }));
   };
 
@@ -221,7 +223,7 @@ export default function Settings() {
       </div>
 
       {/* Display mode control table */}
-      <h2 className="text-xl font-bold mb-4">Control Info</h2>
+      <h2 className="text-xl font-bold mb-4">LCD Control</h2>
       <div className="overflow-x-auto w-full">
         <table className="w-full bg-white border-separate border-spacing-0 table-auto">
           <thead>
@@ -281,6 +283,7 @@ export default function Settings() {
               </td>
             </tr>
             {Object.entries({
+              "On/Off": "Toggle the display on or off",
               Chassis:
                 "Front display shows internal temperature and humidity, water leakage detection, and coolant level",
               CPU: "Front display shows CPU temperature and utilization.",
@@ -288,9 +291,12 @@ export default function Settings() {
               Memory: "Front display shows memory usage.",
               PSU: "Front display shows power consumption, PSU temperature",
             }).map(([key, description]) => {
-              const status = displayMode[key.toLowerCase()];
+              const statusKey =
+                key === "On/Off" ? "display" : key.toLowerCase();
+              const status = displayMode[statusKey];
+
               return (
-                <tr key={key} className="border-b border-gray-300 ">
+                <tr key={key} className="border-b border-gray-300">
                   <td className="py-2 px-4 border border-gray-300 text-center">
                     {key}
                   </td>
@@ -298,13 +304,13 @@ export default function Settings() {
                     {description}
                   </td>
                   <td className="py-2 px-4 border border-gray-300">
-                    <div className="flex flex-col items-center justify-center ">
+                    <div className="flex flex-col items-center justify-center">
                       <button
                         onClick={() => toggleStatus(key)}
                         className={`relative flex items-center w-20 h-8 rounded-full border-2 border-gray-400 transition-colors duration-300 ${
                           status ? "bg-green-500" : "bg-red-500"
                         }`}
-                        disabled={key !== "Chassis"}
+                        disabled={key === "PSU"}
                       >
                         <span
                           className={`absolute left-1 transition-transform duration-300 transform ${
