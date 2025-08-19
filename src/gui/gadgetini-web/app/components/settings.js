@@ -312,7 +312,7 @@ export default function Settings() {
                 <td className="py-2 px-4 border border-gray-300">
                   {description}
                 </td>
-                <td className="py-2 px-4 border border-gray-300">
+                <td className="py-3 px-4 border border-gray-300">
                   <div className="flex flex-col items-center justify-center">
                     <button
                       onClick={() => toggleStatus(key)}
