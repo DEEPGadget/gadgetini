@@ -33,6 +33,7 @@ export async function GET() {
 
     const configData = {
       orientation: getConfigValue("orientation") || "vertical",
+      display: getConfigValue("display") === "on",
       chassis: getConfigValue("chassis") === "on",
       cpu: getConfigValue("cpu") === "on",
       gpu: getConfigValue("gpu") === "on",
@@ -64,6 +65,10 @@ export async function POST(request) {
         .replace(
           /^orientation\s*=\s*.*/m,
           `orientation=${displayMode.orientation}`
+        )
+        .replace(
+          /^display\s*=\s*.*/m,
+          `display=${displayMode.display ? "on" : "off"}`
         )
         .replace(
           /^chassis\s*=\s*.*/m,
