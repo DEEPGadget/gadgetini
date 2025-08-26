@@ -45,7 +45,7 @@ export default function Home() {
           title="Reboot the system"
         >
           <PowerIcon className="w-5 h-5" />
-          {rebooting ? "Rebooting..." : "System Reboot"}
+          {rebooting ? "Rebooting..." : "Gadgetini Reboot"}
         </button>
       </header>
 
