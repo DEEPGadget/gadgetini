@@ -90,9 +90,10 @@ def get_chassis_stabil():
     curr_x = current_stabil['x'] 
     curr_y = current_stabil['y']
     curr_z = current_stabil['z']
-    init_x = boot_stabil['x']
-    init_y = boot_stabil['y']
-    init_z = boot_stabil['z']
+    time.sleep(0.01)
+    init_x = current_stabil['x']
+    init_y = current_stabil['y']
+    init_z = current_stabil['z']
     is_stable = 1
     # Compare current xyz coordinate data with boot xyz data. 
     if abs(curr_x - init_x) > 5 and abs(curr_y - init_y) > 5 or abs(curr_z - init_z) > 5:
@@ -104,9 +105,13 @@ def get_chassis_stabil():
 # is_leak = 1 is coolant leak detected, 0 is stable.
 def get_coolant_leak_detection():
     is_leak = 0
-    ADC_Value = ADC.ADS1256_GetAll()
-    raw_data = round(float(ADC_Value[7]*5.0/0x7fffff),3)
-    if raw_data < 3.0:
+    count = 0 
+    for i in range(10):
+        ADC_Value = ADC.ADS1256_GetAll()
+        raw_data = round(float(ADC_Value[7]*5.0/0x7fffff),3)
+        if raw_data < 3.0:
+            count += 1
+    if count > 8:
         is_leak = 1
     return is_leak
 

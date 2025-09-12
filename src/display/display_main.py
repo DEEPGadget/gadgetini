@@ -914,26 +914,35 @@ class DisplayManager:
         self.viewer_rotation_sec = 5 #sec
         self.current_viewer = 0
         self.viewers = []
-        self.viewers.append(Chassis_Viewer("Chassis Info")) #0 Viewer
-        self.viewers.append(XPU_Viewer("XPU Info")) #1 Viewer
-        self.viewers.append(CPU_Viewer("CPU Info")) #2 Viewer
-        self.viewers.append(MEM_Viewer("MEM Info")) #3 Viewer
-        #self.viewers.append(Viewer("Chassis Info")) #0 Viewer
+        try:
+            self.viewers.append(Chassis_Viewer("Chassis Info")) #0 Viewer
+            self.viewers.append(XPU_Viewer("XPU Info")) #1 Viewer
+            self.viewers.append(CPU_Viewer("CPU Info")) #2 Viewer
+            self.viewers.append(MEM_Viewer("MEM Info")) #3 Viewer
+            #self.viewers.append(Viewer("Chassis Info")) #0 Viewer
 
-        self.disp_data = []
-        self.disp_data.append(CoolantTemperatureData("Coolant Temperature", "°C", 25, 50, read_rate=1, redis=self.redis))
-        self.disp_data.append(ChassisHumidData("Chassis Humidity", "%", 0, 100, 1, redis=self.redis))
-        self.disp_data.append(ChassisTemperatureData("Chassis Temperature", "°C", -20, 60, 1, redis=self.redis))
-        self.disp_data.append(XPUTemperatureData("Max xPU Temperature", "°C", 10, 120, 1, redis=self.redis))
-        self.disp_data.append(XPUPowerData("Max xPU Power", "W", 0, 600, 1, redis=self.redis))
+            self.disp_data = []
+            self.disp_data.append(CoolantTemperatureData("Coolant Temperature", "°C", 25, 50, read_rate=1, redis=self.redis))
+            self.disp_data.append(ChassisHumidData("Chassis Humidity", "%", 0, 100, 1, redis=self.redis))
+            self.disp_data.append(ChassisTemperatureData("Chassis Temperature", "°C", -20, 60, 1, redis=self.redis))
+            self.disp_data.append(XPUTemperatureData("Max xPU Temperature", "°C", 10, 120, 1, redis=self.redis))
+            self.disp_data.append(XPUPowerData("Max xPU Power", "W", 0, 600, 1, redis=self.redis))
 
-        self.disp_data.append(CPUTemperatureData("Max CPU Temperature", "°C", 10, 120, 1, redis=self.redis))
-        self.disp_data.append(CPUUtilData("CPU Utilization", "%", 0, 100, 1, redis=self.redis))
+            self.disp_data.append(CPUTemperatureData("Max CPU Temperature", "°C", 10, 120, 1, redis=self.redis))
+            self.disp_data.append(CPUUtilData("CPU Utilization", "%", 0, 100, 1, redis=self.redis))
 
-        self.disp_data.append(MEMUtilData("Memory Utilization", "%", 0, 100, 1, redis=self.redis))
-        self.disp_data.append(MEMUsedData("Used Memory", "GB", 0, 1024, 1, redis=self.redis))
-        self.disp_data.append(MEMFreeData("Free Memory", "GB", 0, 1024, 1, redis=self.redis))
-
+            self.disp_data.append(MEMUtilData("Memory Utilization", "%", 0, 100, 1, redis=self.redis))
+            self.disp_data.append(MEMUsedData("Used Memory", "GB", 0, 1024, 1, redis=self.redis))
+            self.disp_data.append(MEMFreeData("Free Memory", "GB", 0, 1024, 1, redis=self.redis))
+        except Exception as e:
+            print("Cannot find host via Serial Communication, Check the connection")
+            self.viewers = []
+            self.viewers.append(Chassis_Viewer("Chassis Info")) #0 Viewer
+            self.disp_data = []
+            self.disp_data.append(CoolantTemperatureData("Coolant Temperature", "°C", 25, 50, read_rate=1, redis=self.redis))
+            self.disp_data.append(ChassisHumidData("Chassis Humidity", "%", 0, 100, 1, redis=self.redis))
+            self.disp_data.append(ChassisTemperatureData("Chassis Temperature", "°C", -20, 60, 1, redis=self.redis))
+           
         #self.disp_data.append(SensorData("CPU Temperature", "°C", 0, 20, 1))
         #self.disp_data.append(SensorData("CPU Utilization", "%", 0, 100, 10))
         #self.disp_data.append(SensorData("GPU Utilization", "%", 0, 100, 10))
