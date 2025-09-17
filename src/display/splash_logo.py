@@ -13,7 +13,9 @@ Author(s): Melissa LeBlanc-Williams for Adafruit Industries
 
 import digitalio
 import board
+import configparser
 import busio
+import os
 from PIL import Image, ImageDraw
 from adafruit_rgb_display import ili9341
 from adafruit_rgb_display import st7789  # pylint: disable=unused-import
@@ -36,13 +38,29 @@ spi = busio.SPI(board.SCK_1,board.MOSI_1,board.MISO_1)
 # Config for display baudrate (default max is 24mhz):
 BAUDRATE = 24000000
 
+# Read config.ini from the same directory as this script
+config = configparser.ConfigParser()
+config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
+config.read(config_file)
+
+# Get orientation from config.ini (assuming a section like [display])
+orientation = config['DISPLAY']['orientation'].lower()
+
+# Set image path and rotation based on orientation
+if orientation == 'horizontal':
+    image_path = "/home/gadgetini/gadgetini/src/display/logo_horizontal.jpg"
+    rotation = 270
+else:
+    image_path = "/home/gadgetini/gadgetini/src/display/logo_vertical.jpg"
+    rotation = 180
+
 # pylint: disable=line-too-long
 # Create the display:
 # disp = st7789.ST7789(spi, rotation=90,                            # 2.0" ST7789
 # disp = st7789.ST7789(spi, height=240, y_offset=80, rotation=180,  # 1.3", 1.54" ST7789
 # disp = st7789.ST7789(spi, rotation=90, width=135, height=240, x_offset=53, y_offset=40, # 1.14" ST7789
 # disp = st7789.ST7789(spi, rotation=90, width=172, height=320, x_offset=34, # 1.47" ST7789
-disp = st7789.ST7789(spi, rotation=270, width=170, height=320, x_offset=35, # 1.9" ST7789
+disp = st7789.ST7789(spi, rotation=rotation, width=170, height=320, x_offset=35, # 1.9" ST7789
 # disp = hx8357.HX8357(spi, rotation=180,                           # 3.5" HX8357
 # disp = st7735.ST7735R(spi, rotation=90,                           # 1.8" ST7735R
 # disp = st7735.ST7735R(spi, rotation=270, height=128, x_offset=2, y_offset=3,   # 1.44" ST7735R
@@ -76,7 +94,7 @@ draw = ImageDraw.Draw(image)
 draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
 disp.image(image)
 
-image = Image.open("/home/gadgetini/gadgetini_monitoring_tool/service_scripts/logo_horizontal.jpg")
+image = Image.open(image_path)
 
 # Scale the image to the smaller screen dimension
 image_ratio = image.width / image.height
@@ -94,6 +112,6 @@ x = scaled_width // 2 - width // 2
 y = scaled_height // 2 - height // 2
 image = image.crop((x, y, x + width, y + height))
 
-# Display image.
+# Display image
 disp.image(image)
 exit()
