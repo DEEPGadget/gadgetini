@@ -1,0 +1,174 @@
+(base) jyeongmu@jyeongmu:~/gadgetini/src/prometheus$ cat rules.tmpl
+groups:
+  - name: node_health
+    interval: 5s
+    rules:
+      # ======================= gadgetini (9003) =======================
+
+      # Leak — Values: {CRIT(2), NORMAL(0)}
+      - record: node:coolant_leak
+        expr: |
+          max by (node) (
+            label_replace(
+              2 * (DLC_sensors_gauge{metric="LEAK detection"} == bool ${LEAK_CRIT}),
+              "node", "$1", "instance", "^(.*):.*$"
+            )
+          )
+
+      # Coolant level — Values: {CRIT(2), NORMAL(0)}
+      - record: node:coolant_level
+        expr: |
+          max by (node) (
+            label_replace(
+              2 * (DLC_sensors_gauge{metric="Coolant level"} == bool ${COOLANT_CRIT}),
+              "node", "$1", "instance", "^(.*):.*$"
+            )
+          )
+
+      # Chassis stability — Values: {WARN(1), NORMAL(0)}
+      - record: node:stability
+        expr: |
+          max by (node) (
+            label_replace(
+              1 * (DLC_sensors_gauge{metric="Chassis stability"} == bool ${CHASSIS_STABILITY_WARN}),
+              "node", "$1", "instance", "^(.*):.*$"
+            )
+          )
+
+      # Coolant temperature — Values: {CRIT(2), WARN(1), NORMAL(0)}
+      - record: node:coolant_temp
+        expr: |
+          max by (node) (
+            label_replace(
+              2 * (DLC_sensors_gauge{metric="Coolant temperature"} > bool ${COOLANT_TEMP_CRIT})
+            + (1 - (DLC_sensors_gauge{metric="Coolant temperature"} > bool ${COOLANT_TEMP_CRIT}))
+              * (DLC_sensors_gauge{metric="Coolant temperature"} > bool ${COOLANT_TEMP_WARN}),
+              "node", "$1", "instance", "^(.*):.*$"
+            )
+          )
+
+      # Air temperature — Values: {CRIT(2), WARN(1), NORMAL(0)}
+      - record: node:air_temp
+        expr: |
+          max by (node) (
+            label_replace(
+              2 * (
+                (
+                  (DLC_sensors_gauge{metric="Air temperature"} < bool ${AIR_TEMP_CRIT_LT})
+                + (DLC_sensors_gauge{metric="Air temperature"} > bool ${AIR_TEMP_CRIT_GT})
+                ) > bool 0
+              )
+            + (1 - (
+                (
+                  (DLC_sensors_gauge{metric="Air temperature"} < bool ${AIR_TEMP_CRIT_LT})
+                + (DLC_sensors_gauge{metric="Air temperature"} > bool ${AIR_TEMP_CRIT_GT})
+                ) > bool 0
+              )) * (
+                (
+                  (DLC_sensors_gauge{metric="Air temperature"} < bool ${AIR_TEMP_WARN_LT})
+                + (DLC_sensors_gauge{metric="Air temperature"} > bool ${AIR_TEMP_WARN_GT})
+                ) > bool 0
+              ),
+              "node", "$1", "instance", "^(.*):.*$"
+            )
+          )
+
+      # Air temperature — raw value (°C)
+      - record: node:air_temp:raw
+        expr: |
+          max by (node) (
+            label_replace(
+              DLC_sensors_gauge{metric="Air temperature"},
+              "node", "$1", "instance", "^(.*):.*$"
+            )
+          )
+
+      # Air humidity — Values: {CRIT(2), WARN(1), NORMAL(0)}
+      - record: node:air_hum
+        expr: |
+          max by (node) (
+            label_replace(
+              2 * (
+                (
+                  (DLC_sensors_gauge{metric="Air humidity"} < bool ${AIR_HUM_CRIT_LT})
+                + (DLC_sensors_gauge{metric="Air humidity"} > bool ${AIR_HUM_CRIT_GT})
+                ) > bool 0
+              )
+            + (1 - (
+                (
+                  (DLC_sensors_gauge{metric="Air humidity"} < bool ${AIR_HUM_CRIT_LT})
+                + (DLC_sensors_gauge{metric="Air humidity"} > bool ${AIR_HUM_CRIT_GT})
+                ) > bool 0
+              )) * (
+                (
+                  (DLC_sensors_gauge{metric="Air humidity"} < bool ${AIR_HUM_WARN_LT})
+                + (DLC_sensors_gauge{metric="Air humidity"} > bool ${AIR_HUM_WARN_GT})
+                ) > bool 0
+              ),
+              "node", "$1", "instance", "^(.*):.*$"
+            )
+          )
+
+      # Air humidity — raw value (%RH)
+      - record: node:air_hum:raw
+        expr: |
+          max by (node) (
+            label_replace(
+              DLC_sensors_gauge{metric="Air humidity"},
+              "node", "$1", "instance", "^(.*):.*$"
+            )
+          )
+
+
+      # ======================= host (9005) =======================
+
+      # AI processor temperature — Values: {CRIT(2), WARN(1), NORMAL(0)}
+      - record: node:ai_processor_temp
+        expr: |
+          max by (node) (
+            label_replace(
+              2 * (device_temperature{metric=~".*asic temperature"} > bool ${AI_TEMP_CRIT})
+            + (1 - (device_temperature{metric=~".*asic temperature"} > bool ${AI_TEMP_CRIT}))
+              * (device_temperature{metric=~".*asic temperature"} > bool ${AI_TEMP_WARN}),
+              "node", "$1", "instance", "^(.*):.*$"
+            )
+          )
+
+      # AI processor power — Values: {WARN(1), NORMAL(0)}
+      - record: node:ai_processor_power
+        expr: |
+          max by (node) (
+            label_replace(
+              1 * (sum by (instance, job) (device_temperature{metric=~".*power usage"}) > bool ${AI_POWER_WARN}),
+              "node", "$1", "instance", "^(.*):.*$"
+            )
+          )
+
+      # CPU temperature — Values: {CRIT(2), NORMAL(0)}
+      - record: node:cpu_temp
+        expr: |
+          max by (node) (
+            label_replace(
+              2 * (device_temperature{metric="CPU temperature"} > bool ${CPU_TEMP_CRIT}),
+              "node", "$1", "instance", "^(.*):.*$"
+            )
+          )
+
+      # ======================= Aggregation =======================
+
+      # Node max status (0=OK, 1=WARN, 2=CRIT)
+      - record: node:status
+        expr: |
+          max by (node) (
+            {__name__=~"node:coolant_leak|node:coolant_level|node:stability|node:coolant_temp|node:air_temp|node:air_hum|node:ai_processor_temp|node:ai_processor_power|node:cpu_temp"}
+          )
+
+      # Split views (clean 0/1 with no -0)
+      - record: node:status:crit
+        expr: (node:status == bool 2)
+
+      - record: node:status:warn
+        expr: (node:status == bool 1)
+
+      - record: node:status:normal
+        expr: (node:status == bool 0)
