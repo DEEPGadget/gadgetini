@@ -2317,28 +2317,6 @@
         "regex": "",
         "skipUrlSync": false,
         "type": "datasource"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "RX9070XT",
-          "value": "RX9070XT"
-        },
-        "description": "",
-        "hide": 2,
-        "includeAll": false,
-        "multi": false,
-        "name": "gpu",
-        "options": [
-          {
-            "selected": true,
-            "text": "RX9070XT",
-            "value": "RX9070XT"
-          }
-        ],
-        "query": "RX9070XT",
-        "skipUrlSync": false,
-        "type": "custom"
       }
     ]
   },
@@ -2350,6 +2328,6 @@
   "timezone": "browser",
   "title": "gadgetini",
   "uid": "ee4lkyna6rxfkd",
-  "version": 24,
+  "version": 7,
   "weekStart": ""
 }
