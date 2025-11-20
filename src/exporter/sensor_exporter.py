@@ -2,52 +2,73 @@
 # -*- coding:utf-8 -*-
 import sys
 sys.path.append('/home/gadgetini/High-Precision-AD-DA-Board-Code/RaspberryPI/ADS1256/python3')
-import math
-import numpy as np
 import time
 from prometheus_client import start_http_server, CollectorRegistry
 from prometheus_client.core import GaugeMetricFamily
-import random
-import time
-import requests
-import subprocess
 import redis
+
+SERVER_NAME = "dg5W"
 client = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-class DLC_sensor_Collector(object):
+def get_redis_or_default(key, default=0.0):
+    value = client.get(key)
+    if value is None:
+        return default
+    try:
+        decoded = value.decode('utf-8').strip()
+        if decoded == '':
+            return default
+        return float(decoded)
+    except:
+        return default
 
+def discover_gpu_indices():
+    indices = set()
+    patterns = ["9070XT_asic_temp_*", "9070XT_pwr_*", "9070XT_mem_temp_*"]
+    for pattern in patterns:
+        for key in client.keys(pattern):
+            try:
+                key_str = key.decode("utf-8")
+                parts = key_str.rsplit("_", 1)
+                if len(parts) == 2 and parts[1].isdigit():
+                    indices.add(int(parts[1]))
+            except:
+                continue
+    return sorted(indices) or [0]
+
+class DLC_sensor_Collector(object):
     def collect(self):
-        gauge_metric = GaugeMetricFamily("DLC_sensors_gauge", "deepgadget DLC sensors telemetry", labels=['server_name','metric','description'])
-        #7 = leak detection leak = < 4.2
-        print(int(client.get("coolant_level")))
-        gauge_metric.add_metric(["dg-n300-4","LEAK detection","if leak: value < 4.1"], int(client.get("coolant_leak")))
-        #6 = water level LOW > 1
-        gauge_metric.add_metric(["dg-n300-4","Coolant level", "if empty: value > 1"], int(client.get("coolant_level")))
-        #4 = water temp 34.3 = 1.386 35 = 1.360 35.6 = 1.346 37.6 = 1.282 35.7 = 1.348
-        gauge_metric.add_metric(["dg-n300-4","Coolant temperature", "degree celcious"], float(client.get("coolant_temp")))
-        gauge_metric.add_metric(["dg-n300-4","Air temperature", "degree celcious"], float(client.get("air_temp")))
-        gauge_metric.add_metric(["dg-n300-4","Air humidity", "%"], float(client.get("air_humit")))
-        gauge_metric.add_metric(["dg-n300-4","Chassis stability", "1 is stable, 0 is unstable, may server in oscillatting"], int(client.get("chassis_stabil")))
+        gauge_metric = GaugeMetricFamily(
+            "DLC_sensors_gauge",
+            "deepgadget DLC sensors telemetry",
+            labels=['server_name', 'metric', 'description']
+        )
+
+        gauge_metric.add_metric([SERVER_NAME, "LEAK detection", "if leak: value = 1"], get_redis_or_default("coolant_leak"))
+        gauge_metric.add_metric([SERVER_NAME, "Coolant level", "if full: value = 1"], get_redis_or_default("coolant_level"))
+        gauge_metric.add_metric([SERVER_NAME, "Coolant temperature", "degree celcious"], get_redis_or_default("coolant_temp"))
+        gauge_metric.add_metric([SERVER_NAME, "Air temperature", "degree celcious"], get_redis_or_default("air_temp"))
+        gauge_metric.add_metric([SERVER_NAME, "Air humidity", "%"], get_redis_or_default("air_humit"))
+        gauge_metric.add_metric([SERVER_NAME, "Chassis stability", "1 is stable, 0 is unstable, may server in oscillatting"], get_redis_or_default("chassis_stabil"))
+
+        gpu_indices = discover_gpu_indices()
+
+        for idx in gpu_indices:
+            gauge_metric.add_metric([SERVER_NAME, f"RX9070XT_{idx} asic temperature", "degree celcious"], get_redis_or_default(f"9070XT_asic_temp_{idx}"))
+            gauge_metric.add_metric([SERVER_NAME, f"RX9070XT_{idx} power usage", "W"], get_redis_or_default(f"9070XT_pwr_{idx}"))
+            gauge_metric.add_metric([SERVER_NAME, f"RX9070XT_{idx} memory temperature", "degree celcious"], get_redis_or_default(f"9070XT_mem_temp_{idx}"))
+
+        gauge_metric.add_metric([SERVER_NAME, "CPU temperature", "degree celcious"], get_redis_or_default("cpu_temp_0"))
+        gauge_metric.add_metric([SERVER_NAME, "CPU Usage", "%"], get_redis_or_default("cpu_usage"))
+        gauge_metric.add_metric([SERVER_NAME, "Memory_total", "GB"], get_redis_or_default("mem_total"))
+        gauge_metric.add_metric([SERVER_NAME, "Memory_usage", "GB"], get_redis_or_default("mem_usage"))
+        gauge_metric.add_metric([SERVER_NAME, "Memory_available", "GB"], get_redis_or_default("mem_available"))
+
         yield gauge_metric
 
 if __name__ == "__main__":
-    port = 9003
-    frequency = 2
-    try:
-        registry = CollectorRegistry()
-        sensor_collector = DLC_sensor_Collector()
-        registry.register(sensor_collector)
-        start_http_server(port, registry=registry)
-    except Exception as e:
-        # Error happen fairly often, DHT's are hard to read, just keep going
-        GPIO.cleanup()
-        ADC = ADS1256.ADS1256()
-        ADC.ADS1256_init()
-        # DHT11 connected to GPIO 4
-        dhtDevice = adafruit_dht.DHT11(board.D4)
-        gyroDevice = gyro.mpu6050(0x68)
-        # If sensing fail, initialize ADS1256 module.
-        pass
+    registry = CollectorRegistry()
+    registry.register(DLC_sensor_Collector())
+    start_http_server(9003, registry=registry)
     while True:
-        #print("DLC sensor telemetry initiate..")
-        time.sleep(frequency)
+        time.sleep(1)
