@@ -61,6 +61,19 @@ def get_cpu_usage_percent(interval=0.5):
     usage = (1 - delta_idle / delta_total) * 100
     return round(usage, 1)
 
+def get_nvidia_gpu_telemetry():
+    result = subprocess.Popen(["nvidia-smi", "--query-gpu=name,temperature.gpu,power.draw,power.limit,memory.used,memory.total","--format=csv,noheader,nounits"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    output, errors = result.communicate() # results generate 1 single string
+    gpus = output.split("\n")# split single gpu info by \n, 
+    gpus.pop()# and remove useless blank at last.
+    gpus_info = []
+    for i in gpus: gpus_info.append(i.split(", "))
+    return gpus_info # 2-dim array
+
+#print(get_nvidia_gpu_telemetry())
+#exit()
+
+
 def get_amd_gpu_telemetry(sensors):
     chipsinfo = []
     asic_temp_list = []
@@ -99,71 +112,97 @@ def get_TT_telemetry(sensors):
     chipsinfo = [temp_list, pwr_list]
     return chipsinfo
 
-def get_CPU_telemetry(sensors):
+def parse_cpu_telemetry(sensors_data):
     cpusinfo = []
     temp_list = []
-    pattern = r"k10temp-pci-[a-f0-9]"
-    output, errors = sensors.communicate()
-    sensors_data = json.loads(output)
+    package_temp_list = []
+    pattern = r"(k10temp-pci-[a-f0-9]+|coretemp-isa-[0-9]+)"
 
     for key in sensors_data.keys():
         cpukey_match = re.search(pattern, key)
         if cpukey_match:
             cpu_metric = sensors_data[key]
             cpusinfo.append(cpu_metric)
-    for cpu_id, cpu in enumerate(cpusinfo):
-        if cpu['Tctl']['temp1_input'] > 50:
-            temp_list.append(round(cpu['Tctl']['temp1_input']-25, 1))
-        else:
-            temp_list.append(round(cpu['Tctl']['temp1_input'], 1))
-    ##print("cpusinfo", cpusinfo)
-    cpusinfo = [temp_list]
-    ##print("cpusinfo", cpusinfo)
+    for cpu in cpusinfo:
+        tctl = cpu.get('Tctl', {})
+        if 'temp1_input' in tctl:
+            if tctl['temp1_input'] > 50:
+                temp_list.append(round(tctl['temp1_input'] - 25, 1))
+            else:
+                temp_list.append(round(tctl['temp1_input'], 1))
+        for metric_name, metric_value in cpu.items():
+            if re.search(r"Package id \d+", metric_name) and isinstance(metric_value, dict):
+                pkg_temp = metric_value.get('temp1_input')
+                if pkg_temp is not None:
+                    package_temp_list.append(round(pkg_temp, 1))
+    #print("cpusinfo", cpusinfo)
+    cpusinfo = [temp_list, package_temp_list]
+    #print("cpusinfo", cpusinfo)
+    print("cpusinfo", package_temp_list)
     return cpusinfo
+
+def get_CPU_telemetry(sensors=None, sensors_output=None):
+    if sensors_output is not None:
+        if isinstance(sensors_output, str):
+            sensors_data = json.loads(sensors_output)
+        elif isinstance(sensors_output, dict):
+            sensors_data = sensors_output
+        else:
+            raise TypeError("sensors_output must be a JSON string or dict")
+    else:
+        if sensors is None:
+            raise ValueError("sensors process handle is required when sensors_output is not provided")
+        output, errors = sensors.communicate()
+        sensors_data = json.loads(output)
+
+    return parse_cpu_telemetry(sensors_data)
 
 
 if __name__ == "__main__":
-#    init = 0
     while True:
         sensors  = get_sensors_output()
-        curr_chipsinfo = get_amd_gpu_telemetry(sensors)
+        #curr_chipsinfo = get_amd_gpu_telemetry(sensors)
+        curr_chipsinfo = get_nvidia_gpu_telemetry() 
         curr_cpusinfo = get_CPU_telemetry(sensors)
         curr_meminfo = get_memory_usage_mb()
-        ##print(curr_cpusinfo)
 
         # lpush for multi socket cpu, multi gpu 
-        for idx, cpu in enumerate(curr_cpusinfo[0]):
-            #print("cpu_temp_" + str(idx), str(cpu))
+        for idx, cpu in enumerate(curr_cpusinfo[1]):
+            print("cpu_temp_" + str(idx), str(cpu))
             client.set("cpu_temp_" + str(idx), str(cpu))
 
-        for idx, temp in enumerate(curr_chipsinfo[0]):
-            #print("9070_temp_"+ str(idx), temp)
-            client.set("9070XT_asic_temp_" + str(idx), str(temp))
+        # name
+        for idx, gpu in enumerate(curr_chipsinfo):
+            print(str(gpu[1]))
+            client.set("gpu_name_" + str(idx), str(gpu[0]))
+        
+        # temperature
+        for idx, gpu in enumerate(curr_chipsinfo):
+            print(str(gpu[1]))
+            client.set("gpu_temp_" + str(idx), str(gpu[1]))
 
-        for idx, temp in enumerate(curr_chipsinfo[1]):
-            #print("9070_mem_temp_" + str(idx), temp)
-            client.set("9070XT_mem_temp_" + str(idx), str(temp))
+        # current_pwr_usage
+        for idx, gpu in enumerate(curr_chipsinfo):
+            print(str(gpu[2]))
+            client.set("gpu_curr_pwr_" + str(idx), str(gpu[2]))
 
-        for idx, pwr in enumerate(curr_chipsinfo[2]):
-            #print("9070_pwr_" + str(idx), pwr)
-            client.set("9070XT_pwr_" + str(idx), str(temp))
+        # max_pwr
+        for idx, gpu in enumerate(curr_chipsinfo):
+            print(str(gpu[3]))
+            client.set("gpu_max_pwr_" + str(idx), str(gpu[3]))
+
+        # current_memory_usage
+        for idx, gpu in enumerate(curr_chipsinfo):
+            print(str(gpu[4]))
+            client.set("gpu_curr_mem_" + str(idx), str(gpu[4]))
+
+        # max_memory
+        for idx, gpu in enumerate(curr_chipsinfo):
+            print(str(gpu[5]))
+            client.set("gpu_curr_mem_" + str(idx), str(gpu[5]))
 
         client.set("mem_total", curr_meminfo[0])
         client.set("mem_usage", curr_meminfo[1])
         client.set("mem_available", curr_meminfo[2])
         client.set("cpu_usage", get_cpu_usage_percent())
-           
-#        if init == 1:
-#            client.ltrim("cpu_temp",len(curr_cpusinfo), -1)
-#            client.ltrim("9070XT_asic_temp",len(curr_chipsinfo[0]), -1)
-#            client.ltrim("9070XT_mem_temp",len(curr_chipsinfo[1]), -1)
-#            client.ltrim("9070XT_pwr",len(curr_chipsinfo[2]), -1)
-            #client.ltrim("mem_total", 1, -1)
-            #client.ltrim("mem_usage", 1, -1)
-            #client.ltrim("mem_available", 1, -1)
 
-#       init = 1
-        ##print(client.get("9070XT_asic_temp_0"))
-        ##print("current mem_usage_redis_query")
-        ###print(client.lrange("mem_usage",0,-1))
-        ##print(client.get("mem_usage"))
