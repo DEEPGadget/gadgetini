@@ -173,33 +173,27 @@ if __name__ == "__main__":
 
         # name
         for idx, gpu in enumerate(curr_chipsinfo):
-            print(str(gpu[1]))
             client.set("gpu_name_" + str(idx), str(gpu[0]))
         
         # temperature
         for idx, gpu in enumerate(curr_chipsinfo):
-            print(str(gpu[1]))
             client.set("gpu_temp_" + str(idx), str(gpu[1]))
 
         # current_pwr_usage
         for idx, gpu in enumerate(curr_chipsinfo):
-            print(str(gpu[2]))
             client.set("gpu_curr_pwr_" + str(idx), str(gpu[2]))
 
         # max_pwr
         for idx, gpu in enumerate(curr_chipsinfo):
-            print(str(gpu[3]))
             client.set("gpu_max_pwr_" + str(idx), str(gpu[3]))
 
         # current_memory_usage
         for idx, gpu in enumerate(curr_chipsinfo):
-            print(str(gpu[4]))
             client.set("gpu_curr_mem_" + str(idx), str(gpu[4]))
 
         # max_memory
         for idx, gpu in enumerate(curr_chipsinfo):
-            print(str(gpu[5]))
-            client.set("gpu_curr_mem_" + str(idx), str(gpu[5]))
+            client.set("gpu_max_mem_" + str(idx), str(gpu[5]))
 
         client.set("mem_total", curr_meminfo[0])
         client.set("mem_usage", curr_meminfo[1])
