@@ -1,0 +1,13 @@
+[Unit]
+Description=host hardware metric crawling daemon for gadgeitni
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3.12 /opt/data_crawler_host.py
+Restart=always
+RestartSec=5
+User=admin
+[Install]
+WantedBy=default.target
+

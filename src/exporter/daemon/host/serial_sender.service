@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /opt/serial_sender_v2.py
+ExecStart=/usr/bin/python3.12 /opt/serial_sender_v2.py
 Restart=always
-User=cauai
+User=admin
 [Install]
 WantedBy=default.target

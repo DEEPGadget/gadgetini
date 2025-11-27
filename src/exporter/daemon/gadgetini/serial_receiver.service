@@ -1,9 +1,11 @@
 [Unit]
 Description=dg5W DLC system sensor data serial receiver from host.
-After=data_crawler.service
+After=dev-ttyAMA0.device data_crawler.service
+Requires=dev-ttyAMA0.device
 [Service]
 Type=simple
-ExecStart=python3 /opt/serial_receiver.py
+ExecStartPre=/bin/chmod 777 /dev/ttyAMA0
+ExecStart=python3 /opt/serial_receiver_v2.py
 Restart=always
 RestartSec=5
 User=gadgetini
