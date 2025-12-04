@@ -3,21 +3,17 @@
 # This version overwrites cmdline.txt and config.txt with predefined content.
 
 # --- 1. Variable Configuration ---
-HOST_MAC="9a:1d:1d:0b:35:6b"  # MAC address passed to the host
-GADGET_MAC="fe:f1:1a:d3:6e:b6"  # MAC address for gadgetini's usb0 interface
-NM_CON_NAME="gadgetini"
-STATIC_IP="192.168.4.1/24"
-SERVICE_FILE="/etc/systemd/system/usb-gadget-${NM_CON_NAME}.service"
-
-echo "### 1. Starting Script: USB Gadget Configuration (${NM_CON_NAME}) ###"
+# MAC address for gadgetini's usb0 interface (g_ether.dev_addr). Must be unique and fixed.
+GADGET_MAC="fe:f1:1a:d3:6e:b6"
+NM_CON_NAME="usb-gadget-gadgetini"
+STATIC_IP="10.12.194.1/28"
+SERVICE_FILE="/etc/systemd/system/usb-gadget-up.service"
 
 # --- 2. Overwrite /boot/firmware/cmdline.txt ---
-# WARNING: This overwrites the entire file content with the provided configuration.
 CMDLINE_FILE="/boot/firmware/cmdline.txt"
-CMDLINE_CONTENT="overlayroot=tmpfs console=serial0,9600 root=PARTUUID=1e7ee8d2-02 rootfstype=ext4 fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles cfg80211.ieee80211_regdom=GB modules-load=dwc2,g_ether g_ether.host_addr=${HOST_MAC} g_ether.dev_addr=${GADGET_MAC}"
+CMDLINE_CONTENT="overlayroot=tmpfs console=serial0,9600 root=PARTUUID=1e7ee8d2-02 rootfstype=ext4 fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles cfg80211.ieee80211_regdom=GB modules-load=dwc2,g_ether g_ether.dev_addr=${GADGET_MAC}"
 
-echo "### 2. Overwriting ${CMDLINE_FILE} with fixed MAC addresses ###"
-# Using tee with sudo to overwrite the file content
+echo "# Overwrite ${CMDLINE_FILE} #"
 sudo tee "${CMDLINE_FILE}" > /dev/null <<EOF
 ${CMDLINE_CONTENT}
 EOF
@@ -25,11 +21,7 @@ echo "=> ${CMDLINE_FILE} overwritten successfully."
 
 
 # --- 3. Overwrite /boot/firmware/config.txt ---
-# WARNING: This overwrites the entire file content with the provided configuration.
 CONFIG_FILE="/boot/firmware/config.txt"
-
-echo "### 3. Overwriting ${CONFIG_FILE} for Gadget/System settings ###"
-# Using tee with sudo to overwrite the file content
 sudo tee "${CONFIG_FILE}" > /dev/null <<EOF
 # For more options and information see
 # http://rptl.io/configtxt
@@ -87,26 +79,27 @@ enable_uart=1
 dtoverlay=disable-bt
 dtoverlay=dwc2
 EOF
-echo "=> ${CONFIG_FILE} overwritten successfully."
+echo " ${CONFIG_FILE} overwritten successfully."
 
 
 # --- 4. NetworkManager Connection Profile Creation/Reset ---
-echo "### 4. Creating/Resetting NetworkManager Connection Profile ###"
 
-# Delete existing profile (for idempotent execution)
+# Delete existing profile for Idempotence 
 sudo nmcli connection delete "${NM_CON_NAME}" 2>/dev/null
 
 # Create new profile: static IP assignment for usb0 interface, set to autoconnect
 sudo nmcli connection add type ethernet ifname usb0 con-name "${NM_CON_NAME}" \
     ipv4.method manual ipv4.addresses "${STATIC_IP}" connection.autoconnect yes
+# Set a high metric (e.g., 700) to ensure wlan0 (metric 600) is prioritized for internet.
+sudo nmcli connection modify "${NM_CON_NAME}" ipv4.route-metric 700
 
-echo "=> NM Profile '${NM_CON_NAME}' created successfully."
+echo " NM Profile '${NM_CON_NAME}' created successfully"
 
 
 # --- 5. systemd Service File Creation (To ensure UP state on boot) ---
-echo "### 5. Creating and Registering systemd Service File ###"
+# Service name is fixed for simplicity
+SERVICE_FILE="/etc/systemd/system/usb-gadget-up.service" 
 
-# Create the service file content
 sudo tee "${SERVICE_FILE}" > /dev/null <<EOF
 [Unit]
 Description=Activate Gadget USB Network Connection
@@ -120,12 +113,8 @@ RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 EOF
-
-echo "=> Service file '${SERVICE_FILE}' created successfully."
-
-# --- 6. systemd Service Registration and Activation ---
 sudo systemctl daemon-reload
-sudo systemctl enable "usb-gadget-${NM_CON_NAME}.service"
-echo "=> Service registration and enabling complete. Will run automatically on next reboot."
+sudo systemctl enable "usb-gadget-up.service"
+echo "usb gadget service registration and enabling complete."
 
 echo "### Script Complete. Requires reboot of gadgetini. ###"
