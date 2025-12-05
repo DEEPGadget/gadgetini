@@ -11,7 +11,7 @@ SERVICE_FILE="/etc/systemd/system/usb-gadget-up.service"
 
 # --- Overwrite cmdline.txt ---
 sudo sed -i 's/$/ modules-load=dwc2,g_ether g_ether.dev_addr=fe:f1:1a:d3:6e:b6/' /boot/firmware/cmdline.txt
-echo "1. ${CMLINE_FILE} modified"
+echo "1. ${CMDLINE_FILE} modified"
 
 # --- Overwrite config.txt ---
 sudo tee "${CONFIG_FILE}" > /dev/null <<EOF
