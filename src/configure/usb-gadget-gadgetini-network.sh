@@ -10,7 +10,7 @@ sudo nmcli connection delete "${NM_CON_NAME}" 2>/dev/null || true
 sudo nmcli connection add type ethernet ifname usb0 con-name "${NM_CON_NAME}" \
     ipv4.method manual ipv4.addresses "${STATIC_IP}" connection.autoconnect yes
 sudo nmcli connection modify "${NM_CON_NAME}" ipv4.route-metric 700
-echo "3. NM profile created (${NM_CON_NAME})"
+echo "1. NM profile created (${NM_CON_NAME})"
 
 # --- Systemd service creation ---
 sudo tee "${SERVICE_FILE}" > /dev/null <<EOF
@@ -29,5 +29,5 @@ EOF
 
 sudo systemctl daemon-reload
 sudo systemctl enable "usb-gadget-up.service"
-echo "systemd service enabled (usb-gadget-up.service)"
+echo "2. systemd service enabled (usb-gadget-up.service)"
 
