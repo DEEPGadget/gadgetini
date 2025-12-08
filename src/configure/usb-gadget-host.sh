@@ -4,10 +4,7 @@
 NM_CON_NAME="usb-gadget-host"
 STATIC_IP="10.12.194.2/28"
 STATIC_ROUTE="10.12.194.0/28"
-
-# --- Detect USB ethernet interface (enx*) ---
-IFNAME=$(nmcli -t -f DEVICE,TYPE dev status \
-  | awk -F: '$2=="ethernet" && $1 ~ /^enx/ {print $1; exit}')
+IFNAME="enxfef11ad36eb7"
 
 # --- NetworkManager connection (reset & create) ---
 sudo nmcli connection delete "${NM_CON_NAME}" 2>/dev/null || true
