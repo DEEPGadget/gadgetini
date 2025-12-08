@@ -11,7 +11,7 @@ sudo nmcli connection add type ethernet ifname usb0 con-name "${NM_CON_NAME}" \
     ipv4.method manual ipv4.addresses "${STATIC_IP}" connection.autoconnect yes
 sudo nmcli connection modify "${NM_CON_NAME}" ipv4.route-metric 700
 sudo nmcli connection up ${NM_CON_NAME} ifname usb0
-echo "1. NM profile created (${NM_CON_NAME})"
+echo "1. NM profile created (${NM_CON_NAME}) & connection activated "
 
 # --- Systemd service creation ---
 sudo tee "${SERVICE_FILE}" > /dev/null <<EOF

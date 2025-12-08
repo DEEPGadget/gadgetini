@@ -14,14 +14,8 @@ sudo nmcli connection add type ethernet \
   ipv4.method manual \
   ipv4.addresses "${STATIC_IP}" \
   connection.autoconnect yes
-echo "1. NM profile created (${NM_CON_NAME})"
-
-# --- Apply route and metric ---
 sudo nmcli connection modify "${NM_CON_NAME}" ipv4.routes "${STATIC_ROUTE}"
 sudo nmcli connection modify "${NM_CON_NAME}" ipv4.route-metric 700
-echo "2. Route and metric applied"
-
-# --- Activate connection ---
 sudo nmcli connection up "${NM_CON_NAME}"
-echo "3. Connection activated (${NM_CON_NAME})"
+echo "1. NM profile created (${NM_CON_NAME}) & connection activated "
 
