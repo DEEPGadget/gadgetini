@@ -55,32 +55,68 @@ def get_air_humit():
 # Coolant temperature fomula generate by several measured data using linear regression. 
 # x: Raw sensing data(ADC_Value, y: Degree celcisous)
 def get_coolant_temp():
-    sample_buf = []
-    raw_val = 0
-    celcious = 32.4
-    try:
-        for i in range(5):
-            ADC_Value = ADC.ADS1256_GetAll()
-            sample_buf.append(float(ADC_Value[4]*5.0/0x7fffff))
-        np.abs(sample_buf)
-        sample_buf.sort()
-        if sample_buf[0] - sample_buf[-1] > 0.0001:
-            raw_val = sample_buf[0]
-        else:
-            raw_val = sample_buf[1]
-        coeff_a = 50.393
-        coeff_b = -1.177
-        raw = 0
-        celcious = 0
-        celcious = coeff_a * raw_val ** coeff_b
-        celcious = round(celcious, 1)
-    except Exception as e:
-        celcious = 32.4
-        exit()
-    finally:
-        return celcious
-        exit()
+    """
+    Assumption (your request): ADS1256 VREF=5.0V, but thermistor divider VIN=3.3V.
 
+    Divider wiring (same as 그림1):
+      VIN_DIV(3.3V) --- R_FIXED(10k) --- Vout(AD4) --- NTC(10k) --- GND
+
+    We must:
+      1) Convert RAW -> Vout using ADC reference (VREF)
+      2) Convert Vout -> Rntc using divider supply (VIN_DIV)
+      3) Convert Rntc -> Celsius using Beta (or S-H)
+    """
+    import math
+    import numpy as np
+
+    # --- voltages (separated!) ---
+    VREF = 5.0        # ADC reference used for RAW->V conversion (ASSUMED)
+    VIN_DIV = 3.3     # actual divider supply measured at 3.3V pin (CONFIRMED by you)
+
+    # --- divider / thermistor parameters ---
+    R_FIXED = 10_000.0
+    R25 = 10_000.0
+    BETA = 3950.0     # TODO: replace with Barrow NTC B-value if known
+    T0_K = 25.0 + 273.15
+
+    DEFAULT_C = 32.4
+
+    try:
+        # 1) read several samples
+        vs = []
+        for _ in range(7):
+            ADC_Value = ADC.ADS1256_GetAll()
+            raw = float(ADC_Value[4])
+
+            # RAW -> Vout using ADC's VREF (ASSUMED 5V)
+            vout = raw * VREF / 0x7fffff
+            vs.append(vout)
+
+        # 2) robust filtering: median
+        vout = float(np.median(vs))
+
+        # 3) clamp to physical range of divider (0..VIN_DIV)
+        # because divider is powered by 3.3V even if VREF is 5V
+        if vout <= 0.0:
+            return DEFAULT_C
+        if vout >= VIN_DIV:
+            # if you see this often, RAW->Vout scaling or channel wiring is likely wrong
+            return DEFAULT_C
+
+        # 4) Vout -> Rntc (divider math uses VIN_DIV)
+        r_ntc = R_FIXED * vout / (VIN_DIV - vout)
+        if r_ntc <= 0:
+            return DEFAULT_C
+
+        # 5) Rntc -> Celsius (Beta)
+        ln = math.log(r_ntc / R25)
+        temp_k = 1.0 / ((ln / BETA) + (1.0 / T0_K))
+        celsius = temp_k - 273.15
+
+        return round(celsius, 1)
+
+    except Exception:
+        return DEFAULT_C
 
 
 # is_stable 1 is stable, 0 is unstable.
