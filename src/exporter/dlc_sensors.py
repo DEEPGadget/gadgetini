@@ -55,6 +55,7 @@ def get_air_humit():
 # Coolant temperature fomula generate by several measured data using linear regression. 
 # x: Raw sensing data(ADC_Value, y: Degree celcisous)
 def get_coolant_temp():
+    VREF = 5.0
     VIN_DIV = 3.3     # Based on 3.3V circuit in Image 2
     R_FIXED = 10000.0 
     DEFAULT_C = 0
