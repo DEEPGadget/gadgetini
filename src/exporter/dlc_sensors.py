@@ -55,33 +55,46 @@ def get_air_humit():
 # Coolant temperature fomula generate by several measured data using linear regression. 
 # x: Raw sensing data(ADC_Value, y: Degree celcisous)
 def get_coolant_temp():
-    sample_buf = []
-    raw_val = 0
-    celcious = 32.4
+    import math
+    import numpy as np
+
+    VREF = 5.0        
+    VIN_DIV = 3.3     # Based on 3.3V circuit in Image 2
+    R_FIXED = 10000.0 
+    DEFAULT_C = 0
+
+    # Precise Coefficients derived from Image 2 R-T Table
+    SH_A = 0.0010957
+    SH_B = 0.0002395
+    SH_C = 0.000000073454
+
     try:
-        for i in range(5):
+        vs = []
+        for _ in range(7):
             ADC_Value = ADC.ADS1256_GetAll()
-            sample_buf.append(float(ADC_Value[4]*5.0/0x7fffff))
-        np.abs(sample_buf)
-        sample_buf.sort()
-        if sample_buf[0] - sample_buf[-1] > 0.0001:
-            raw_val = sample_buf[0]
-        else:
-            raw_val = sample_buf[1]
-        coeff_a = 50.393
-        coeff_b = -1.177
-        raw = 0
-        celcious = 0
-        celcious = coeff_a * raw_val ** coeff_b
-        celcious = round(celcious, 1)
-    except Exception as e:
-        celcious = 32.4
-        exit()
-    finally:
-        return celcious
-        exit()
+            raw = float(ADC_Value[4]) 
+            vout = raw * VREF / 0x7fffff
+            vs.append(vout)
 
+        vout = float(np.median(vs))
 
+        if vout <= 0.001 or vout >= (VIN_DIV - 0.001):
+            return DEFAULT_C
+
+        # Calculate R_ntc using the 3.3V divider source
+        r_ntc = (vout * R_FIXED) / (VIN_DIV - vout)
+
+        # Steinhart-Hart Equation
+        ln_r = math.log(r_ntc)
+        # 1/T = A + B*ln(R) + C*(ln(R)^3)
+        inv_t = SH_A + (SH_B * ln_r) + (SH_C * (ln_r ** 3))
+        temp_k = 1.0 / inv_t
+        celsius = temp_k - 273.15
+
+        return round(celsius, 1)
+
+    except Exception:
+        return DEFAULT_C
 
 # is_stable 1 is stable, 0 is unstable.
 def get_chassis_stabil():
