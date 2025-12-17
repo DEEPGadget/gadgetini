@@ -59,35 +59,30 @@ def get_coolant_temp():
     import numpy as np
 
     # Hardware Configuration
-    VREF = 5.0        # ADC full-scale reference
-    VIN_DIV = 3.3     # Voltage divider source (Image 1)
-    R_FIXED = 10000.0 # 10k Ohm fixed resistor
+    VREF = 5.0        
+    VIN_DIV = 3.3     
+    R_FIXED = 10000.0 
     DEFAULT_C = 0
 
-    # Steinhart-Hart Coefficients (Derived from Image 2 Table)
+    # Steinhart-Hart Coefficients 
     SH_A = 0.0010957
     SH_B = 0.0002395
     SH_C = 0.000000073454
 
     try:
-        # Step 1: Data Acquisition with Median Filtering
         vs = []
         for _ in range(7):
             ADC_Value = ADC.ADS1256_GetAll()
             raw = float(ADC_Value[4]) 
             vs.append(raw * VREF / 0x7fffff)
 
-        # Better approach: Use median to ignore electrical noise spikes
         vout = float(np.median(vs))
 
-        # Step 2: Safety Check for Hardware Faults (Open/Short circuit)
         if vout <= 0.001 or vout >= (VIN_DIV - 0.001):
             return DEFAULT_C
 
-        # Step 3: Voltage to Resistance calculation (3.3V divider)
         r_ntc = (vout * R_FIXED) / (VIN_DIV - vout)
 
-        # Step 4: Resistance to Celsius (Steinhart-Hart)
         ln_r = math.log(r_ntc)
         temp_k = 1.0 / (SH_A + (SH_B * ln_r) + (SH_C * (ln_r**3)))
         celsius = temp_k - 273.15
