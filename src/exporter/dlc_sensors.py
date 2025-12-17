@@ -55,32 +55,47 @@ def get_air_humit():
 # Coolant temperature fomula generate by several measured data using linear regression. 
 # x: Raw sensing data(ADC_Value, y: Degree celcisous)
 def get_coolant_temp():
-    sample_buf = []
-    raw_val = 0
-    celcious = 32.4
-    try:
-        for i in range(5):
-            ADC_Value = ADC.ADS1256_GetAll()
-            sample_buf.append(float(ADC_Value[4]*5.0/0x7fffff))
-        np.abs(sample_buf)
-        sample_buf.sort()
-        if sample_buf[0] - sample_buf[-1] > 0.0001:
-            raw_val = sample_buf[0]
-        else:
-            raw_val = sample_buf[1]
-        coeff_a = 50.393
-        coeff_b = -1.177
-        raw = 0
-        celcious = 0
-        celcious = coeff_a * raw_val ** coeff_b
-        celcious = round(celcious, 1)
-    except Exception as e:
-        celcious = 32.4
-        exit()
-    finally:
-        return celcious
-        exit()
+    import math
+    import numpy as np
 
+    # Hardware Configuration
+    VREF = 5.0        # ADC full-scale reference
+    VIN_DIV = 3.3     # Voltage divider source (Image 1)
+    R_FIXED = 10000.0 # 10k Ohm fixed resistor
+    DEFAULT_C = 0
+
+    # Steinhart-Hart Coefficients (Derived from Image 2 Table)
+    SH_A = 0.0010957
+    SH_B = 0.0002395
+    SH_C = 0.000000073454
+
+    try:
+        # Step 1: Data Acquisition with Median Filtering
+        vs = []
+        for _ in range(7):
+            ADC_Value = ADC.ADS1256_GetAll()
+            raw = float(ADC_Value[4]) 
+            vs.append(raw * VREF / 0x7fffff)
+
+        # Better approach: Use median to ignore electrical noise spikes
+        vout = float(np.median(vs))
+
+        # Step 2: Safety Check for Hardware Faults (Open/Short circuit)
+        if vout <= 0.001 or vout >= (VIN_DIV - 0.001):
+            return DEFAULT_C
+
+        # Step 3: Voltage to Resistance calculation (3.3V divider)
+        r_ntc = (vout * R_FIXED) / (VIN_DIV - vout)
+
+        # Step 4: Resistance to Celsius (Steinhart-Hart)
+        ln_r = math.log(r_ntc)
+        temp_k = 1.0 / (SH_A + (SH_B * ln_r) + (SH_C * (ln_r**3)))
+        celsius = temp_k - 273.15
+
+        return round(celsius, 1)
+
+    except Exception:
+        return DEFAULT_C
 
 
 # is_stable 1 is stable, 0 is unstable.
