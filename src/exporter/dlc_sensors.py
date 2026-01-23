@@ -26,11 +26,9 @@ boot_stabil = gyroDevice.get_gyro_data()
 
 # DHT11 connected to GPIO 4
 def get_air_temp():
-    curr_temp = 26.5
+    curr_temp = 0
     try:
-        bias = random.random()
-        bias_trim = round(bias, 1)
-        curr_temp = dhtDevice.temperature + bias_trim
+        curr_temp = dhtDevice.temperature 
     except Exception as e:
         print("dht sensing error")
         # Error happen fairly often, DHT's are hard to read, just keep going 
@@ -39,11 +37,9 @@ def get_air_temp():
         return curr_temp
         
 def get_air_humit():
-    curr_humit = 25.2
+    curr_humit = 0
     try:
-        bias = random.random()
-        bias_trim = round(bias, 1)
-        curr_humit = dhtDevice.humidity + bias_trim
+        curr_humit = dhtDevice.humidity 
     except Exception as e:
         print(e)
         print("dht sensing error")
