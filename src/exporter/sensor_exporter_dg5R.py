@@ -12,7 +12,33 @@ import time
 import requests
 import subprocess
 import redis
+
 client = redis.StrictRedis(host='localhost', port=6379, db=0)
+
+
+def _get_int(key, default=0):
+    v = client.get(key)
+    if v is None:
+        return int(default)
+    try:
+        return int(v)
+    except Exception:
+        try:
+            return int(float(v))
+        except Exception:
+            return int(default)
+
+def _get_float(key, default=0.0):
+    v = client.get(key)
+    if v is None:
+        return float(default)
+    try:
+        return float(v)
+    except Exception:
+        try:
+            return float(v.decode("utf-8"))
+        except Exception:
+            return float(default)
 
 class DLC_sensor_Collector(object):
 
@@ -35,34 +61,34 @@ class DLC_sensor_Collector(object):
         for keys in client.keys("gpu_temp_*"):
             number = str(keys).split("_")[2]
             print(number)
-            gauge_metric.add_metric(["dg5W","H200NVL_" + str(number) +" asic temperature", "degree celcious"], float(client.get(keys)))
+            # gauge_metric.add_metric(["dg5W","H200NVL_" + str(number) +" asic temperature", "degree celcious"], float(client.get(keys)))
 
         for keys in client.keys("gpu_curr_pwr_*"):
             number = str(keys).split("_")[3]
             print(number)
-            gauge_metric.add_metric(["dg5W","H200NVL_" + str(number) +"current power usage", "W"], float(client.get(keys)))
+            # gauge_metric.add_metric(["dg5W","H200NVL_" + str(number) +"current power usage", "W"], float(client.get(keys)))
 
         for keys in client.keys("gpu_max_pwr_*"):
             number = str(keys).split("_")[3]
             print(number)
-            gauge_metric.add_metric(["dg5W","H200NVL_" + str(number) +" Max power limit", "W"], float(client.get(keys)))
+            # gauge_metric.add_metric(["dg5W","H200NVL_" + str(number) +" Max power limit", "W"], float(client.get(keys)))
 
         for keys in client.keys("gpu_curr_mem_*"):
             number = str(keys).split("_")[3]
             print(number)
-            gauge_metric.add_metric(["dg5W","H200NVL_" + str(number) +" current memory usage", "byte"], float(client.get(keys)))
+            # gauge_metric.add_metric(["dg5W","H200NVL_" + str(number) +" current memory usage", "byte"], float(client.get(keys)))
  
         for keys in client.keys("gpu_max_mem_*"):
             number = str(keys).split("_")[3]
             print(number)
-            gauge_metric.add_metric(["dg5W","H200NVL_" + str(number) +" memory capacity", "byte"], float(client.get(keys)))
+            # gauge_metric.add_metric(["dg5W","H200NVL_" + str(number) +" memory capacity", "byte"], float(client.get(keys)))
  
-        gauge_metric.add_metric(["dg5W","CPU0 temperature", "degree celcious"], float(client.get("cpu_temp_0")))
-        gauge_metric.add_metric(["dg5W","CPU1 temperature", "degree celcious"], float(client.get("cpu_temp_1")))
-        gauge_metric.add_metric(["dg5W","CPU Usage", "%"], float(client.get("cpu_usage")))
-        gauge_metric.add_metric(["dg5W","Memory_total","GB"], float(client.get("mem_total")))
-        gauge_metric.add_metric(["dg5W","Memory_usage","GB"], float(client.get("mem_usage")))
-        gauge_metric.add_metric(["dg5W","Memory_available","GB"], float(client.get("mem_available")))
+        # gauge_metric.add_metric(["dg5W","CPU0 temperature", "degree celcious"], float(client.get("cpu_temp_0")))
+        # gauge_metric.add_metric(["dg5W","CPU1 temperature", "degree celcious"], float(client.get("cpu_temp_1")))
+        # gauge_metric.add_metric(["dg5W","CPU Usage", "%"], float(client.get("cpu_usage")))
+        # gauge_metric.add_metric(["dg5W","Memory_total","GB"], float(client.get("mem_total")))
+        # gauge_metric.add_metric(["dg5W","Memory_usage","GB"], float(client.get("mem_usage")))
+        # gauge_metric.add_metric(["dg5W","Memory_available","GB"], float(client.get("mem_available")))
 
         yield gauge_metric
 
