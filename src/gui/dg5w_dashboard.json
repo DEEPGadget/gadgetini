@@ -28,9 +28,7 @@
         "expr": "DLC_sensors_gauge{metric=\"Coolant level\"}",
         "filter": {
           "exclude": false,
-          "ids": [
-            14
-          ]
+          "ids": [14]
         },
         "hide": true,
         "iconColor": "red",
@@ -47,9 +45,7 @@
         "expr": "DLC_sensors_gauge{metric=\"Coolant temperature\"} >= 40 and DLC_sensors_gauge{metric=\"Coolant temperature\"} <= 50",
         "filter": {
           "exclude": false,
-          "ids": [
-            14
-          ]
+          "ids": [14]
         },
         "hide": true,
         "iconColor": "yellow",
@@ -66,9 +62,7 @@
         "expr": "DLC_sensors_gauge{metric=\"Coolant temperature\"} > 50",
         "filter": {
           "exclude": false,
-          "ids": [
-            14
-          ]
+          "ids": [14]
         },
         "hide": true,
         "iconColor": "red",
@@ -85,9 +79,7 @@
         "expr": "DLC_sensors_gauge{metric=\"Air temperature\"} >= 38 and DLC_sensors_gauge{metric=\"Air temperature\"} <= 40",
         "filter": {
           "exclude": false,
-          "ids": [
-            14
-          ]
+          "ids": [14]
         },
         "hide": true,
         "iconColor": "yellow",
@@ -104,9 +96,7 @@
         "expr": "DLC_sensors_gauge{metric=\"Air temperature\"} > 40",
         "filter": {
           "exclude": false,
-          "ids": [
-            14
-          ]
+          "ids": [14]
         },
         "hide": true,
         "iconColor": "red",
@@ -123,9 +113,7 @@
         "expr": "DLC_sensors_gauge{metric=\"Air humidity\"} >= 50 and DLC_sensors_gauge{metric=\"Air humidity\"} <= 60",
         "filter": {
           "exclude": false,
-          "ids": [
-            14
-          ]
+          "ids": [14]
         },
         "hide": true,
         "iconColor": "yellow",
@@ -142,9 +130,7 @@
         "expr": "DLC_sensors_gauge{instance=\"192.168.1.60:9003\", metric=\"Chassis hunmidity\"} > 60 ",
         "filter": {
           "exclude": false,
-          "ids": [
-            14
-          ]
+          "ids": [14]
         },
         "hide": true,
         "iconColor": "red",
@@ -161,9 +147,7 @@
         "expr": "DLC_sensors_gauge{metric=\"LEAK detection\"} < 4.1",
         "filter": {
           "exclude": false,
-          "ids": [
-            14
-          ]
+          "ids": [14]
         },
         "hide": true,
         "iconColor": "red",
@@ -180,9 +164,7 @@
         "expr": "DLC_sensors_gauge{metric=\"LEAK detection\"} == 0",
         "filter": {
           "exclude": false,
-          "ids": [
-            14
-          ]
+          "ids": [14]
         },
         "hide": true,
         "iconColor": "red",
@@ -229,7 +211,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "semi-dark-green",
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -259,9 +242,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -309,7 +290,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "semi-dark-red"
+                "color": "semi-dark-red",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
@@ -321,11 +303,11 @@
               },
               {
                 "color": "semi-dark-yellow",
-                "value": 90
+                "value": 50
               },
               {
                 "color": "semi-dark-red",
-                "value": 95
+                "value": 55
               }
             ]
           },
@@ -347,9 +329,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -381,7 +361,7 @@
     },
     {
       "datasource": {
-        "name": "${datasource}",
+        "default": false,
         "type": "prometheus",
         "uid": "${datasource}"
       },
@@ -398,7 +378,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "semi-dark-red"
+                "color": "semi-dark-red",
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -436,9 +417,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -473,60 +452,6 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
       "gridPos": {
         "h": 8,
         "w": 9,
@@ -535,28 +460,25 @@
       },
       "id": 20,
       "options": {
-        "candleStyle": "candles",
-        "colorStrategy": "open-close",
-        "colors": {
-          "down": "red",
-          "up": "green"
+        "alertInstanceLabelFilter": "",
+        "alertName": "",
+        "dashboardAlerts": false,
+        "groupBy": [],
+        "groupMode": "default",
+        "maxItems": 20,
+        "sortOrder": 1,
+        "stateFilter": {
+          "error": true,
+          "firing": true,
+          "noData": false,
+          "normal": false,
+          "pending": true
         },
-        "includeAllFields": false,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "mode": "candles+volume",
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+        "viewMode": "list"
       },
       "pluginVersion": "11.2.2",
       "title": "Current Server Alert",
-      "type": "candlestick"
+      "type": "alertlist"
     },
     {
       "datasource": {
@@ -592,7 +514,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "semi-dark-red"
+                "color": "semi-dark-red",
+                "value": null
               },
               {
                 "color": "semi-dark-green",
@@ -617,9 +540,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -681,7 +602,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "semi-dark-green"
+                "color": "semi-dark-green",
+                "value": null
               },
               {
                 "color": "semi-dark-red",
@@ -706,9 +628,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -725,7 +645,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{metric=\"LEAK detection\"}",
+          "expr": "min_over_time(DLC_sensors_gauge{metric=\"LEAK detection\"}[10s])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -753,9 +673,9 @@
             {
               "options": {
                 "0": {
-                  "color": "semi-dark-red",
+                  "color": "orange",
                   "index": 0,
-                  "text": "Critical"
+                  "text": "Warning"
                 },
                 "1": {
                   "color": "semi-dark-green",
@@ -770,7 +690,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "semi-dark-red"
+                "color": "orange",
+                "value": null
               },
               {
                 "color": "semi-dark-green",
@@ -795,9 +716,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -883,11 +802,12 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 95
               }
             ]
           },
@@ -923,8 +843,8 @@
             "uid": "${datasource}"
           },
           "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "DLC_sensors_gauge{metric=\"CPU temperature\"}",
+          "editorMode": "code",
+          "expr": "DLC_sensors_gauge{\r\ndescription=\"degree celcious\",\r\nmetric=~\"CPU[0-9]+ temperature\"\r\n}\r\n",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -955,7 +875,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -988,9 +909,7 @@
         "namePlacement": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1006,12 +925,12 @@
             "uid": "${datasource}"
           },
           "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max_over_time(DLC_sensors_gauge{metric=\"CPU temperature\"}[24h])",
+          "editorMode": "code",
+          "expr": "max_over_time(\r\n  label_replace(\r\n    DLC_sensors_gauge{\r\n      metric=~\"CPU[0-9]+ temperature\"},\r\n    \"cpu_name\",\r\n    \"$1\",               \r\n    \"metric\",\r\n    \"(.*) temperature\") \r\n  [24h:])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "__auto",
+          "legendFormat": "{{cpu_name}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -1038,7 +957,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1071,9 +991,7 @@
         "namePlacement": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1089,350 +1007,19 @@
             "uid": "${datasource}"
           },
           "disableTextWrap": false,
-          "editorMode": "builder",
+          "editorMode": "code",
           "exemplar": false,
-          "expr": "DLC_sensors_gauge{metric=\"CPU temperature\"}",
+          "expr": "label_replace(\r\n    DLC_sensors_gauge{\r\n      metric=~\"CPU[0-9]+ temperature\"\r\n    },\r\n    \"cpu_name\", \"CPU$1\",          \r\n    \"metric\", \"CPU([0-9]+) temperature\"\r\n  )\r\n",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "{{cpu_name}}",
           "range": false,
           "refId": "A",
           "useBackend": false
         }
       ],
       "title": "Current CPU temperature",
-      "type": "bargauge"
-    },
-    {
-      "datasource": {
-        "default": true,
-        "type": "prometheus",
-        "uid": "ee1ovqoc0treoa"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 7,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineStyle": {
-              "fill": "solid"
-            },
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "#EAB839",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "CPU Usage"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 12,
-        "x": 0,
-        "y": 14
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.1.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "ee1ovqoc0treoa"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "DLC_sensors_gauge{metric=\"CPU Usage\"}",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{metric}}",
-          "range": true,
-          "refId": "B",
-          "useBackend": false
-        }
-      ],
-      "title": "CPU utilization",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "default": true,
-        "type": "prometheus",
-        "uid": "ee1ovqoc0treoa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "#EAB839",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 6,
-        "x": 12,
-        "y": 14
-      },
-      "id": 7,
-      "options": {
-        "displayMode": "gradient",
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "maxVizHeight": 300,
-        "minVizHeight": 16,
-        "minVizWidth": 8,
-        "namePlacement": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "max"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showUnfilled": true,
-        "sizing": "auto",
-        "valueMode": "color"
-      },
-      "pluginVersion": "11.2.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "ee1ovqoc0treoa"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "max_over_time(DLC_sensors_gauge{metric=\"CPU CPU Usage\"}[1h])",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "ee1ovqoc0treoa"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max_over_time(DLC_sensors_gauge{metric=\"CPU Usage\"}[24h])",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "B",
-          "useBackend": false
-        }
-      ],
-      "title": "Max CPU utilization (Last 24h)",
-      "type": "bargauge"
-    },
-    {
-      "datasource": {
-        "default": true,
-        "type": "prometheus",
-        "uid": "ee1ovqoc0treoa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "#EAB839",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 6,
-        "x": 18,
-        "y": 14
-      },
-      "id": 8,
-      "options": {
-        "displayMode": "gradient",
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "maxVizHeight": 300,
-        "minVizHeight": 16,
-        "minVizWidth": 8,
-        "namePlacement": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showUnfilled": true,
-        "sizing": "auto",
-        "valueMode": "color"
-      },
-      "pluginVersion": "11.2.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "ee1ovqoc0treoa"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "DLC_sensors_gauge{metric=\"CPU Usage\", server_name=\"dg5W\"}",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "B",
-          "useBackend": false
-        }
-      ],
-      "title": "Current CPU utilization ",
       "type": "bargauge"
     },
     {
@@ -1486,7 +1073,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -1506,7 +1094,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 19
+        "y": 14
       },
       "id": 10,
       "options": {
@@ -1531,7 +1119,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{description=\"degree celcious\", metric=~\".*asic temperature.*\"}",
+          "expr": "clamp_max(label_replace(DLC_sensors_gauge{server_name=\"dg5W\", metric=~\".*asic temperature\"},\"id\",\"$1\",\"metric\",\"(.*) asic temperature\"),95)",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1564,7 +1152,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -1584,7 +1173,7 @@
         "h": 6,
         "w": 6,
         "x": 12,
-        "y": 19
+        "y": 14
       },
       "id": 11,
       "options": {
@@ -1601,9 +1190,7 @@
         "namePlacement": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1621,7 +1208,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "label_replace(\r\n    max_over_time(DLC_sensors_gauge{server_name=\"dg5W\", metric=~\".*asic temperature\"}[1h]),\r\n    \"id\",\r\n    \"$1\",\r\n    \"metric\",\r\n    \"(.*) asic temperature\"\r\n)",
+          "expr": "clamp_max(label_replace(max_over_time(DLC_sensors_gauge{server_name=\"dg5W\", metric=~\".* asic temperature\"}[24h]),\"id\",\"$1\",\"metric\",\"(.*) asic temperature\"),95)",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -1654,7 +1241,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -1674,7 +1262,7 @@
         "h": 6,
         "w": 6,
         "x": 18,
-        "y": 19
+        "y": 14
       },
       "id": 12,
       "options": {
@@ -1691,9 +1279,7 @@
         "namePlacement": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1711,7 +1297,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "label_replace(\r\n    DLC_sensors_gauge{server_name=\"dg5W\", metric=~\".*asic temperature\"},\r\n    \"id\",\r\n    \"$1\",\r\n    \"metric\",\r\n    \"(.*) asic temperature\"\r\n)",
+          "expr": "clamp_max(label_replace(DLC_sensors_gauge{metric=~\".*asic temperature\"},\"id\",\"$1\",\"metric\",\"(.*) asic temperature\"),95)",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
@@ -1769,21 +1355,22 @@
             }
           },
           "mappings": [],
-          "max": 100,
+          "max": 600,
           "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
-                "value": 304
+                "value": 590
               },
               {
                 "color": "red",
-                "value": 340
+                "value": 600
               }
             ]
           },
@@ -1795,7 +1382,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 25
+        "y": 20
       },
       "id": 16,
       "options": {
@@ -1820,7 +1407,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{description=\"W\", metric=~\".*power usage.*\"}",
+          "expr": "clamp_max(DLC_sensors_gauge{metric=~\".*power usage.*\"},600)",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1847,21 +1434,22 @@
             "mode": "thresholds"
           },
           "mappings": [],
-          "max": 100,
+          "max": 600,
           "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
-                "value": 304
+                "value": 590
               },
               {
                 "color": "red",
-                "value": 340
+                "value": 600
               }
             ]
           },
@@ -1873,7 +1461,7 @@
         "h": 6,
         "w": 6,
         "x": 12,
-        "y": 25
+        "y": 20
       },
       "id": 17,
       "options": {
@@ -1890,9 +1478,7 @@
         "namePlacement": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1909,11 +1495,11 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace(\r\n    max_over_time(DLC_sensors_gauge{metric=~\".*power usage.*\"}[1h]),\r\n    \"id\",\r\n    \"$1\",\r\n    \"metric\",\r\n    \"(n300_[0-9]+[']).*power usage\"\r\n)",
+          "expr": "clamp_max(label_replace(max_over_time(DLC_sensors_gauge{metric=~\".*current power usage\"}[24h]),\"gpu_name\",\"$1\",\"metric\",\"(.*)current power usage\"),600)",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{id}}",
+          "legendFormat": "{{gpu_name}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -1935,17 +1521,22 @@
             "mode": "thresholds"
           },
           "mappings": [],
-          "max": 100,
+          "max": 598,
           "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 590
               },
               {
                 "color": "red",
-                "value": 86
+                "value": 600
               }
             ]
           },
@@ -1957,7 +1548,7 @@
         "h": 6,
         "w": 6,
         "x": 18,
-        "y": 25
+        "y": 20
       },
       "id": 18,
       "options": {
@@ -1974,9 +1565,7 @@
         "namePlacement": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1994,11 +1583,11 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "label_replace(\r\n    DLC_sensors_gauge{metric=~\".*power usage.*\"},\r\n    \"id\",\r\n    \"$1\",\r\n    \"metric\",\r\n    \"(n300_[0-9]+[']).*power usage\"\r\n)",
+          "expr": "clamp_max(label_replace(DLC_sensors_gauge{metric=~\".*power usage.*\"},\"gpu_name\",\"$1\",\"metric\",\"(.*)current power usage\"),600)",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
-          "legendFormat": "{{id}}",
+          "legendFormat": "{{gpu_name}}",
           "range": false,
           "refId": "A",
           "useBackend": false
@@ -2009,48 +1598,24 @@
     },
     {
       "datasource": {
-        "default": false,
+        "default": true,
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "ee1ovqoc0treoa"
       },
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
           "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 7,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
             },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "inspect": false
           },
+          "decimals": 1,
           "mappings": [],
           "max": 100,
           "min": 0,
@@ -2058,15 +1623,113 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 15,
+        "x": 0,
+        "y": 26
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "frameIndex": 0,
+        "showHeader": true
+      },
+      "pluginVersion": "11.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ee1ovqoc0treoa"
+          },
+          "editorMode": "code",
+          "expr": "DLC_sensors_gauge{\r\n  description=\"%\",\r\n  metric=\"CPU Usage\",\r\n  server_name=\"dg5W\"\r\n}\r\n",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "CPU usage",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ee1ovqoc0treoa"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "100 *\r\nDLC_sensors_gauge{\r\n  description=\"GB\",\r\n  metric=\"Memory_usage\",\r\n  server_name=\"dg5W\"\r\n}\r\n/\r\nignoring(metric)\r\nDLC_sensors_gauge{\r\n  description=\"GB\",\r\n  metric=\"Memory_total\",\r\n  server_name=\"dg5W\"\r\n}\r\n",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "Memory usage",
+          "range": true,
+          "refId": "B",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ee1ovqoc0treoa"
+          },
+          "editorMode": "code",
+          "expr": "100 *\r\nlabel_replace(\r\n  DLC_sensors_gauge{\r\n    description=\"byte\",\r\n    metric=~\"H200NVL_[0-9]+' current memory usage\",\r\n    server_name=\"dg5W\"\r\n  },\r\n  \"gpu_name\", \"$1\",                      \r\n  \"metric\", \"(H200NVL_[0-9]+') .*\"\r\n)\r\n/\r\non(server_name, gpu_name)\r\nlabel_replace(\r\n  DLC_sensors_gauge{\r\n    description=\"byte\",\r\n    metric=~\"H200NVL_[0-9]+' memory capacity\",\r\n    server_name=\"dg5W\"\r\n  },\r\n  \"gpu_name\", \"$1\",\r\n  \"metric\", \"(H200NVL_[0-9]+') .*\"\r\n)\r\n",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{gpu_name}} memory usage",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "title": "Resource utilization",
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {}
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "default": true,
+        "type": "prometheus",
+        "uid": "ee1ovqoc0treoa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
-                "value": 75
-              },
-              {
-                "color": "red",
-                "value": 90
+                "value": 100
               }
             ]
           },
@@ -2076,46 +1739,46 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 12,
-        "x": 0,
-        "y": 31
+        "w": 5,
+        "x": 15,
+        "y": 26
       },
-      "id": 28,
+      "id": 8,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "11.2.2",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "ee1ovqoc0treoa"
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "(\r\n    DLC_sensors_gauge{metric=\"Memory_usage\", server_name=\"dg5W\"}\r\n    / on(server_name)  \r\n    DLC_sensors_gauge{metric=\"Memory_total\", server_name=\"dg5W\"}\r\n) * 100",
+          "expr": "DLC_sensors_gauge{metric=\"CPU Usage\", server_name=\"dg5W\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{metric}}",
+          "legendFormat": "__auto",
           "range": true,
-          "refId": "A",
+          "refId": "B",
           "useBackend": false
         }
       ],
-      "title": "Memory utilization",
-      "type": "timeseries"
+      "title": "Current CPU utilization ",
+      "type": "gauge"
     },
     {
       "datasource": {
@@ -2129,6 +1792,7 @@
           "color": {
             "mode": "thresholds"
           },
+          "decimals": 1,
           "mappings": [],
           "max": 100,
           "min": 0,
@@ -2136,15 +1800,12 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
-                "value": 75
-              },
-              {
-                "color": "red",
-                "value": 90
+                "value": 100
               }
             ]
           },
@@ -2154,34 +1815,23 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 6,
-        "x": 12,
-        "y": 31
+        "w": 4,
+        "x": 20,
+        "y": 26
       },
       "id": 29,
       "options": {
-        "displayMode": "gradient",
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "maxVizHeight": 300,
-        "minVizHeight": 16,
-        "minVizWidth": 8,
-        "namePlacement": "auto",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
-        "showUnfilled": true,
-        "sizing": "auto",
-        "valueMode": "color"
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
       "pluginVersion": "11.2.2",
       "targets": [
@@ -2192,7 +1842,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "min_over_time(\r\n  DLC_sensors_gauge{description=\"GB\", server_name=\"dg5W\", metric=~\".*usage.*\"}[24h]\r\n)",
+          "expr": "100 *\r\nDLC_sensors_gauge{\r\n  description=\"GB\",\r\n  metric=\"Memory_usage\",\r\n  server_name=\"dg5W\"\r\n}\r\n/\r\nignoring(metric)\r\nDLC_sensors_gauge{\r\n  description=\"GB\",\r\n  metric=\"Memory_total\",\r\n  server_name=\"dg5W\"\r\n}\r\n",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -2202,8 +1852,8 @@
           "useBackend": false
         }
       ],
-      "title": "Max memory utilization (24h)",
-      "type": "bargauge"
+      "title": "Current memory utilization",
+      "type": "gauge"
     },
     {
       "datasource": {
@@ -2217,6 +1867,7 @@
           "color": {
             "mode": "thresholds"
           },
+          "decimals": 1,
           "mappings": [],
           "max": 100,
           "min": 0,
@@ -2224,15 +1875,12 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
-                "value": 75
-              },
-              {
-                "color": "red",
-                "value": 90
+                "value": 100
               }
             ]
           },
@@ -2241,35 +1889,24 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 18,
-        "y": 31
+        "h": 7,
+        "w": 9,
+        "x": 15,
+        "y": 32
       },
       "id": 30,
       "options": {
-        "displayMode": "gradient",
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "maxVizHeight": 300,
-        "minVizHeight": 16,
-        "minVizWidth": 8,
-        "namePlacement": "auto",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
-        "showUnfilled": true,
-        "sizing": "auto",
-        "valueMode": "color"
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
       "pluginVersion": "11.2.2",
       "targets": [
@@ -2281,21 +1918,21 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "(\r\n    DLC_sensors_gauge{metric=\"Memory_usage\", server_name=\"dg5W\"}\r\n    / ignoring(metric)\r\n    DLC_sensors_gauge{metric=\"Memory_total\", server_name=\"dg5W\"}\r\n) * 100",
+          "expr": "100 *\r\nlabel_replace(\r\n  DLC_sensors_gauge{\r\n    description=\"byte\",\r\n    metric=~\"H200NVL_[0-9]+' current memory usage\",\r\n    server_name=\"dg5W\"\r\n  },\r\n  \"gpu_name\", \"$1\",                      \r\n  \"metric\", \"(H200NVL_[0-9]+') .*\"\r\n)\r\n/\r\non(server_name, gpu_name)\r\nlabel_replace(\r\n  DLC_sensors_gauge{\r\n    description=\"byte\",\r\n    metric=~\"H200NVL_[0-9]+' memory capacity\",\r\n    server_name=\"dg5W\"\r\n  },\r\n  \"gpu_name\", \"$1\",\r\n  \"metric\", \"(H200NVL_[0-9]+') .*\"\r\n)\r\n",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
-          "legendFormat": "id:{{chip_id}}",
+          "legendFormat": "{{gpu_name}}",
           "range": false,
           "refId": "A",
           "useBackend": false
         }
       ],
-      "title": "Current memory utilization",
-      "type": "bargauge"
+      "title": "Current AI processors memory utilization",
+      "type": "gauge"
     }
   ],
-  "refresh": "5s",
+  "refresh": "10s",
   "schemaVersion": 39,
   "tags": [],
   "templating": {
@@ -2328,6 +1965,6 @@
   "timezone": "browser",
   "title": "gadgetini",
   "uid": "ee4lkyna6rxfkd",
-  "version": 7,
+  "version": 14,
   "weekStart": ""
 }
