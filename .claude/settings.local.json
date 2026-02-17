@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "mcp__claude_ai_Atlassian__getConfluencePage",
+      "Bash(brew --version:*)",
+      "Bash(brew install:*)",
+      "Bash(brew services start:*)",
+      "Bash(curl:*)",
+      "Bash(/usr/local/opt/grafana/bin/grafana cli plugins install:*)",
+      "Bash(/usr/local/opt/grafana/bin/grafana cli:*)",
+      "Bash(brew services:*)",
+      "Bash(pip3 install:*)"
+    ]
+  }
+}
