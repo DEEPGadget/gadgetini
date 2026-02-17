@@ -1,0 +1,10 @@
+numpy
+Pillow
+redis
+requests
+opencv-python
+matplotlib
+psutil
+adafruit-blinka
+adafruit-circuitpython-rgb-display
+RPi.GPIO

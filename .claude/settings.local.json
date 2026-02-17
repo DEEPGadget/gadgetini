@@ -11,7 +11,9 @@
       "Bash(/usr/local/opt/grafana/bin/grafana cli plugins install:*)",
       "Bash(/usr/local/opt/grafana/bin/grafana cli:*)",
       "Bash(brew services:*)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)"
     ]
   }
 }
