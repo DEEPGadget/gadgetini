@@ -92,31 +92,96 @@ class DLC_sensor_Collector(object):
             _get_float("air_humit")
         )
 
-        # NOTE: GPU metrics blocks are kept as-is (commented out)
-        for keys in client.keys("gpu_temp_*"):
-            number = str(keys).split("_")[2]
-            print(number)
-            # gauge_metric.add_metric(["dg5R","H200NVL_" + str(number) +" asic temperature", "degree celcious"], _get_float(keys))
+        # ── GPU metrics (from serial_receiver: gpuN_gpu_*) ──
+        for key in client.keys("*_gpu_temp"):
+            idx = key.decode().split("_")[0].replace("gpu", "")
+            name = client.get(f"gpu{idx}_gpu_name")
+            gpu_label = name.decode() + "_" + idx if name else "GPU_" + idx
 
-        for keys in client.keys("gpu_curr_pwr_*"):
-            number = str(keys).split("_")[3]
-            print(number)
-            # gauge_metric.add_metric(["dg5R","H200NVL_" + str(number) +" current power usage", "W"], _get_float(keys))
+            gauge_metric.add_metric(
+                ["dg5R", gpu_label + " asic temperature", "degree celcious"],
+                _get_float(f"gpu{idx}_gpu_temp")
+            )
+            gauge_metric.add_metric(
+                ["dg5R", gpu_label + " current power usage", "W"],
+                _get_float(f"gpu{idx}_gpu_power")
+            )
+            gauge_metric.add_metric(
+                ["dg5R", gpu_label + " Max power limit", "W"],
+                _get_float(f"gpu{idx}_gpu_power_limit")
+            )
+            gauge_metric.add_metric(
+                ["dg5R", gpu_label + " core utilization", "%"],
+                _get_float(f"gpu{idx}_gpu_util")
+            )
+            gauge_metric.add_metric(
+                ["dg5R", gpu_label + " memory utilization", "%"],
+                _get_float(f"gpu{idx}_gpu_mem_util")
+            )
 
-        for keys in client.keys("gpu_max_pwr_*"):
-            number = str(keys).split("_")[3]
-            print(number)
-            # gauge_metric.add_metric(["dg5R","H200NVL_" + str(number) +" Max power limit", "W"], _get_float(keys))
+        # ── CPU metrics (from serial_receiver: cpu_N_temp, cpu_util, cpu_power_N) ──
+        for key in client.keys("cpu_*_temp"):
+            idx = key.decode().split("_")[1]
+            gauge_metric.add_metric(
+                ["dg5R", "CPU" + idx + " temperature", "degree celcious"],
+                _get_float(key)
+            )
 
-        for keys in client.keys("gpu_curr_mem_*"):
-            number = str(keys).split("_")[3]
-            print(number)
-            # gauge_metric.add_metric(["dg5R","H200NVL_" + str(number) +" current memory usage", "byte"], _get_float(keys))
+        for key in client.keys("cpu_power_*"):
+            idx = key.decode().split("_")[2]
+            gauge_metric.add_metric(
+                ["dg5R", "CPU" + idx + " power usage", "W"],
+                _get_float(key)
+            )
 
-        for keys in client.keys("gpu_max_mem_*"):
-            number = str(keys).split("_")[3]
-            print(number)
-            # gauge_metric.add_metric(["dg5R","H200NVL_" + str(number) +" memory capacity", "byte"], _get_float(keys))
+        gauge_metric.add_metric(
+            ["dg5R", "CPU Usage", "%"],
+            _get_float("cpu_util")
+        )
+
+        # ── Memory metrics (from serial_receiver: total_mem, avail_mem, etc.) ──
+        gauge_metric.add_metric(
+            ["dg5R", "Memory_total", "GB"],
+            _get_float("total_mem")
+        )
+        gauge_metric.add_metric(
+            ["dg5R", "Memory_usage", "GB"],
+            _get_float("used_mem")
+        )
+        gauge_metric.add_metric(
+            ["dg5R", "Memory_available", "GB"],
+            _get_float("avail_mem")
+        )
+        gauge_metric.add_metric(
+            ["dg5R", "Swap_usage", "GB"],
+            _get_float("used_swp")
+        )
+        gauge_metric.add_metric(
+            ["dg5R", "OOM_count", "count"],
+            _get_int("oom_count")
+        )
+
+        # ── Network metrics (from serial_receiver: net_*) ──
+        gauge_metric.add_metric(
+            ["dg5R", "Network link status", "1=UP 0=DOWN"],
+            _get_int("net_link_status")
+        )
+        gauge_metric.add_metric(
+            ["dg5R", "Network TX throughput", "Gbps"],
+            _get_float("net_tx_bps")
+        )
+        gauge_metric.add_metric(
+            ["dg5R", "Network RX throughput", "Gbps"],
+            _get_float("net_rx_bps")
+        )
+        gauge_metric.add_metric(
+            ["dg5R", "Network errors rate", "%"],
+            _get_float("net_errors_rate")
+        )
+        gauge_metric.add_metric(
+            ["dg5R", "Network drops rate", "%"],
+            _get_float("net_drops_rate")
+        )
 
         yield gauge_metric
 
