@@ -1,0 +1,1924 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "name": "dg5R - Compute",
+      "folder": "dg5R Alerts",
+      "interval": "1m",
+      "rules": [
+        {
+          "id": 10,
+          "uid": "afdjbk0r3z18gc",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Compute",
+          "title": "AI Processor Temperature Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\".*asic temperature\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        90
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "{{ $labels.metric }} = {{ $values.B }}°C (critical > 90°C)",
+            "summary": "AI Processor (GPU) temperature exceeded 90°C"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 11,
+          "uid": "dfdjbk0tgvkzka",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Compute",
+          "title": "AI Processor Power Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\".*current power usage\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        700
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "{{ $labels.metric }} = {{ $values.B }}W (critical > 700W, max limit)",
+            "summary": "AI Processor (GPU) power exceeded 700W"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 12,
+          "uid": "dfdjbk0wir474d",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Compute",
+          "title": "CPU Temperature Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"CPU\\\\d+ temperature\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        95
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "{{ $labels.metric }} = {{ $values.B }}°C (critical > 95°C)",
+            "summary": "CPU temperature exceeded 95°C"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 13,
+          "uid": "efdjbk0y96ku8d",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Compute",
+          "title": "CPU Power Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"CPU\\\\d+ power usage\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        300
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "{{ $labels.metric }} = {{ $values.B }}W (critical > 300W)",
+            "summary": "CPU power exceeded 300W"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 14,
+          "uid": "bfdjbk118k7pcc",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Compute",
+          "title": "CPU Utilization Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"CPU Usage\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        95
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "CPU Usage = {{ $values.B }}% (critical > 95%)",
+            "summary": "CPU utilization exceeded 95%"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "warning"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        }
+      ]
+    },
+    {
+      "name": "dg5R - Cooling",
+      "folder": "dg5R Alerts",
+      "interval": "1m",
+      "rules": [
+        {
+          "id": 1,
+          "uid": "efdjbk02ez668b",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Cooling",
+          "title": "Coolant Inlet Temperature High",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature inlet.*\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        45
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "{{ $labels.metric }} = {{ $values.B }}°C (critical > 45°C)",
+            "summary": "Coolant inlet temperature exceeded 45°C"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 2,
+          "uid": "dfdjbk05ocef4d",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Cooling",
+          "title": "Coolant Inlet Temperature Low",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature inlet.*\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        18
+                      ],
+                      "type": "lt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "{{ $labels.metric }} = {{ $values.B }}°C (critical < 18°C)",
+            "summary": "Coolant inlet temperature below 18°C"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 3,
+          "uid": "dfdjbk08nq1a8d",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Cooling",
+          "title": "Coolant Outlet Temperature Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature outlet.*\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        65
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "{{ $labels.metric }} = {{ $values.B }}°C (critical > 65°C)",
+            "summary": "Coolant outlet temperature exceeded 65°C"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 4,
+          "uid": "afdjbk0bplkhsc",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Cooling",
+          "title": "Coolant Delta T Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant deltaT.*\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        20
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "{{ $labels.metric }} = {{ $values.B }}°C (critical > 20°C)",
+            "summary": "Coolant temperature delta exceeded 20°C"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 5,
+          "uid": "ffdjbk0diixhcd",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Cooling",
+          "title": "Leak Detected",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"LEAK detection\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        0.5
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "0s",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "Leak sensor triggered (value = {{ $values.B }})",
+            "summary": "LEAK DETECTED on dg5R server!"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 6,
+          "uid": "afdjbk0gfeo00a",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Cooling",
+          "title": "Coolant Level Low",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Coolant level\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        0.5
+                      ],
+                      "type": "lt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "30s",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "Coolant level = {{ $values.B }} (0 = LOW, 1 = HIGH)",
+            "summary": "Coolant level is LOW"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 7,
+          "uid": "cfdjbk0jesav4d",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Cooling",
+          "title": "Chassis Temperature Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air temperature\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        50
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "Air temperature = {{ $values.B }}°C (critical > 50°C)",
+            "summary": "Chassis air temperature exceeded 50°C"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 8,
+          "uid": "afdjbk0mbo1dse",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Cooling",
+          "title": "Chassis Humidity High",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air humidity\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        80
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "Air humidity = {{ $values.B }}% (critical > 80%)",
+            "summary": "Chassis humidity exceeded 80%"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 9,
+          "uid": "dfdjbk0o23i0wd",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Cooling",
+          "title": "Chassis Humidity Low",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air humidity\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        10
+                      ],
+                      "type": "lt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "Air humidity = {{ $values.B }}% (critical < 10%)",
+            "summary": "Chassis humidity below 10%"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        }
+      ]
+    },
+    {
+      "name": "dg5R - Network",
+      "folder": "dg5R Alerts",
+      "interval": "1m",
+      "rules": [
+        {
+          "id": 18,
+          "uid": "afdjbk1cjlo1se",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Network",
+          "title": "Network Link Down",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Network link status\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        0.5
+                      ],
+                      "type": "lt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "10s",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "Network link status = {{ $values.B }} (0 = DOWN)",
+            "summary": "Network link is DOWN"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 19,
+          "uid": "ffdjbk1fnz3lse",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Network",
+          "title": "Network Error Rate High",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Network errors rate\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        1
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "Network error rate = {{ $values.B }}%",
+            "summary": "Network error rate exceeded 1%"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "warning"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 20,
+          "uid": "dfdjbk1izu874e",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - Network",
+          "title": "Network Drop Rate High",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Network drops rate\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        1
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:33+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "Network drop rate = {{ $values.B }}%",
+            "summary": "Network drop rate exceeded 1%"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "warning"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        }
+      ]
+    },
+    {
+      "name": "dg5R - System",
+      "folder": "dg5R Alerts",
+      "interval": "1m",
+      "rules": [
+        {
+          "id": 15,
+          "uid": "afdjbk145fy80b",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - System",
+          "title": "Memory Available Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Memory_available\"} / DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Memory_total\"} * 100",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        10
+                      ],
+                      "type": "lt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "Memory available = {{ $values.B }}% (critical < 10%)",
+            "summary": "Available memory below 10%"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 16,
+          "uid": "cfdjbk17cba4gf",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - System",
+          "title": "OOM Kill Detected",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"OOM_count\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        0.5
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "0s",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "OOM count = {{ $values.B }}",
+            "summary": "OOM kill event detected"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "critical"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        },
+        {
+          "id": 17,
+          "uid": "efdjbk1aloidcc",
+          "orgID": 1,
+          "folderUID": "dg5r-alerts",
+          "ruleGroup": "dg5R - System",
+          "title": "Swap Usage Warning",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "dfddakquxzf28a",
+              "model": {
+                "editorMode": "code",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Swap_usage\"}",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "{{metric}}",
+                "maxDataPoints": 43200,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        10
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "reducer": {
+                      "type": "last"
+                    }
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "updated": "2026-02-18T02:52:32+09:00",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "keep_firing_for": "0s",
+          "annotations": {
+            "description": "Swap usage = {{ $values.B }} GB (warning > 10 GB)",
+            "summary": "Swap usage exceeded 10 GB"
+          },
+          "labels": {
+            "server": "dg5R",
+            "severity": "warning"
+          },
+          "isPaused": false,
+          "notification_settings": null,
+          "record": null
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "description": "dg5R liquid cooling server alert rules",
+    "server": "dg5R",
+    "total_rules": 20,
+    "categories": {
+      "Cooling": "Inlet/Outlet temps, Delta T, Leak, Coolant level, Chassis",
+      "Compute": "GPU temp/power, CPU temp/power/util",
+      "System": "Memory, OOM, Swap",
+      "Network": "Link status, Error/Drop rates"
+    }
+  }
+}
