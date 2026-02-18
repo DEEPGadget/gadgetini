@@ -11,11 +11,15 @@ from PIL import Image, ImageDraw
 from config import USE_VIRTUAL_LCD, GRAPH_SIZE, FPS
 from profiles import load_product
 from leak_alert_viewer import LeakAlertViewer
+from history_store import HistoryStore
 
 if USE_VIRTUAL_LCD:
     from config import VirtualLCD
 else:
     from config import st7789, spi, cs_pin, dc_pin, reset_pin, BAUDRATE
+
+
+from config import USE_REAL_DATA, DEBUG
 
 
 class DisplayManager:
@@ -44,6 +48,8 @@ class DisplayManager:
             self._all_viewers = product.create_fallback_viewers()
 
         self._build_active_viewers()
+
+        self.history_store = HistoryStore()
 
         self.leak_redis_key = getattr(product, 'LEAK_REDIS_KEY', 'coolant_leak')
         self.leak_start_time = None
@@ -129,6 +135,10 @@ class DisplayManager:
             self.leak_alert_active = False
             self.leak_start_time = None
             return
+        if not USE_REAL_DATA:
+            self.leak_alert_active = False
+            self.leak_start_time = None
+            return
         try:
             val = self.redis.get(self.leak_redis_key)
             if val is not None and int(val) == 1:
@@ -140,6 +150,8 @@ class DisplayManager:
                 self.leak_start_time = None
                 self.leak_alert_active = False
         except Exception:
+            self.leak_start_time = None
+            self.leak_alert_active = False
             pass
 
     def draw_viewer(self, frame):
@@ -183,17 +195,36 @@ class DisplayManager:
                 continue
 
     def sensor_data_collector(self):
+        interval = 1 / FPS
+        next_tick = time.monotonic() + interval
         while not self.stop_event.is_set():
             for sensor_data in self.sensors.values():
                 if sensor_data.active:
                     sensor_data.sensor_data_collector()
-            time.sleep(1/FPS)
+            now = time.monotonic()
+            sleep_sec = next_tick - now
+            if sleep_sec > 0:
+                time.sleep(sleep_sec)
+            next_tick += interval
 
     def data_processor(self):
         frame = 0
+        interval = 1 / FPS
+        now = time.monotonic()
+        next_tick = time.monotonic() + interval
         while not self.stop_event.is_set():
+            if DEBUG != 0:   
+                print(f"frame={frame}, now={now}, next_tick={next_tick}")
+
             for sensor_data in self.sensors.values():
                 sensor_data.sensor_data_processing()
+
+            # Feed sensor values to history store (~1/sec)
+            if frame % FPS == 0:
+                for key, sd in self.sensors.items():
+                    if len(sd.buffer) > 0:
+                        self.history_store.accumulate(key, sd.buffer[-1])
+                self.history_store.tick()
 
             self._check_leak()
 
@@ -202,12 +233,18 @@ class DisplayManager:
             if ((frame != 0) and (frame % (FPS*self.viewer_rotation_sec)) == 0):
                 self.set_next_viewer()
 
+
             frame = frame + 1
             if frame > FPS*3600*24*7:
                 frame = 0
 
             self.draw_viewer(frame % FPS)
-            time.sleep(1/FPS)
+
+            now = time.monotonic()
+            sleep_sec = next_tick - now
+            if sleep_sec > 0:
+                time.sleep(sleep_sec)
+            next_tick += interval
 
     def start_thr(self):
         sensor_thread = threading.Thread(
@@ -227,4 +264,5 @@ class DisplayManager:
 
     def stop(self):
         self.stop_event.set()
+        self.history_store.save()
         self.disp.cleanup()

@@ -1,10 +1,12 @@
 from config import (DEBUG, GRAPH_SIZE,
                     FONT_PATH, BOLD_FONT_PATH)
 from base_viewer import BaseViewer
-from draw_utils import draw_aligned_text, draw_multi_graph
+from draw_utils import draw_aligned_text, draw_daily_graph
 
 
-class MultiSensorViewer(BaseViewer):
+class DailyViewer(BaseViewer):
+    """24-hour history viewer. Reads from disp_manager.history_store."""
+
     def __init__(self, title, sensor_keys, colors, labels):
         super().__init__()
         self.title = title
@@ -15,13 +17,16 @@ class MultiSensorViewer(BaseViewer):
     def draw(self, draw, disp_manager, frame):
         offset = self._setup(draw, disp_manager)
 
+        histories = [disp_manager.history_store.get_history(k)
+                     for k in self.sensor_keys]
         sensor_list = [disp_manager.sensors[k] for k in self.sensor_keys]
         num = len(sensor_list)
 
-        has_data = any(len(s.buffer) >= 2 for s in sensor_list)
+        has_history = any(len(h) >= 2 for h in histories)
+        has_live = any(len(s.buffer) > 0 for s in sensor_list)
         any_error = any(s.error for s in sensor_list)
 
-        if not has_data and not any_error:
+        if not has_history and not has_live and not any_error:
             return
 
         graphbox, databox = self._boxes(offset, disp_manager.horizontal)
@@ -36,14 +41,28 @@ class MultiSensorViewer(BaseViewer):
         unit_str = sensor_list[0].unit_str
 
         # Graph
-        if has_data:
-            min_val, max_val, normalized_list = self._normalize(sensor_list, GRAPH_SIZE)
+        if has_history:
+            min_val, max_val, normalized_list = self._normalize_histories(histories)
+
             self._draw_graph_labels(draw, min_val, max_val, unit_str,
                                     gx1, gy1, gy2, GRAPH_SIZE)
-            draw_multi_graph(draw, sensor_list, normalized_list, self.colors,
-                             graphbox)
 
-        # === Data panel layout ===
+            draw_daily_graph(draw, histories, normalized_list, self.colors,
+                             (gx1, gy1, gx2, gy2))
+
+        elif has_live:
+            live_vals = [s.buffer[-1] for s in sensor_list if len(s.buffer) > 0]
+            if live_vals:
+                peak = max(live_vals)
+                peak_str = f"peak {peak:.1f}{unit_str}"
+                draw_aligned_text(draw=draw, text=peak_str, font_size=8, fill='white',
+                                  box=(gx1, gy1, GRAPH_SIZE, 8),
+                                  align="center", halign="top", font_path=FONT_PATH)
+                gy_mid = (gy1 + gy2) // 2
+                for gx in range(gx1, gx2, 4):
+                    draw.point((gx, gy_mid), fill=(50, 50, 50))
+
+        # === Data panel (adaptive) ===
         dw = dx2 - dx1
         footer_h = 12
 
@@ -59,7 +78,6 @@ class MultiSensorViewer(BaseViewer):
         row_h = avail_h // rows_per_col
         col_w = dw // cols
 
-        # Font sizing based on row height and column count
         if cols == 2:
             if row_h >= 18:
                 vf, lf, sq, uf = 14, 8, 5, 8
@@ -75,7 +93,7 @@ class MultiSensorViewer(BaseViewer):
         # TITLE
         self._draw_title(draw, self.title, dx1, dy1, dw, h=title_h)
 
-        # Sensor value rows
+        # Sensor value rows — current live values
         label_w = max(15, int(col_w * 0.22))
         unit_w = max(14, int(col_w * 0.20))
         sq_pad = sq + 4
@@ -116,3 +134,24 @@ class MultiSensorViewer(BaseViewer):
 
         # FOOTER
         self._draw_footer(draw, disp_manager, dx1, dy2 - footer_h, GRAPH_SIZE, h=footer_h)
+
+    def _normalize_histories(self, histories):
+        """Normalize history data lists (not sensor buffers)."""
+        import numpy as np
+        all_values = []
+        for h in histories:
+            all_values.extend(h)
+
+        min_val = int(np.min(all_values) * 0.95)
+        max_val = int(np.max(all_values) * 1.05)
+        if min_val == max_val:
+            max_val = min_val + 1
+
+        normalized_list = []
+        for h in histories:
+            if len(h) >= 2:
+                norm = np.interp(h, (min_val, max_val), (8, GRAPH_SIZE - 8))
+                normalized_list.append(list(norm))
+            else:
+                normalized_list.append([])
+        return min_val, max_val, normalized_list

@@ -70,6 +70,7 @@ class SensorData:
             return None
 
     def sensor_data_collector(self):
+        self.count += 1
         if self.count >= self.read_rate:
             self.count = 0
             sensor_value = self.read_sensor()
@@ -80,8 +81,6 @@ class SensorData:
                     self.data_queue.get(0)
                 if not self.data_queue.full():
                     self.data_queue.put(sensor_value)
-        else:
-            self.count = self.count + 1
 
     def sensor_data_processing(self):
         with self.lock:
