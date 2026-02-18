@@ -62,3 +62,62 @@ def draw_aligned_text(draw, text, font_size, fill, box, align="left", halign="to
         draw.rectangle(bbox, outline=(0,255,0), width=1)
 
     draw.text((tx, ty), text, font=font, fill=fill)
+
+
+def draw_multi_graph(draw, sensor_list, normalized_list, colors, graphbox):
+    x1, y1, x2, y2 = graphbox
+
+    # Horizontal grid dotted lines at 25%, 50%, 75%
+    for pct in [0.25, 0.5, 0.75]:
+        gy = int(y2 - (y2 - y1) * pct)
+        for gx in range(x1, x2, 4):
+            draw.point((gx, gy), fill=(35, 35, 35))
+
+    # Each sensor line: glow then main
+    for sensor_data, norm_data, color in zip(sensor_list, normalized_list, colors):
+        if len(sensor_data.buffer) < 2:
+            continue
+        # Glow
+        for i in range(1, len(sensor_data.buffer)):
+            px1, py1 = i + x1, int(y2 - norm_data[i - 1])
+            px2, py2 = i + x1 + 1, int(y2 - norm_data[i])
+            glow = (color[0] // 4, color[1] // 4, color[2] // 4)
+            draw.line((px1, py1, px2, py2), fill=glow, width=3)
+        # Main line
+        for i in range(1, len(sensor_data.buffer)):
+            px1, py1 = i + x1, int(y2 - norm_data[i - 1])
+            px2, py2 = i + x1 + 1, int(y2 - norm_data[i])
+            draw.line((px1, py1, px2, py2), fill=color, width=2)
+
+
+def draw_graph(draw, sensor_data, normalized_data, graphbox):
+    x1, y1, x2, y2 = graphbox
+
+    # Horizontal grid dotted lines at 25%, 50%, 75%
+    for pct in [0.25, 0.5, 0.75]:
+        gy = int(y2 - (y2 - y1) * pct)
+        for gx in range(x1, x2, 4):
+            draw.point((gx, gy), fill=(35, 35, 35))
+
+    # Gradient area fill — vertical line from curve to bottom at each x
+    for i in range(len(sensor_data.buffer)):
+        x = i + x1 + 1
+        y_top = int(y2 - normalized_data[i])
+        color = sensor_data.get_color_gradient(sensor_data.buffer[i])
+        faded = (color[0] // 5, color[1] // 5, color[2] // 5)
+        draw.line((x, y_top, x, y2), fill=faded, width=1)
+
+    # Glow — wide dim line for depth effect
+    for i in range(1, len(sensor_data.buffer)):
+        px1, py1 = i + x1, int(y2 - normalized_data[i - 1])
+        px2, py2 = i + x1 + 1, int(y2 - normalized_data[i])
+        color = sensor_data.get_color_gradient(sensor_data.buffer[i])
+        glow = (color[0] // 3, color[1] // 3, color[2] // 3)
+        draw.line((px1, py1, px2, py2), fill=glow, width=5)
+
+    # Main line — sharp, 2px
+    for i in range(1, len(sensor_data.buffer)):
+        px1, py1 = i + x1, int(y2 - normalized_data[i - 1])
+        px2, py2 = i + x1 + 1, int(y2 - normalized_data[i])
+        color = sensor_data.get_color_gradient(sensor_data.buffer[i])
+        draw.line((px1, py1, px2, py2), fill=color, width=2)

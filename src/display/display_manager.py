@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw
 
 from config import USE_VIRTUAL_LCD, GRAPH_SIZE, FPS
 from profiles import load_product
+from leak_alert_viewer import LeakAlertViewer
 
 if USE_VIRTUAL_LCD:
     from config import VirtualLCD
@@ -23,23 +24,32 @@ class DisplayManager:
         self.horizontal = -1
 
         self.update_info()
-        self.version = "gadgetini v0.3"
-        #self.redis = redis.Redis(host='localhost', port=6379, db=0)
-        self.redis = redis.Redis(host='192.168.1.64', port=6379, db=0)
+        self.version = self.config.get('PRODUCT', 'version', fallback='gadgetini')
+        redis_host = self.config.get('PRODUCT', 'redis_host', fallback='localhost')
+        redis_port = self.config.getint('PRODUCT', 'redis_port', fallback=6379)
+        self.redis = redis.Redis(host=redis_host, port=redis_port, db=0)
 
-        self.viewer_rotation_sec = 5
+        self.viewer_rotation_sec = self.config.getint('DISPLAY', 'rotation_sec', fallback=5)
         self.current_viewer = 0
 
         product_name = self.config.get('PRODUCT', 'name', fallback='dg5w')
         product = load_product(product_name)
 
         try:
-            self.sensors = product.create_sensors(self.redis)
-            self.viewers = product.create_viewers()
+            self.sensors = product.create_sensors(self.redis, self.config)
+            self._all_viewers = product.create_viewers(self.config)
         except Exception as e:
             print(f"Sensor init failed: {e}")
             self.sensors = product.create_fallback_sensors(self.redis)
-            self.viewers = product.create_fallback_viewers()
+            self._all_viewers = product.create_fallback_viewers()
+
+        self._build_active_viewers()
+
+        self.leak_redis_key = getattr(product, 'LEAK_REDIS_KEY', 'coolant_leak')
+        self.leak_start_time = None
+        self.leak_alert_active = False
+        self.leak_alert_viewer = LeakAlertViewer()
+        self.leak_threshold_sec = 5
 
         self.stop_event = threading.Event()
         self.ip_addr = ""
@@ -97,6 +107,14 @@ class DisplayManager:
             print(f"Orientation: {orientation} must be horizontal or vertical")
             return
 
+    def _build_active_viewers(self):
+        self.viewers = [
+            viewer for key, viewer in self._all_viewers
+            if self.config.getboolean('DISPLAY', key, fallback=True)
+        ]
+        if self.current_viewer >= len(self.viewers):
+            self.current_viewer = 0
+
     def set_next_viewer(self):
         self.current_viewer = self.current_viewer+1
         if self.current_viewer >= len(self.viewers):
@@ -106,15 +124,46 @@ class DisplayManager:
     def get_cur_viewer(self):
         return self.viewers[self.current_viewer]
 
+    def _check_leak(self):
+        if not self.config.getboolean('DISPLAY', 'leak', fallback=True):
+            self.leak_alert_active = False
+            self.leak_start_time = None
+            return
+        try:
+            val = self.redis.get(self.leak_redis_key)
+            if val is not None and int(val) == 1:
+                if self.leak_start_time is None:
+                    self.leak_start_time = time.time()
+                elif time.time() - self.leak_start_time >= self.leak_threshold_sec:
+                    self.leak_alert_active = True
+            else:
+                self.leak_start_time = None
+                self.leak_alert_active = False
+        except Exception:
+            pass
+
     def draw_viewer(self, frame):
-        cur_viewer = self.get_cur_viewer()
-        cur_viewer.draw(self.draw, self, frame)
+        if not self.config.getboolean('DISPLAY', 'display', fallback=True):
+            self.draw.rectangle((0, 0, self.width, self.height), fill='black')
+            self.disp.image(self.disp_buffer)
+            return
+
+        if self.leak_alert_active:
+            self.leak_alert_viewer.draw(self.draw, self, frame)
+        elif len(self.viewers) > 0:
+            cur_viewer = self.get_cur_viewer()
+            cur_viewer.draw(self.draw, self, frame)
+        else:
+            self.draw.rectangle((0, 0, self.width, self.height), fill='black')
         self.disp.image(self.disp_buffer)
 
     def update_info(self, config_path="config.ini"):
         self.config.read(config_path)
+        self.viewer_rotation_sec = self.config.getint('DISPLAY', 'rotation_sec', fallback=5)
         self.get_ip_address()
         self.update_display()
+        if hasattr(self, '_all_viewers'):
+            self._build_active_viewers()
 
     def get_ip_address(self):
         interfaces = ["eth0", "wlan0"]
@@ -145,6 +194,8 @@ class DisplayManager:
         while not self.stop_event.is_set():
             for sensor_data in self.sensors.values():
                 sensor_data.sensor_data_processing()
+
+            self._check_leak()
 
             if (frame % (FPS*5)) == 0:
                 self.update_info()

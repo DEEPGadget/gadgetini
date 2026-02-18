@@ -1,6 +1,6 @@
 # Global flags
 DEBUG = 0
-USE_VIRTUAL_LCD = True
+USE_VIRTUAL_LCD = False
 USE_REAL_DATA = True
 
 # Display constants
@@ -13,6 +13,7 @@ BOLD_FONT_PATH = "fonts/JetBrainsMono-Bold.ttf"
 EXTRABOLD_FONT_PATH = "fonts/JetBrainsMono-ExtraBold.ttf"
 LIGHT_FONT_PATH = "fonts/JetBrainsMono-Light.ttf"
 THIN_FONT_PATH = "fonts/JetBrainsMono-Thin.ttf"
+ICON_FONT_PATH = "fonts/JetBrainsMonoNerdFont-Bold.ttf"
 
 # Conditional hardware imports
 if USE_VIRTUAL_LCD:

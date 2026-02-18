@@ -8,9 +8,11 @@ from config import USE_REAL_DATA, GRAPH_SIZE
 class SensorData:
     def __init__(self, title_str, unit_str, min_val, max_val, read_rate=30,
                  max_buffer_size=GRAPH_SIZE, redis=None,
-                 redis_key=None, redis_keys=None, formula=None):
+                 redis_key=None, redis_keys=None, formula=None, icon=None, label=None):
         self.title_str = title_str
         self.unit_str = unit_str
+        self.icon = icon
+        self.label = label
         self.data_queue = queue.Queue(1)
         self.buffer = []
         self.min_val = min_val
