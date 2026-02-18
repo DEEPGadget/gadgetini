@@ -1644,7 +1644,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Memory_available\"} / DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Memory_total\"} * 100",
+                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Memory_available\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -1682,7 +1682,7 @@
                   {
                     "evaluator": {
                       "params": [
-                        10
+                        51.2
                       ],
                       "type": "lt"
                     },
@@ -1702,108 +1702,14 @@
               }
             }
           ],
-          "updated": "2026-02-18T02:52:32+09:00",
+          "updated": "2026-02-18T03:11:03+09:00",
           "noDataState": "NoData",
           "execErrState": "Error",
           "for": "1m",
           "keep_firing_for": "0s",
           "annotations": {
-            "description": "Memory available = {{ $values.B }}% (critical < 10%)",
+            "description": "Memory available = {{ $values.B }} GB (critical < 51.2 GB = 10% of 512 GB)",
             "summary": "Available memory below 10%"
-          },
-          "labels": {
-            "server": "dg5R",
-            "severity": "critical"
-          },
-          "isPaused": false,
-          "notification_settings": null,
-          "record": null
-        },
-        {
-          "id": 16,
-          "uid": "cfdjbk17cba4gf",
-          "orgID": 1,
-          "folderUID": "dg5r-alerts",
-          "ruleGroup": "dg5R - System",
-          "title": "OOM Kill Detected",
-          "condition": "C",
-          "data": [
-            {
-              "refId": "A",
-              "queryType": "",
-              "relativeTimeRange": {
-                "from": 300,
-                "to": 0
-              },
-              "datasourceUid": "dfddakquxzf28a",
-              "model": {
-                "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"OOM_count\"}",
-                "instant": true,
-                "intervalMs": 1000,
-                "legendFormat": "{{metric}}",
-                "maxDataPoints": 43200,
-                "refId": "A"
-              }
-            },
-            {
-              "refId": "B",
-              "queryType": "",
-              "relativeTimeRange": {
-                "from": 300,
-                "to": 0
-              },
-              "datasourceUid": "__expr__",
-              "model": {
-                "expression": "A",
-                "intervalMs": 1000,
-                "maxDataPoints": 43200,
-                "reducer": "last",
-                "refId": "B",
-                "type": "reduce"
-              }
-            },
-            {
-              "refId": "C",
-              "queryType": "",
-              "relativeTimeRange": {
-                "from": 300,
-                "to": 0
-              },
-              "datasourceUid": "__expr__",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [
-                        0.5
-                      ],
-                      "type": "gt"
-                    },
-                    "operator": {
-                      "type": "and"
-                    },
-                    "reducer": {
-                      "type": "last"
-                    }
-                  }
-                ],
-                "expression": "B",
-                "intervalMs": 1000,
-                "maxDataPoints": 43200,
-                "refId": "C",
-                "type": "threshold"
-              }
-            }
-          ],
-          "updated": "2026-02-18T02:52:32+09:00",
-          "noDataState": "NoData",
-          "execErrState": "Error",
-          "for": "0s",
-          "keep_firing_for": "0s",
-          "annotations": {
-            "description": "OOM count = {{ $values.B }}",
-            "summary": "OOM kill event detected"
           },
           "labels": {
             "server": "dg5R",
@@ -1913,11 +1819,11 @@
   "metadata": {
     "description": "dg5R liquid cooling server alert rules",
     "server": "dg5R",
-    "total_rules": 20,
+    "total_rules": 19,
     "categories": {
       "Cooling": "Inlet/Outlet temps, Delta T, Leak, Coolant level, Chassis",
       "Compute": "GPU temp/power, CPU temp/power/util",
-      "System": "Memory, OOM, Swap",
+      "System": "Memory, Swap",
       "Network": "Link status, Error/Drop rates"
     }
   }
