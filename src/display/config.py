@@ -5,7 +5,7 @@ USE_REAL_DATA = True
 
 # Display constants
 GRAPH_SIZE = 145
-FPS = 10
+FPS = 15
 
 # Font paths
 FONT_PATH = "fonts/JetBrainsMono-Regular.ttf"

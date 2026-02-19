@@ -11,11 +11,15 @@ from PIL import Image, ImageDraw
 from config import USE_VIRTUAL_LCD, GRAPH_SIZE, FPS
 from profiles import load_product
 from leak_alert_viewer import LeakAlertViewer
+from history_store import HistoryStore
 
 if USE_VIRTUAL_LCD:
     from config import VirtualLCD
 else:
     from config import st7789, spi, cs_pin, dc_pin, reset_pin, BAUDRATE
+
+
+from config import USE_REAL_DATA, DEBUG
 
 
 class DisplayManager:
@@ -43,13 +47,19 @@ class DisplayManager:
             self.sensors = product.create_fallback_sensors(self.redis)
             self._all_viewers = product.create_fallback_viewers()
 
+        self._update_viewer_host_data()
         self._build_active_viewers()
+
+        self.history_store = HistoryStore()
 
         self.leak_redis_key = getattr(product, 'LEAK_REDIS_KEY', 'coolant_leak')
         self.leak_start_time = None
         self.leak_alert_active = False
         self.leak_alert_viewer = LeakAlertViewer()
         self.leak_threshold_sec = 5
+
+
+        self.host_status = False
 
         self.stop_event = threading.Event()
         self.ip_addr = ""
@@ -107,6 +117,50 @@ class DisplayManager:
             print(f"Orientation: {orientation} must be horizontal or vertical")
             return
 
+    def _get_viewer_sensor_keys(self, viewer):
+        """Extract all sensor keys from a viewer."""
+        keys = []
+        # SensorViewer: sensor_key, sub1_key, sub2_key
+        if hasattr(viewer, 'sensor_key') and viewer.sensor_key:
+            keys.append(viewer.sensor_key)
+        if hasattr(viewer, 'sub1_key') and viewer.sub1_key:
+            keys.append(viewer.sub1_key)
+        if hasattr(viewer, 'sub2_key') and viewer.sub2_key:
+            keys.append(viewer.sub2_key)
+        # MultiSensorViewer, DailyViewer: sensor_keys
+        if hasattr(viewer, 'sensor_keys') and viewer.sensor_keys:
+            keys.extend(viewer.sensor_keys)
+        # TempUtilViewer: util_keys
+        if hasattr(viewer, 'util_keys') and viewer.util_keys:
+            keys.extend(viewer.util_keys)
+        # DualSensorViewer: panels[*]['sensor_key']
+        if hasattr(viewer, 'panels') and viewer.panels:
+            for panel in viewer.panels:
+                if 'sensor_key' in panel:
+                    keys.append(panel['sensor_key'])
+        # CoolantDetailViewer: loops[*]['sensor_keys'], loops[*]['delta_key']
+        if hasattr(viewer, 'loops') and viewer.loops:
+            for loop in viewer.loops:
+                if 'sensor_keys' in loop:
+                    keys.extend(loop['sensor_keys'])
+                if 'delta_key' in loop:
+                    keys.append(loop['delta_key'])
+        # DualSensorViewer: status_badges[*]['key']
+        if hasattr(viewer, 'status_badges') and viewer.status_badges:
+            for badge in viewer.status_badges:
+                if 'key' in badge:
+                    keys.append(badge['key'])
+        return keys
+
+    def _update_viewer_host_data(self):
+        """Set viewer.host_data=1 if any of its sensors has host_data=1."""
+        for key, viewer in self._all_viewers:
+            sensor_keys = self._get_viewer_sensor_keys(viewer)
+            for sk in sensor_keys:
+                if sk in self.sensors and self.sensors[sk].host_data == 1:
+                    viewer.host_data = 1
+                    break
+
     def _build_active_viewers(self):
         self.viewers = [
             viewer for key, viewer in self._all_viewers
@@ -129,6 +183,10 @@ class DisplayManager:
             self.leak_alert_active = False
             self.leak_start_time = None
             return
+        if not USE_REAL_DATA:
+            self.leak_alert_active = False
+            self.leak_start_time = None
+            return
         try:
             val = self.redis.get(self.leak_redis_key)
             if val is not None and int(val) == 1:
@@ -140,6 +198,23 @@ class DisplayManager:
                 self.leak_start_time = None
                 self.leak_alert_active = False
         except Exception:
+            self.leak_start_time = None
+            self.leak_alert_active = False
+            pass
+
+    def _check_host_status(self):
+        if not USE_REAL_DATA:
+            self.host_status = True
+            return
+        try:
+            val = self.redis.get("host_stat")
+            #print(f"host_stat = {val}")
+            if val is not None and int(val) == 1:
+                self.host_status = True
+            else:
+                self.host_status = False
+        except Exception:
+            self.host_status = False
             pass
 
     def draw_viewer(self, frame):
@@ -152,7 +227,18 @@ class DisplayManager:
             self.leak_alert_viewer.draw(self.draw, self, frame)
         elif len(self.viewers) > 0:
             cur_viewer = self.get_cur_viewer()
-            cur_viewer.draw(self.draw, self, frame)
+            attempts = 0
+            while cur_viewer.host_data == 1 and not self.host_status:
+                self.set_next_viewer()
+                cur_viewer = self.get_cur_viewer()
+                attempts += 1
+                if attempts >= len(self.viewers):
+                    cur_viewer = None
+                    break
+            if cur_viewer:
+                cur_viewer.draw(self.draw, self, frame)
+            else:
+                self.draw.rectangle((0, 0, self.width, self.height), fill='black')
         else:
             self.draw.rectangle((0, 0, self.width, self.height), fill='black')
         self.disp.image(self.disp_buffer)
@@ -183,17 +269,43 @@ class DisplayManager:
                 continue
 
     def sensor_data_collector(self):
+        interval = 1 / FPS
+        next_tick = time.monotonic() + interval
         while not self.stop_event.is_set():
             for sensor_data in self.sensors.values():
                 if sensor_data.active:
+                    if sensor_data.host_data == 1 and not self.host_status:
+                        continue
                     sensor_data.sensor_data_collector()
-            time.sleep(1/FPS)
+            now = time.monotonic()
+            sleep_sec = next_tick - now
+            if sleep_sec > 0:
+                time.sleep(sleep_sec)
+            next_tick += interval
 
     def data_processor(self):
         frame = 0
+        interval = 1 / FPS
+        now = time.monotonic()
+        next_tick = time.monotonic() + interval
         while not self.stop_event.is_set():
+            if DEBUG != 0:   
+                print(f"frame={frame}, now={now}, next_tick={next_tick}")
+
+            self._check_host_status()
+            #print(f"host_status={self.host_status}")
+
             for sensor_data in self.sensors.values():
+                if sensor_data.host_data == 1 and not self.host_status:
+                    continue
                 sensor_data.sensor_data_processing()
+
+            # Feed sensor values to history store (~1/sec)
+            if frame % FPS == 0:
+                for key, sd in self.sensors.items():
+                    if len(sd.buffer) > 0:
+                        self.history_store.accumulate(key, sd.buffer[-1])
+                self.history_store.tick()
 
             self._check_leak()
 
@@ -202,12 +314,18 @@ class DisplayManager:
             if ((frame != 0) and (frame % (FPS*self.viewer_rotation_sec)) == 0):
                 self.set_next_viewer()
 
+
             frame = frame + 1
             if frame > FPS*3600*24*7:
                 frame = 0
 
             self.draw_viewer(frame % FPS)
-            time.sleep(1/FPS)
+
+            now = time.monotonic()
+            sleep_sec = next_tick - now
+            if sleep_sec > 0:
+                time.sleep(sleep_sec)
+            next_tick += interval
 
     def start_thr(self):
         sensor_thread = threading.Thread(
@@ -227,4 +345,5 @@ class DisplayManager:
 
     def stop(self):
         self.stop_event.set()
+        self.history_store.save()
         self.disp.cleanup()

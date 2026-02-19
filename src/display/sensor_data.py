@@ -8,7 +8,7 @@ from config import USE_REAL_DATA, GRAPH_SIZE
 class SensorData:
     def __init__(self, title_str, unit_str, min_val, max_val, read_rate=30,
                  max_buffer_size=GRAPH_SIZE, redis=None,
-                 redis_key=None, redis_keys=None, formula=None, icon=None, label=None):
+                 redis_key=None, redis_keys=None, formula=None, icon=None, label=None, host_data=0):
         self.title_str = title_str
         self.unit_str = unit_str
         self.icon = icon
@@ -23,6 +23,9 @@ class SensorData:
         self.max_points = GRAPH_SIZE - 5
         self.count = 0
         self.prev = 2
+
+        self.host_data = host_data
+        #print(f"host_data = {self.host_data}")
 
         self.redis = redis
         self.redis_key = redis_key
@@ -70,6 +73,7 @@ class SensorData:
             return None
 
     def sensor_data_collector(self):
+        self.count += 1
         if self.count >= self.read_rate:
             self.count = 0
             sensor_value = self.read_sensor()
@@ -80,8 +84,6 @@ class SensorData:
                     self.data_queue.get(0)
                 if not self.data_queue.full():
                     self.data_queue.put(sensor_value)
-        else:
-            self.count = self.count + 1
 
     def sensor_data_processing(self):
         with self.lock:

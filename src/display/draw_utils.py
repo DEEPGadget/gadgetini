@@ -29,18 +29,21 @@ def get_text_dimensions(draw, text_string, font):
 
 #box: (x, y, width, height)
 #align: "left", "center", "right"
-def draw_aligned_text(draw, text, font_size, fill, box, align="left", halign="top", font_path=FONT_PATH, autoscale=False):
+def draw_aligned_text(draw, text, font_size, fill, box, align="left", halign="top",
+                      font_path=FONT_PATH, autoscale=False, ref_text=None):
     x, y, width, height = box
 
     font = get_cached_font(font_size, font_path)
-    text_width, text_height, ascent = get_text_dimensions(draw, text, font=font)
-    new_font_size = font_size
 
-    if (autoscale == True) and (text_width > width or text_height > height):
-        scale = min(width / text_width, height / text_height)
-        new_font_size = max(1, int(font.size * scale))
-        font = get_cached_font(new_font_size)
-        text_width, text_height, ascent = get_text_dimensions(draw, text, font=font)
+    if autoscale:
+        sizing_text = ref_text or text
+        sz_w, sz_h, _ = get_text_dimensions(draw, sizing_text, font=font)
+        if sz_w > width or sz_h > height:
+            scale = min(width / sz_w, height / sz_h)
+            new_font_size = max(1, int(font.size * scale))
+            font = get_cached_font(new_font_size, font_path)
+
+    text_width, text_height, ascent = get_text_dimensions(draw, text, font=font)
 
     if align == "center":
         tx = x + (width - text_width) / 2
@@ -87,6 +90,47 @@ def draw_multi_graph(draw, sensor_list, normalized_list, colors, graphbox):
         for i in range(1, len(sensor_data.buffer)):
             px1, py1 = i + x1, int(y2 - norm_data[i - 1])
             px2, py2 = i + x1 + 1, int(y2 - norm_data[i])
+            draw.line((px1, py1, px2, py2), fill=color, width=2)
+
+
+def draw_daily_graph(draw, histories, normalized_list, colors, graphbox, max_points=144):
+    x1, y1, x2, y2 = graphbox
+
+    # Horizontal grid dotted lines at 25%, 50%, 75%
+    for pct in [0.25, 0.5, 0.75]:
+        gy = int(y2 - (y2 - y1) * pct)
+        for gx in range(x1, x2, 4):
+            draw.point((gx, gy), fill=(35, 35, 35))
+
+    # Vertical time markers at 6h, 12h, 18h from the oldest data point
+    # Data fills left-to-right, so markers are relative to data length
+    data_len = max((len(h) for h in histories), default=0)
+    for hours in [6, 12, 18]:
+        marker_pos = int(hours / 24 * max_points)
+        tx = x1 + data_len - marker_pos
+        if x1 <= tx <= x2:
+            for ty in range(y1, y2, 4):
+                draw.point((tx, ty), fill=(50, 50, 50))
+
+    # Each sensor line, left-aligned
+    for hist, norm, color in zip(histories, normalized_list, colors):
+        if len(hist) < 2:
+            continue
+        x_off = 0
+        # Glow
+        for i in range(1, len(hist)):
+            px1 = i - 1 + x1 + x_off
+            py1 = int(y2 - norm[i - 1])
+            px2 = i + x1 + x_off
+            py2 = int(y2 - norm[i])
+            glow = (color[0] // 4, color[1] // 4, color[2] // 4)
+            draw.line((px1, py1, px2, py2), fill=glow, width=3)
+        # Main line
+        for i in range(1, len(hist)):
+            px1 = i - 1 + x1 + x_off
+            py1 = int(y2 - norm[i - 1])
+            px2 = i + x1 + x_off
+            py2 = int(y2 - norm[i])
             draw.line((px1, py1, px2, py2), fill=color, width=2)
 
 

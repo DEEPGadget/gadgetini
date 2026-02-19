@@ -3,15 +3,16 @@ import numpy as np
 from config import (DEBUG, GRAPH_SIZE,
                     FONT_PATH, BOLD_FONT_PATH, EXTRABOLD_FONT_PATH,
                     LIGHT_FONT_PATH, THIN_FONT_PATH, ICON_FONT_PATH)
+from base_viewer import BaseViewer
 from draw_utils import draw_aligned_text, draw_graph
 
 
-class SensorViewer:
+class SensorViewer(BaseViewer):
     def __init__(self, title, sensor_key, sub1_key=None, sub2_key=None,
                  fixed_min=None, fixed_max=None,
                  sub1_autoscale=False, sub2_autoscale=False):
+        super().__init__()
         self.title = title
-        self.active = 1
         self.sensor_key = sensor_key
         self.sub1_key = sub1_key
         self.sub2_key = sub2_key
@@ -53,15 +54,15 @@ class SensorViewer:
             val_font, unit_font = 36, 20
             unit_w = 30
         else:
-            val_font, unit_font = 26, 15
-            unit_w = 25
+            val_font, unit_font = 18, 12
+            unit_w = 20
 
         display_val = val_str or f"{round(sub_data.buffer[-1], 2):.1f}"
         fill_color = err_color if val_str else 'white'
         draw_aligned_text(draw=draw, text=display_val, font_size=val_font, fill=fill_color,
                           box=(box_x, box_y + 15, box_w - unit_w, 30 if full_width else 24),
                           align="right", halign="top",
-                          font_path=BOLD_FONT_PATH, autoscale=autoscale)
+                          font_path=BOLD_FONT_PATH, autoscale=True, ref_text="000.0")
 
         # Unit
         if not val_str:
@@ -71,14 +72,7 @@ class SensorViewer:
                               font_path=FONT_PATH, autoscale=False)
 
     def draw(self, draw, disp_manager, frame):
-        if disp_manager.horizontal == 1:
-            offset = (disp_manager.x_offset, disp_manager.y_offset)
-        else:
-            offset = (disp_manager.y_offset, disp_manager.x_offset)
-
-        draw.rectangle((0, 0, disp_manager.width, disp_manager.height), fill='black')
-        if DEBUG != 0:
-            draw.rectangle((offset[0],offset[1],disp_manager.width, disp_manager.height), outline=(0,0,255), width=3)
+        offset = self._setup(draw, disp_manager)
 
         sensor_data = disp_manager.sensors[self.sensor_key]
         sub_sensor_data_1 = disp_manager.sensors[self.sub1_key] if self.sub1_key else None
@@ -87,106 +81,82 @@ class SensorViewer:
         main_has_data = len(sensor_data.buffer) >= 2
 
         if not main_has_data and not sensor_data.error:
-            print("Ready for reading the sensor data")
             return
 
+        footer_h = 12
         if main_has_data:
-            if self.fixed_min is not None:
-                min_value = self.fixed_min
-                max_value = self.fixed_max
-            else:
-                min_value = int(np.min(sensor_data.buffer)*0.95)
-                max_value = int(np.max(sensor_data.buffer)*1.05)
+            min_value, max_value, normalized_data = self._normalize_single(
+                sensor_data, GRAPH_SIZE - footer_h, self.fixed_min, self.fixed_max)
 
-            normalized_data = np.interp(
-                sensor_data.buffer,
-                (min_value, max_value),
-                (8, GRAPH_SIZE-8)
-            )
-
-        gray = (50,50,50)
-
-        #GRAPHBOX
-        graphbox_x1 = offset[0]
-        graphbox_y1 = offset[1]
-        graphbox_x2 = graphbox_x1 + GRAPH_SIZE
-        graphbox_y2 = graphbox_y1 + GRAPH_SIZE
-        if DEBUG == 1:
-            draw.rectangle((graphbox_x1, graphbox_y1, graphbox_x2, graphbox_y2), outline=gray, width=3)
-
-
-        #DATABOX
-        if disp_manager.horizontal == 1:
-            databox_x1 = graphbox_x2 + 5
-            databox_y1 = graphbox_y1
-            databox_x2 = databox_x1 + GRAPH_SIZE
-            databox_y2 = databox_y1 + GRAPH_SIZE
-        else:
-            databox_x1 = graphbox_x1
-            databox_y1 = graphbox_y2 + 5
-            databox_x2 = databox_x1 + GRAPH_SIZE
-            databox_y2 = databox_y1 + GRAPH_SIZE
+        gray = (50, 50, 50)
+        graphbox, databox = self._boxes(offset, disp_manager.horizontal)
+        gx1, gy1, gx2, gy2 = graphbox
+        dx1, dy1, dx2, dy2 = databox
+        graph_gy2 = gy2 - footer_h
 
         if DEBUG == 1:
-            draw.rectangle((databox_x1, databox_y1, databox_x2, databox_y2), outline=gray, width=3)
+            draw.rectangle(graphbox, outline=gray, width=3)
+            draw.rectangle(databox, outline=gray, width=3)
 
-        err_color = (128, 128, 128)
+        err_color = self.ERR_COLOR
         if main_has_data:
-            sensor_value_str = str(f"{round(sensor_data.buffer[-1],2):.1f}")
+            sensor_value_str = f"{round(sensor_data.buffer[-1], 2):.1f}"
             main_color = sensor_data.get_color_gradient(sensor_data.buffer[-1])
         else:
             sensor_value_str = "Err"
             main_color = err_color
-        title = str(sensor_data.title_str)
-        unit = str(sensor_data.unit_str) if main_has_data else ""
+        title = sensor_data.title_str
+        unit = sensor_data.unit_str if main_has_data else ""
 
-        if main_has_data:
-            min_value_str = str(f"{round(min_value):.1f}"+sensor_data.unit_str)
-            max_value_str = str(f"{round(max_value):.1f}"+sensor_data.unit_str)
+        dw = dx2 - dx1
 
-        version_str = str(disp_manager.version)
+        # TITLE
+        self._draw_title(draw, title, dx1, dy1, dw, h=30)
 
-        #TITLE
-        draw_aligned_text(draw=draw, text=title, font_size=40, fill=main_color, box=(databox_x1, databox_y1, databox_x2-databox_x1, 30), align="center", halign="center", font_path=BOLD_FONT_PATH, autoscale=True)
-        #VALUE
-        draw_aligned_text(draw=draw, text=sensor_value_str, font_size=50, fill=main_color, box=(databox_x1, databox_y1+30, (databox_x2-databox_x1-25), 45), align="left", halign="center", font_path=EXTRABOLD_FONT_PATH, autoscale=False)
-        #UNIT
-        draw_aligned_text(draw=draw, text=unit, font_size=40, fill='white', box=(databox_x2-25, databox_y1+30, 25, 45), align="left", halign="top", font_path=BOLD_FONT_PATH, autoscale=True)
+        # VALUE
+        draw_aligned_text(draw=draw, text=sensor_value_str, font_size=50, fill=main_color,
+                          box=(dx1, dy1 + 30, dw - 25, 45),
+                          align="left", halign="center",
+                          font_path=EXTRABOLD_FONT_PATH, autoscale=False)
+        # UNIT
+        draw_aligned_text(draw=draw, text=unit, font_size=40, fill='white',
+                          box=(dx2 - 25, dy1 + 30, 25, 45),
+                          align="left", halign="top",
+                          font_path=BOLD_FONT_PATH, autoscale=True)
 
-        #IP
-        draw_aligned_text(draw=draw, text=disp_manager.ip_addr, font_size=8, fill='white', box=(databox_x1, databox_y2-12, GRAPH_SIZE, 12), align="left", halign="center", font_path=LIGHT_FONT_PATH)
+        # FOOTERS
+        self._draw_footer(draw, disp_manager, gx1, graph_gy2, GRAPH_SIZE, h=footer_h,
+                          mode='left')
+        self._draw_footer(draw, disp_manager, dx1, dy2 - footer_h, GRAPH_SIZE, h=footer_h,
+                          mode='right')
 
-        #Gadgetini Version
-        draw_aligned_text(draw=draw, text=version_str, font_size=8, fill='gray', box=(databox_x1, databox_y2-12, GRAPH_SIZE, 12), align="right", halign="center", font_path=LIGHT_FONT_PATH)
-
-
+        # SUBS
         margin = 5
-        dw = databox_x2 - databox_x1
         sub_count = (1 if sub_sensor_data_1 else 0) + (1 if sub_sensor_data_2 else 0)
 
         if sub_count == 2:
-            # Two subs — each gets half width
             half_w = dw / 2 - margin
             if sub_sensor_data_1:
                 self._draw_sub(draw, sub_sensor_data_1,
-                               databox_x1, half_w, databox_y1 + 75,
+                               dx1, half_w, dy1 + 75,
                                err_color, self.sub1_autoscale)
             if sub_sensor_data_2:
                 self._draw_sub(draw, sub_sensor_data_2,
-                               databox_x1 + dw / 2 + margin, half_w, databox_y1 + 75,
+                               dx1 + dw / 2 + margin, half_w, dy1 + 75,
                                err_color, self.sub2_autoscale)
         elif sub_count == 1:
-            # One sub — full width, centered
             sub = sub_sensor_data_1 or sub_sensor_data_2
             autoscale = self.sub1_autoscale if sub_sensor_data_1 else self.sub2_autoscale
             self._draw_sub(draw, sub,
-                           databox_x1, dw, databox_y1 + 75,
+                           dx1, dw, dy1 + 75,
                            err_color, autoscale, full_width=True)
 
-        #Min/Max & Graph
+        # Min/Max & Graph
         if main_has_data:
-            draw_aligned_text(draw=draw, text=max_value_str, font_size=8, fill=sensor_data.get_color_gradient(max_value), box=(graphbox_x1, graphbox_y1, GRAPH_SIZE, 8), align="center", halign="top", font_path=FONT_PATH)
-            draw_aligned_text(draw=draw, text=min_value_str, font_size=8, fill=sensor_data.get_color_gradient(min_value), box=(graphbox_x1, graphbox_y2-8, GRAPH_SIZE, 8), align="center", halign="bottom", font_path=FONT_PATH)
+            self._draw_graph_labels(
+                draw, min_value, max_value, sensor_data.unit_str,
+                gx1, gy1, graph_gy2, GRAPH_SIZE,
+                min_fill=sensor_data.get_color_gradient(min_value),
+                max_fill=sensor_data.get_color_gradient(max_value))
 
-            draw_graph(draw, sensor_data, normalized_data,
-                       (graphbox_x1, graphbox_y1, graphbox_x2, graphbox_y2))
+            draw_graph(draw, sensor_data, normalized_data, (gx1, gy1, gx2, graph_gy2))
