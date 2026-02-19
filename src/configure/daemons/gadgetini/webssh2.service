@@ -1,0 +1,12 @@
+[Unit]
+Description=Run npm start for webssh2:2222
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/gadgetini/webssh2/app
+ExecStart=/usr/bin/npm start
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

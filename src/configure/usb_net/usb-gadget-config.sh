@@ -3,7 +3,7 @@
 # --- Variable Configuration ---
 GADGET_MAC="fe:f1:1a:d3:6e:b6"
 NM_CON_NAME="usb-gadget-gadgetini"
-STATIC_IP="10.12.194.1/28"
+STATIC_IP="fd12:3456:789a:1::2/64"
 CMDLINE_FILE="/boot/firmware/cmdline.txt"
 CONFIG_FILE="/boot/firmware/config.txt"
 SERVICE_FILE="/etc/systemd/system/usb-gadget-up.service"

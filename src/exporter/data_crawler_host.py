@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# deepgadget Monitoring Agent (v0.4)
+#
+# This code collects basic host hardware/resource metrics (e.g., CPU, memory, disk, network)
+# and forwards them to the deepgadget monitoring system for observability purposes.
+#
+# It is intended for monitoring only: it does not control, modify, or tune host resources,
+# and it should not be interpreted as performing benchmarking or enforcing limits.
 
 import redis
 import json
@@ -11,8 +18,9 @@ from rich.text import Text
 from rich.console import Group
 import time
 import math
+from typing import List, Dict
 
-client = redis.StrictRedis(host='localhost', port=6379, db=0)
+client = redis.StrictRedis(host='fd12:3456:789a:1::2', port=6379, db=0)
 
 def get_sensors_output():
     result = subprocess.Popen(["sensors", "-j"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -158,20 +166,211 @@ def get_CPU_telemetry(sensors=None, sensors_output=None):
     return parse_cpu_telemetry(sensors_data)
 
 
+def get_ipmi_power_output():
+    """
+    Launch ipmitool process to read CPU power sensors (POWER_CPU1, POWER_CPU2).
+    Returns a subprocess.Popen handle.
+    """
+    return subprocess.Popen(
+        ["ipmitool", "sensor", "reading", "POWER_CPU1", "POWER_CPU2"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+def parse_cpu_power_telemetry(ipmi_text: str):
+    """
+    Parse ipmitool text output and extract POWER_CPU1/POWER_CPU2 readings as float Watts.
+
+    Supported formats:
+      A) Two-column output (your current output):
+         POWER_CPU1 | 82
+         POWER_CPU2 | 86
+
+      B) Typical `sensor reading` with unit:
+         POWER_CPU1 | 82.000 | Watts | ok
+
+      C) Typical `sdr elist` style:
+         POWER_CPU1 | ... | 82 Watts
+
+    Returns:
+      {"cpu1_watts": float|None, "cpu2_watts": float|None}
+    """
+    result = {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
+
+    for line in ipmi_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+
+        # Match lines starting with POWER_CPU1 or POWER_CPU2 and capture the rest
+        m = re.match(r"^(POWER_CPU[12])\s*\|\s*(.+)$", line)
+        if not m:
+            continue
+
+        sensor_name = m.group(1)
+        rest = m.group(2).strip()
+
+        watts = None
+
+        # Case 1: Two-column output where `rest` is a plain number (e.g., "82")
+        mn = re.match(r"^([0-9]+(?:\.[0-9]+)?)$", rest)
+        if mn:
+            watts = float(mn.group(1))
+        else:
+            # Case 2: "82 Watts" appears somewhere in the remainder
+            mw = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*Watts\b", rest, re.IGNORECASE)
+            if mw:
+                watts = float(mw.group(1))
+            else:
+                # Case 3: Multi-column format: "82.000 | Watts | ok"
+                parts = [p.strip() for p in rest.split("|")]
+                if parts and re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", parts[0]):
+                    watts = float(parts[0])
+
+        # Assign parsed value to the proper output field
+        if watts is not None:
+            if sensor_name.endswith("1"):
+                result["cpu_curr_pwr_0"] = watts
+            else:
+                result["cpu_curr_pwr_1"] = watts
+
+    return result
+
+def get_CPU_power_telemetry(ipmi_proc=None, ipmi_output=None):
+    """
+    Fetch and parse CPU power telemetry.
+
+    Usage patterns:
+      - If ipmi_output is provided (string), parse it directly.
+      - Otherwise, ipmi_proc must be a subprocess.Popen handle and we read stdout/stderr.
+
+    Returns:
+      {"cpu1_watts": float|None, "cpu2_watts": float|None}
+    """
+    if ipmi_output is not None:
+        if not isinstance(ipmi_output, str):
+            raise TypeError("ipmi_output must be a string")
+        text = ipmi_output
+    else:
+        if ipmi_proc is None:
+            raise ValueError("ipmi_proc is required when ipmi_output is not provided")
+
+        out, err = ipmi_proc.communicate()
+        if ipmi_proc.returncode not in (0, None) and not out:
+            raise RuntimeError(f"ipmitool failed: {err.strip()}")
+        text = out
+
+    return parse_cpu_power_telemetry(text)
+
+# Example:
+# ipmi = get_ipmi_power_output()
+# power = get_CPU_power_telemetry(ipmi_proc=ipmi)
+# print(power)  # {"cpu1_watts": 82.0, "cpu2_watts": 86.0}
+
+def get_nic_link_status() -> List[Dict[str, str]]:
+    """
+    Return NIC link status based on NetworkManager (nmcli).
+
+    - Excludes loopback interface "lo"
+    - Considers only TYPE == "ethernet"
+    - Maps link status to bool:
+        * connected  -> True
+        * connecting -> True  (typically link is up but IP config/DHCP is in progress)
+        * other      -> False (e.g., unavailable, disconnected, unmanaged)
+
+    Return format:
+        [
+          {"ens102f1": True},
+          {"enP1s125f0np0": False},
+          ...
+        ]
+    """
+    cmd = ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "dev", "status"]
+    res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+
+    # If nmcli fails, raise an error with stderr for debugging
+    if res.returncode != 0:
+        raise RuntimeError(f"nmcli failed (rc={res.returncode}): {res.stderr.strip()}")
+
+    out: List[Dict[str, str]] = []
+
+    for line in res.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+
+        # Split into 3 fields only: DEVICE:TYPE:STATE (STATE may contain spaces/parentheses)
+        parts = line.split(":", 2)
+        if len(parts) != 3:
+            continue
+
+        dev, nic_type, state = parts[0].strip(), parts[1].strip(), parts[2].strip()
+
+        # Exclude loopback and non-ethernet devices
+        if dev == "lo" or nic_type != "ethernet":
+            continue
+
+        state_lower = state.lower()
+        print("state_lower", state_lower)
+        # Treat "connected" and "connecting" as link up
+        link_up = 0
+        if state_lower.startswith("connected") or state_lower.startswith("connecting"):
+            link_up = 1
+        out.append({dev: str(link_up)})
+
+    return out
+
+
+def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0") -> int:
+    """
+    Returns Mellanox/NVIDIA IB NIC ASIC temperature (°C) by running:
+      sudo mget_temp -d <mst_dev>
+    Example output: "42"
+    """
+    p = subprocess.run(
+        ["sudo", "mget_temp", "-d", mst_dev],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=3,
+        check=False,
+    )
+    if p.returncode != 0:
+        raise RuntimeError(f"mget_temp failed (rc={p.returncode}): {p.stderr.strip()}")
+
+    out = p.stdout.strip()
+    try:
+        return str(out)
+    except ValueError as e:
+        raise RuntimeError(f"unexpected mget_temp output: {out!r}") from e
+
 if __name__ == "__main__":
     while True:
         sensors  = get_sensors_output()
+        ipmi = get_ipmi_power_output()
         #curr_chipsinfo = get_amd_gpu_telemetry(sensors)
         curr_chipsinfo = get_nvidia_gpu_telemetry() 
         curr_cpusinfo = get_CPU_telemetry(sensors)
         curr_meminfo = get_memory_usage_mb()
-
+        curr_ipmi_telemetry = get_CPU_power_telemetry(ipmi_proc=ipmi)
+        curr_link_status = get_nic_link_status()
         # lpush for multi socket cpu, multi gpu 
         for idx, cpu in enumerate(curr_cpusinfo[1]):
             print("cpu_temp_" + str(idx), str(cpu))
             client.set("cpu_temp_" + str(idx), str(cpu))
-
-        # name
+        # ipmi cpu power
+        for idx, key in enumerate(curr_ipmi_telemetry):
+            client.set(str(key), str(curr_ipmi_telemetry[key]))
+            print(curr_ipmi_telemetry)
+            print(key)
+            print(curr_ipmi_telemetry[key])
+		# nic link status
+        for nic in curr_link_status:
+            key ,val = next(iter(nic.items()))
+            client.set("nic_"+str(key)+"_stat", str(val))
+            print(key)
+            print(val)
         for idx, gpu in enumerate(curr_chipsinfo):
             client.set("gpu_name_" + str(idx), str(gpu[0]))
         
@@ -199,4 +398,4 @@ if __name__ == "__main__":
         client.set("mem_usage", curr_meminfo[1])
         client.set("mem_available", curr_meminfo[2])
         client.set("cpu_usage", get_cpu_usage_percent())
-
+        client.set("ib_nic_temp", get_ib_nic_asic_temp())

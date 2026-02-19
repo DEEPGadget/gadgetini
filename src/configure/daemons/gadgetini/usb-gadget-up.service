@@ -1,0 +1,11 @@
+[Unit]
+Description=Activate Gadget USB Network Connection
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/nmcli connection up usb-gadget-gadgetini ifname usb0
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
