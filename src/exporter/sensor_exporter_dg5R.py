@@ -163,14 +163,12 @@ class DLCCollector:
             pwr_l = get_float(f"gpu_max_pwr_{i}")
             mem_u = get_float(f"gpu_curr_mem_{i}")
             mem_t = get_float(f"gpu_max_mem_{i}")
-            mem_util = (mem_u / mem_t * 100) if mem_t > 10 else 0.0
 
             g.add_metric([srv, f"gpu{i}", "temperature",      "°C",   extra], temp)
             g.add_metric([srv, f"gpu{i}", "power_current",    "W",    extra], pwr)
             g.add_metric([srv, f"gpu{i}", "power_limit",      "W",    extra], pwr_l)
             g.add_metric([srv, f"gpu{i}", "memory_used",      "MiB",  extra], mem_u)
             g.add_metric([srv, f"gpu{i}", "memory_total",     "MiB",  extra], mem_t)
-            g.add_metric([srv, f"gpu{i}", "memory_util",      "%",    extra], round(mem_util, 1))
 
         # ── CPUs ───────────────────────────────────────────────────
         g.add_metric([srv, "cpu", "usage_total", "%", ""], get_float("cpu_usage"))
