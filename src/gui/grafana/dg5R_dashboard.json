@@ -155,32 +155,6 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} > 80 or dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} < 10",
-        "hide": true,
-        "iconColor": "red",
-        "name": "Chassis humidity critical",
-        "textFormat": "Critical",
-        "titleFormat": "Chassis humidity"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${datasource}"
-        },
-        "enable": true,
-        "expr": "(dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} > 60 and dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} <= 80) or (dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} >= 10 and dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} < 20)",
-        "hide": true,
-        "iconColor": "yellow",
-        "name": "Chassis humidity warning",
-        "textFormat": "Warning",
-        "titleFormat": "Chassis humidity"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${datasource}"
-        },
-        "enable": true,
         "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu.\", metric=\"temperature\"} > 90",
         "hide": true,
         "iconColor": "red",
@@ -829,6 +803,34 @@
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "B"
+        }
+      ],
+      "annotations": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "enable": true,
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} > 80 or dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} < 10",
+          "hide": false,
+          "iconColor": "red",
+          "name": "Chassis humidity critical",
+          "textFormat": "Critical",
+          "titleFormat": "Chassis humidity"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "enable": true,
+          "expr": "(dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} > 60 and dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} <= 80) or (dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} >= 10 and dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} < 20)",
+          "hide": false,
+          "iconColor": "yellow",
+          "name": "Chassis humidity warning",
+          "textFormat": "Warning",
+          "titleFormat": "Chassis humidity"
         }
       ],
       "title": "Chassis Temperature & Humidity",
