@@ -25,7 +25,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\".*asic temperature\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu.\", metric=\"temperature\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -119,7 +119,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\".*current power usage\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu.\", metric=\"power_current\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -213,7 +213,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"CPU\\\\d+ temperature\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cpu[0-9]\", metric=\"temperature\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -307,7 +307,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"CPU\\\\d+ power usage\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cpu[0-9]\", metric=\"power\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -401,7 +401,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"CPU Usage\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cpu\", metric=\"usage_total\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -502,7 +502,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature inlet.*\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"inlet[0-9]_temp\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -596,7 +596,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature inlet.*\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"inlet[0-9]_temp\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -690,7 +690,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature outlet.*\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"outlet[0-9]_temp\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -784,7 +784,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant deltaT.*\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"delta_t[0-9]\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -878,7 +878,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"LEAK detection\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"leak_detected\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -972,7 +972,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Coolant level\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"level_full\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -1066,7 +1066,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air temperature\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_temp\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -1160,7 +1160,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air humidity\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -1254,7 +1254,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air humidity\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -1355,7 +1355,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Network link status\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"network\", metric=\"link_status\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -1449,7 +1449,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Network errors rate\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", metric=\"Network_errors_rate\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -1543,7 +1543,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Network drops rate\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", metric=\"Network_drops_rate\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -1644,7 +1644,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Memory_available\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"memory\", metric=\"available\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",
@@ -1738,7 +1738,7 @@
               "datasourceUid": "dfddakquxzf28a",
               "model": {
                 "editorMode": "code",
-                "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Swap_usage\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", metric=\"Swap_usage\"}",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "{{metric}}",

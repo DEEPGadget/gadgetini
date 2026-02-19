@@ -25,7 +25,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature inlet.*\"} > 45 or DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature inlet.*\"} < 18",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"inlet[0-9]_temp\"} > 45 or dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"inlet[0-9]_temp\"} < 18",
         "hide": true,
         "iconColor": "red",
         "name": "Coolant inlet critical",
@@ -38,7 +38,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "(DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature inlet.*\"} > 40 and DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature inlet.*\"} <= 45) or (DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature inlet.*\"} >= 18 and DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature inlet.*\"} < 22)",
+        "expr": "(dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"inlet[0-9]_temp\"} > 40 and dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"inlet[0-9]_temp\"} <= 45) or (dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"inlet[0-9]_temp\"} >= 18 and dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"inlet[0-9]_temp\"} < 22)",
         "hide": true,
         "iconColor": "yellow",
         "name": "Coolant inlet warning",
@@ -51,7 +51,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature outlet.*\"} > 65",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"outlet[0-9]_temp\"} > 65",
         "hide": true,
         "iconColor": "red",
         "name": "Coolant outlet critical",
@@ -64,7 +64,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature outlet.*\"} > 60 and DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature outlet.*\"} <= 65",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"outlet[0-9]_temp\"} > 60 and dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"outlet[0-9]_temp\"} <= 65",
         "hide": true,
         "iconColor": "yellow",
         "name": "Coolant outlet warning",
@@ -77,7 +77,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant deltaT.*\"} > 20",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"delta_t[0-9]\"} > 20",
         "hide": true,
         "iconColor": "red",
         "name": "Coolant deltaT critical",
@@ -90,7 +90,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant deltaT.*\"} > 15 and DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant deltaT.*\"} <= 20",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"delta_t[0-9]\"} > 15 and dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"delta_t[0-9]\"} <= 20",
         "hide": true,
         "iconColor": "yellow",
         "name": "Coolant deltaT warning",
@@ -103,7 +103,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Coolant level\"} == 0",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"level_full\"} == 0",
         "hide": true,
         "iconColor": "red",
         "name": "Coolant level critical",
@@ -116,7 +116,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"LEAK detection\"} == 1",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"leak_detected\"} == 1",
         "hide": true,
         "iconColor": "red",
         "name": "Coolant leak critical",
@@ -129,7 +129,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air temperature\"} > 50",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_temp\"} > 50",
         "hide": true,
         "iconColor": "red",
         "name": "Chassis temp critical",
@@ -142,7 +142,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air temperature\"} > 40 and DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air temperature\"} <= 50",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_temp\"} > 40 and dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_temp\"} <= 50",
         "hide": true,
         "iconColor": "yellow",
         "name": "Chassis temp warning",
@@ -155,7 +155,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air humidity\"} > 80 or DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air humidity\"} < 10",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} > 80 or dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} < 10",
         "hide": true,
         "iconColor": "red",
         "name": "Chassis humidity critical",
@@ -168,7 +168,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "(DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air humidity\"} > 60 and DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air humidity\"} <= 80) or (DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air humidity\"} >= 10 and DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air humidity\"} < 20)",
+        "expr": "(dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} > 60 and dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} <= 80) or (dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} >= 10 and dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"} < 20)",
         "hide": true,
         "iconColor": "yellow",
         "name": "Chassis humidity warning",
@@ -181,7 +181,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\".*asic temperature\"} > 90",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu.\", metric=\"temperature\"} > 90",
         "hide": true,
         "iconColor": "red",
         "name": "AI processor temp critical",
@@ -194,7 +194,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\".*asic temperature\"} > 75 and DLC_sensors_gauge{server_name=\"dg5R\", metric=~\".*asic temperature\"} <= 90",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu.\", metric=\"temperature\"} > 75 and dlc_system_sensor{server=\"dg5R\", component=~\"gpu.\", metric=\"temperature\"} <= 90",
         "hide": true,
         "iconColor": "yellow",
         "name": "AI processor temp warning",
@@ -207,7 +207,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"CPU[0-9]+ temperature\"} > 95",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cpu[0-9]\", metric=\"temperature\"} > 95",
         "hide": true,
         "iconColor": "red",
         "name": "CPU temp critical",
@@ -220,7 +220,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"CPU[0-9]+ temperature\"} > 85 and DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"CPU[0-9]+ temperature\"} <= 95",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cpu[0-9]\", metric=\"temperature\"} > 85 and dlc_system_sensor{server=\"dg5R\", component=~\"cpu[0-9]\", metric=\"temperature\"} <= 95",
         "hide": true,
         "iconColor": "yellow",
         "name": "CPU temp warning",
@@ -233,7 +233,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"OOM_count\"} >= 1",
+        "expr": "dlc_system_sensor{server=\"dg5R\", metric=\"OOM_count\"} >= 1",
         "hide": true,
         "iconColor": "red",
         "name": "OOM critical",
@@ -246,7 +246,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Network link status\"} == 0",
+        "expr": "dlc_system_sensor{server=\"dg5R\", component=\"network\", metric=\"link_status\"} == 0",
         "hide": true,
         "iconColor": "red",
         "name": "Network link down",
@@ -259,7 +259,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Network drops rate\"} >= 0.05",
+        "expr": "dlc_system_sensor{server=\"dg5R\", metric=\"Network_drops_rate\"} >= 0.05",
         "hide": true,
         "iconColor": "red",
         "name": "Network drops critical",
@@ -272,7 +272,7 @@
           "uid": "${datasource}"
         },
         "enable": true,
-        "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Network drops rate\"} > 0.01 and DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Network drops rate\"} < 0.05",
+        "expr": "dlc_system_sensor{server=\"dg5R\", metric=\"Network_drops_rate\"} > 0.01 and dlc_system_sensor{server=\"dg5R\", metric=\"Network_drops_rate\"} < 0.05",
         "hide": true,
         "iconColor": "yellow",
         "name": "Network drops warning",
@@ -329,7 +329,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\"}",
           "instant": true,
           "legendFormat": "{{metric}}",
           "refId": "A"
@@ -413,7 +413,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant.*|LEAK.*|Air.*\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cooling|environment\"}",
           "instant": true,
           "legendFormat": "{{metric}}",
           "refId": "A"
@@ -451,7 +451,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"CPU.*|.*asic temperature|.*power usage|.*utilization|.*power limit|Memory.*|Swap.*|OOM.*\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cpu.*|gpu.*|memory\"}",
           "instant": true,
           "legendFormat": "{{metric}}",
           "refId": "A"
@@ -489,7 +489,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Network.*\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=\"network\"}",
           "instant": true,
           "legendFormat": "{{metric}}",
           "refId": "A"
@@ -664,7 +664,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"Coolant temperature.*|Coolant deltaT.*\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"inlet[0-9]_temp|outlet[0-9]_temp|delta_t[0-9]\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "A"
@@ -814,7 +814,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air temperature\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_temp\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "A"
@@ -825,7 +825,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Air humidity\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "B"
@@ -930,7 +930,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\".*asic temperature\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu.\", metric=\"temperature\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "A"
@@ -1035,7 +1035,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\".*current power usage\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu.\", metric=\"power_current\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "A"
@@ -1152,7 +1152,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Memory_total\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=\"memory\", metric=\"total\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "A"
@@ -1163,7 +1163,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Memory_usage\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=\"memory\", metric=\"usage\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "B"
@@ -1174,7 +1174,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Memory_available\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=\"memory\", metric=\"available\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "C"
@@ -1185,7 +1185,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=\"Swap_usage\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", metric=\"Swap_usage\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "D"
@@ -1290,7 +1290,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"CPU[0-9]+ temperature\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cpu[0-9]\", metric=\"temperature\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "A"
@@ -1395,7 +1395,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "DLC_sensors_gauge{server_name=\"dg5R\", metric=~\"CPU[0-9]+ power usage\"}",
+          "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cpu[0-9]\", metric=\"power\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "A"
