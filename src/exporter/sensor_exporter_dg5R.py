@@ -83,13 +83,7 @@ client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=T
 
 
 [NIC]
-- nic_ens102f0_stat         (string/boolean(true/false))  link status (UP/DOWN)
-- nic_ens102f1_stat         (string/boolean)
-- nic_enP1s125f0np0_stat    (string/boolean)
-- nic_enP1s125f1np1_stat    (string/boolean)
-- nic_enxfef11ad36eb7_stat  (string/boolean)
-- nic_enxee7c7c859844_stat  (string/boolean)
-
+- nic_*_stat         (string/boolean(true/false))  link status (1 UP, 0 DOWN)
 
 [Infiniband / IB]
 - ib_nic_temp               (°C)       IB NIC chipset temperature
@@ -101,7 +95,7 @@ client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=T
 - coolant_temp_outlet2      (°C)       coolant outlet temperature (channel2)
 - coolant_delta_t1          (°C)       ΔT = outlet1 - inlet1
 - coolant_delta_t2          (°C)       ΔT = outlet2 - inlet2
-- coolant_level             (0/1 bool) coolant level (0 Low, 1 High) 
+- coolant_level             (0/1 bool) coolant level (0 Middle, 1 High) 
 - coolant_leak              (0/1 bool) coolant leakage detection (0 Noraml, 1 Leak detected) 
 
 [Air / Environment]
