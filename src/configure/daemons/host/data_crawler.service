@@ -1,0 +1,14 @@
+[Unit]
+Description=host server hardware metric crawling daemon for deepgadget gadgeitni
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/gadgetini/venv/bin/python /opt/gadgetini/data_crawler_host.py
+Restart=always
+RestartSec=5
+User=root
+Group=root
+[Install]
+WantedBy=multi-user.target
+

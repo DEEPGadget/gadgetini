@@ -1,0 +1,14 @@
+[Unit]
+Desctiption=Activate gadgetini monitoring system network start up
+Requires=NetworkManager.service
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/nmcli connection up gadgetini ifname enxfef11ad36eb7
+Type=oneshot
+RemainAfterExit=yes
+User=root
+Group=root
+[Install]
+WantedBy=multi-user.target
+
