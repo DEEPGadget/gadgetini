@@ -79,7 +79,7 @@ client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=T
 [Memory]
 - mem_total                 (GiB)    total memory 
 - mem_available             (GiB)    available memory
-- mem_usage                 (%)      memory usage
+- mem_usage                 (GiB)    memory usage
 
 
 [NIC]
@@ -92,7 +92,7 @@ client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=T
 
 
 [Infiniband / IB]
-- ib_nic_temp               (°C)       IB NIC 칩셋 온도
+- ib_nic_temp               (°C)       IB NIC chipset temperature
 
 [Cooling - coolant]
 - coolant_temp_inlet1       (°C)       coolant inlet temperature (channel1)
@@ -182,7 +182,7 @@ class DLCCollector:
         # ── System Memory ──────────────────────────────────────────
         g.add_metric([srv, "memory", "total",     "GiB", ""], get_float("mem_total"))
         g.add_metric([srv, "memory", "available", "GiB", ""], get_float("mem_available"))
-        g.add_metric([srv, "memory", "usage",     "%",   ""], get_float("mem_usage"))
+        g.add_metric([srv, "memory", "usage",     "GiB",   ""], get_float("mem_usage"))
 
         # ── Network Interfaces status ──────────────────────────────
         nic_patterns = [
