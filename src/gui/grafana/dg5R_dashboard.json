@@ -491,7 +491,7 @@
           "editorMode": "code",
           "expr": "dlc_system_sensor{server=\"dg5R\", component=\"network\"}",
           "instant": true,
-          "legendFormat": "{{metric}}",
+          "legendFormat": "{{extra}}",
           "refId": "A"
         }
       ],
@@ -931,7 +931,7 @@
           },
           "editorMode": "code",
           "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu.\", metric=\"temperature\"}",
-          "legendFormat": "{{metric}}",
+          "legendFormat": "{{component}}",
           "range": true,
           "refId": "A"
         }
@@ -1036,7 +1036,7 @@
           },
           "editorMode": "code",
           "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu.\", metric=\"power_current\"}",
-          "legendFormat": "{{metric}}",
+          "legendFormat": "{{component}}",
           "range": true,
           "refId": "A"
         }
@@ -1178,17 +1178,6 @@
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5R\", metric=\"Swap_usage\"}",
-          "legendFormat": "{{metric}}",
-          "range": true,
-          "refId": "D"
         }
       ],
       "title": "Memory & Swap",
@@ -1291,7 +1280,7 @@
           },
           "editorMode": "code",
           "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cpu[0-9]\", metric=\"temperature\"}",
-          "legendFormat": "{{metric}}",
+          "legendFormat": "{{component}}",
           "range": true,
           "refId": "A"
         }
@@ -1396,7 +1385,7 @@
           },
           "editorMode": "code",
           "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cpu[0-9]\", metric=\"power\"}",
-          "legendFormat": "{{metric}}",
+          "legendFormat": "{{component}}",
           "range": true,
           "refId": "A"
         }
