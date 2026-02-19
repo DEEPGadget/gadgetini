@@ -33,6 +33,10 @@ class DailyViewer(BaseViewer):
         gx1, gy1, gx2, gy2 = graphbox
         dx1, dy1, dx2, dy2 = databox
 
+        footer_h = 12
+        graph_gy2 = gy2 - footer_h
+        actual_graph_h = graph_gy2 - gy1
+
         if DEBUG == 1:
             gray = (50, 50, 50)
             draw.rectangle(graphbox, outline=gray, width=3)
@@ -42,13 +46,14 @@ class DailyViewer(BaseViewer):
 
         # Graph
         if has_history:
-            min_val, max_val, normalized_list = self._normalize_histories(histories)
+            min_val, max_val, normalized_list = self._normalize_histories(
+                histories, actual_graph_h)
 
             self._draw_graph_labels(draw, min_val, max_val, unit_str,
-                                    gx1, gy1, gy2, GRAPH_SIZE)
+                                    gx1, gy1, graph_gy2, GRAPH_SIZE)
 
             draw_daily_graph(draw, histories, normalized_list, self.colors,
-                             (gx1, gy1, gx2, gy2))
+                             (gx1, gy1, gx2, graph_gy2))
 
         elif has_live:
             live_vals = [s.buffer[-1] for s in sensor_list if len(s.buffer) > 0]
@@ -58,13 +63,12 @@ class DailyViewer(BaseViewer):
                 draw_aligned_text(draw=draw, text=peak_str, font_size=8, fill='white',
                                   box=(gx1, gy1, GRAPH_SIZE, 8),
                                   align="center", halign="top", font_path=FONT_PATH)
-                gy_mid = (gy1 + gy2) // 2
+                gy_mid = (gy1 + graph_gy2) // 2
                 for gx in range(gx1, gx2, 4):
                     draw.point((gx, gy_mid), fill=(50, 50, 50))
 
         # === Data panel (adaptive) ===
         dw = dx2 - dx1
-        footer_h = 12
 
         if num <= 5:
             cols = 1
@@ -132,10 +136,13 @@ class DailyViewer(BaseViewer):
                                   box=(val_x + val_w, ry, unit_w, row_h),
                                   align="left", halign="center", font_path=FONT_PATH)
 
-        # FOOTER
-        self._draw_footer(draw, disp_manager, dx1, dy2 - footer_h, GRAPH_SIZE, h=footer_h)
+        # FOOTERS
+        self._draw_footer(draw, disp_manager, gx1, graph_gy2, GRAPH_SIZE, h=footer_h,
+                          mode='left')
+        self._draw_footer(draw, disp_manager, dx1, dy2 - footer_h, GRAPH_SIZE, h=footer_h,
+                          mode='right')
 
-    def _normalize_histories(self, histories):
+    def _normalize_histories(self, histories, graph_h):
         """Normalize history data lists (not sensor buffers)."""
         import numpy as np
         all_values = []
@@ -150,7 +157,7 @@ class DailyViewer(BaseViewer):
         normalized_list = []
         for h in histories:
             if len(h) >= 2:
-                norm = np.interp(h, (min_val, max_val), (8, GRAPH_SIZE - 8))
+                norm = np.interp(h, (min_val, max_val), (8, graph_h - 8))
                 normalized_list.append(list(norm))
             else:
                 normalized_list.append([])

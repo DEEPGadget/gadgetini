@@ -28,24 +28,27 @@ class MultiSensorViewer(BaseViewer):
         gx1, gy1, gx2, gy2 = graphbox
         dx1, dy1, dx2, dy2 = databox
 
+        footer_h = 12
+        graph_gy2 = gy2 - footer_h
+        actual_graph_h = graph_gy2 - gy1
+
         if DEBUG == 1:
             gray = (50, 50, 50)
-            draw.rectangle(graphbox, outline=gray, width=3)
+            draw.rectangle((gx1, gy1, gx2, graph_gy2), outline=gray, width=3)
             draw.rectangle(databox, outline=gray, width=3)
 
         unit_str = sensor_list[0].unit_str
 
         # Graph
         if has_data:
-            min_val, max_val, normalized_list = self._normalize(sensor_list, GRAPH_SIZE)
+            min_val, max_val, normalized_list = self._normalize(sensor_list, actual_graph_h)
             self._draw_graph_labels(draw, min_val, max_val, unit_str,
-                                    gx1, gy1, gy2, GRAPH_SIZE)
+                                    gx1, gy1, graph_gy2, GRAPH_SIZE)
             draw_multi_graph(draw, sensor_list, normalized_list, self.colors,
-                             graphbox)
+                             (gx1, gy1, gx2, graph_gy2))
 
         # === Data panel layout ===
         dw = dx2 - dx1
-        footer_h = 12
 
         if num <= 5:
             cols = 1
@@ -114,5 +117,9 @@ class MultiSensorViewer(BaseViewer):
                                   box=(val_x + val_w, ry, unit_w, row_h),
                                   align="left", halign="center", font_path=FONT_PATH)
 
-        # FOOTER
-        self._draw_footer(draw, disp_manager, dx1, dy2 - footer_h, GRAPH_SIZE, h=footer_h)
+        # FOOTERS
+        self._draw_footer(draw, disp_manager, gx1, graph_gy2, GRAPH_SIZE, h=footer_h,
+                          mode='left')
+        self._draw_footer(draw, disp_manager, dx1, dy2 - footer_h, GRAPH_SIZE, h=footer_h,
+                          mode='right')
+

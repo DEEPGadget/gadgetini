@@ -10,8 +10,10 @@ class BaseViewer:
 
     ERR_COLOR = (128, 128, 128)
 
-    def __init__(self):
+    def __init__(self, host_data=0):
         self.active = 1
+        self.host_data = host_data
+        #print(f"host_data = {self.host_data}")
 
     def _setup(self, draw, disp_manager):
         """Clear screen, draw debug border, return offset tuple."""
@@ -44,16 +46,63 @@ class BaseViewer:
                           font_path=BOLD_FONT_PATH, autoscale=True)
 
     def _draw_footer(self, draw, disp_manager, x, y, w, h=10, mode='both'):
-        """Footer with IP (left) and version (right). mode: 'both'|'left'|'right'."""
+        """Footer: left=leak+level status dots, right=IP+version.
+        mode: 'both'|'left'|'right'
+          'left'  → leak/level indicators only (used by left panel in dual-panel layouts)
+          'right' → IP + version only         (used by right panel in dual-panel layouts)
+          'both'  → left 45% status, right 55% IP+version
+        """
+        dot_r = 3
+        dot_cy = y + h // 2
+
+        # --- Status indicators (LEAK + LEVEL) ---
         if mode in ('both', 'left'):
-            draw_aligned_text(draw=draw, text=disp_manager.ip_addr,
-                              font_size=8, fill='white',
-                              box=(x, y, w, h), align="left", halign="center",
-                              font_path=LIGHT_FONT_PATH)
+            status_w = int(w * 0.45) if mode == 'both' else w
+            half_status = status_w // 2
+
+            leak_sensor = disp_manager.sensors.get('coolant_leak')
+            if leak_sensor and len(leak_sensor.buffer) > 0:
+                leak_color = (0, 200, 80) if int(round(leak_sensor.buffer[-1])) == 0 else (255, 60, 60)
+            else:
+                leak_color = self.ERR_COLOR
+
+            level_sensor = disp_manager.sensors.get('coolant_level')
+            if level_sensor and len(level_sensor.buffer) > 0:
+                level_color = (0, 200, 80) if int(round(level_sensor.buffer[-1])) == 1 else (255, 60, 60)
+            else:
+                level_color = self.ERR_COLOR
+
+            # Leak dot + label
+            lk_cx = x + dot_r + 2
+            draw.ellipse((lk_cx - dot_r, dot_cy - dot_r,
+                          lk_cx + dot_r, dot_cy + dot_r), fill=leak_color)
+            draw_aligned_text(draw=draw, text="LEAK", font_size=7, fill='white',
+                              box=(x + dot_r * 2 + 5, y, half_status - dot_r * 2 - 5, h),
+                              align="left", halign="center", font_path=LIGHT_FONT_PATH)
+
+            # Level dot + label
+            lv_x = x + half_status
+            lv_cx = lv_x + dot_r + 2
+            draw.ellipse((lv_cx - dot_r, dot_cy - dot_r,
+                          lv_cx + dot_r, dot_cy + dot_r), fill=level_color)
+            draw_aligned_text(draw=draw, text="LEVEL", font_size=7, fill='white',
+                              box=(lv_x + dot_r * 2 + 5, y, half_status - dot_r * 2 - 5, h),
+                              align="left", halign="center", font_path=LIGHT_FONT_PATH)
+
+        # --- IP + version ---
         if mode in ('both', 'right'):
+            if mode == 'both':
+                info_x = x + int(w * 0.45)
+                info_w = w - int(w * 0.45)
+            else:
+                info_x, info_w = x, w
+            draw_aligned_text(draw=draw, text=disp_manager.ip_addr,
+                              font_size=7, fill='white',
+                              box=(info_x, y, info_w, h), align="left", halign="center",
+                              font_path=LIGHT_FONT_PATH)
             draw_aligned_text(draw=draw, text=disp_manager.version,
-                              font_size=8, fill='gray',
-                              box=(x, y, w, h), align="right", halign="center",
+                              font_size=7, fill='gray',
+                              box=(info_x, y, info_w, h), align="right", halign="center",
                               font_path=LIGHT_FONT_PATH)
 
     def _normalize(self, sensor_list, graph_h):

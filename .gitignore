@@ -4,3 +4,6 @@
 # python cache
 __pycache__/
 *.pyc
+
+src/display/history.json
+

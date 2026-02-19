@@ -32,9 +32,9 @@ class TempUtilViewer(BaseViewer):
             return
 
         # Layout
-        title_h = 12
+        title_h = 15
         graph_h = 95
-        footer_h = 10
+        footer_h = 12
         legend_h = GRAPH_SIZE - title_h - graph_h - footer_h
 
         if disp_manager.horizontal == 1:
@@ -101,6 +101,12 @@ class TempUtilViewer(BaseViewer):
             cy = legend_y + row * row_h_l
             self._draw_legend_row(draw, s, label, color, cx, cy, row_h_l, col_w)
 
-        # FOOTER
+        # FOOTERS
         ft_y = base_y + GRAPH_SIZE - footer_h
-        self._draw_footer(draw, disp_manager, lx, ft_y, full_w, h=footer_h)
+        if disp_manager.horizontal == 1:
+            self._draw_footer(draw, disp_manager, lx, ft_y, GRAPH_SIZE, h=footer_h,
+                              mode='left')
+            self._draw_footer(draw, disp_manager, rx, ft_y, GRAPH_SIZE, h=footer_h,
+                              mode='right')
+        else:
+            self._draw_footer(draw, disp_manager, lx, ft_y, full_w, h=footer_h)

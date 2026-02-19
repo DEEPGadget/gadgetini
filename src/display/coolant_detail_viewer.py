@@ -34,10 +34,10 @@ class CoolantDetailViewer(BaseViewer):
     def _draw_panel(self, draw, disp_manager, loop, px, py, panel_idx):
         w = GRAPH_SIZE
         title_h = 15
-        graph_h = 78
+        graph_h = 76
         row_h = 15
         delta_h = 12
-        footer_h = 10
+        footer_h = 12
 
         sensors = [disp_manager.sensors[k] for k in loop['sensor_keys']]
         delta_sensor = disp_manager.sensors[loop['delta_key']]

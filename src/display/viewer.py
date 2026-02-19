@@ -83,14 +83,16 @@ class SensorViewer(BaseViewer):
         if not main_has_data and not sensor_data.error:
             return
 
+        footer_h = 12
         if main_has_data:
             min_value, max_value, normalized_data = self._normalize_single(
-                sensor_data, GRAPH_SIZE, self.fixed_min, self.fixed_max)
+                sensor_data, GRAPH_SIZE - footer_h, self.fixed_min, self.fixed_max)
 
         gray = (50, 50, 50)
         graphbox, databox = self._boxes(offset, disp_manager.horizontal)
         gx1, gy1, gx2, gy2 = graphbox
         dx1, dy1, dx2, dy2 = databox
+        graph_gy2 = gy2 - footer_h
 
         if DEBUG == 1:
             draw.rectangle(graphbox, outline=gray, width=3)
@@ -122,8 +124,11 @@ class SensorViewer(BaseViewer):
                           align="left", halign="top",
                           font_path=BOLD_FONT_PATH, autoscale=True)
 
-        # FOOTER
-        self._draw_footer(draw, disp_manager, dx1, dy2 - 12, GRAPH_SIZE, h=12)
+        # FOOTERS
+        self._draw_footer(draw, disp_manager, gx1, graph_gy2, GRAPH_SIZE, h=footer_h,
+                          mode='left')
+        self._draw_footer(draw, disp_manager, dx1, dy2 - footer_h, GRAPH_SIZE, h=footer_h,
+                          mode='right')
 
         # SUBS
         margin = 5
@@ -150,8 +155,8 @@ class SensorViewer(BaseViewer):
         if main_has_data:
             self._draw_graph_labels(
                 draw, min_value, max_value, sensor_data.unit_str,
-                gx1, gy1, gy2, GRAPH_SIZE,
+                gx1, gy1, graph_gy2, GRAPH_SIZE,
                 min_fill=sensor_data.get_color_gradient(min_value),
                 max_fill=sensor_data.get_color_gradient(max_value))
 
-            draw_graph(draw, sensor_data, normalized_data, graphbox)
+            draw_graph(draw, sensor_data, normalized_data, (gx1, gy1, gx2, graph_gy2))

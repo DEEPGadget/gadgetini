@@ -59,6 +59,7 @@ def _build_sensor(entry, redis):
         "max_val": entry['max'],
         "read_rate": entry.get('read_rate', 1),
         "redis": redis,
+        "host_data": int(entry.get('host_data', 0)),
         "icon": _parse_icon(entry.get('icon')),
         "label": entry.get('label'),
     }

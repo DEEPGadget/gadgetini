@@ -68,23 +68,25 @@
   "sensors": [
     {
       "key": "coolant_inlet1",
-      "title": "Coolant Inlet1",
+      "title": "Coolant Inlet(1)",
       "unit": "°C",
-      "min": 15,
-      "max": 50,
+      "min": 0,
+      "max": 100,
       "read_rate": 1,
       "redis_key": "coolant_temp_inlet1",
+      "host_data": "0",
       "icon": "0xf0510"
     },
     {
       "key": "coolant_outlet1",
-      "title": "Coolant Outlet1",
+      "title": "Coolant Outlet(1)",
       "unit": "°C",
-      "min": 15,
-      "max": 60,
+      "min": 0,
+      "max": 100,
       "read_rate": 1,
       "redis_key": "coolant_temp_outlet1",
       "icon": "0xf0510",
+      "host_data": "0",
       "label": "OUT1"
     },
     {
@@ -92,31 +94,34 @@
       "title": "Coolant ΔT1",
       "unit": "°C",
       "min": 0,
-      "max": 20,
+      "max": 100,
       "read_rate": 1,
       "redis_key": "coolant_delta_t1",
+      "host_data": "0",
       "icon": "0xf0510",
       "label": "ΔT1"
     },
     {
       "key": "coolant_inlet2",
-      "title": "Coolant Inlet2",
+      "title": "Coolant Inlet(2)",
       "unit": "°C",
-      "min": 15,
-      "max": 50,
+      "min": 0,
+      "max": 100,
       "read_rate": 1,
       "redis_key": "coolant_temp_inlet2",
+      "host_data": "0",
       "icon": "0xf0510"
     },
     {
       "key": "coolant_outlet2",
-      "title": "Coolant Outlet2",
+      "title": "Coolant Outlet(2)",
       "unit": "°C",
-      "min": 15,
-      "max": 60,
+      "min": 0,
+      "max": 100,
       "read_rate": 1,
       "redis_key": "coolant_temp_outlet2",
       "icon": "0xf0510",
+      "host_data": "0",
       "label": "OUT2"
     },
     {
@@ -124,20 +129,22 @@
       "title": "Coolant ΔT2",
       "unit": "°C",
       "min": 0,
-      "max": 20,
+      "max": 100,
       "read_rate": 1,
       "redis_key": "coolant_delta_t2",
       "icon": "0xf0510",
+      "host_data": "0",
       "label": "ΔT2"
     },
     {
       "key": "chassis_temp",
-      "title": "Air Temperature",
+      "title": "Chassis Temperature",
       "unit": "°C",
       "min": -20,
-      "max": 60,
+      "max": 80,
       "read_rate": 1,
       "redis_key": "air_temp",
+      "host_data": "0",
       "icon": "0xf0510"
     },
     {
@@ -148,8 +155,29 @@
       "max": 100,
       "read_rate": 1,
       "redis_key": "air_humit",
+      "host_data": "0",
       "icon": "0xf058e",
       "label": "HUM"
+    },
+    {
+      "key": "coolant_level",
+      "title": "Coolant Level",
+      "unit": "",
+      "min": 0,
+      "max": 1,
+      "read_rate": 1,
+      "redis_key": "coolant_level",
+      "host_data": "0"
+    },
+    {
+      "key": "coolant_leak",
+      "title": "Coolant Leak",
+      "unit": "",
+      "min": 0,
+      "max": 1,
+      "read_rate": 1,
+      "redis_key": "coolant_leak",
+      "host_data": "0"
     },
     {
       "key": "mem_util",
@@ -158,7 +186,8 @@
       "min": 0,
       "max": 100,
       "read_rate": 1,
-      "formula": "float(r.get('used_mem')) / float(r.get('total_mem')) * 100",
+      "redis_key": "mem_usage",
+      "host_data": "1",
       "icon": "0xf035b"
     },
     {
@@ -166,72 +195,90 @@
       "title": "Used Memory",
       "unit": "GB",
       "min": 0,
-      "max": 2048,
+      "max": 4096,
       "read_rate": 1,
-      "redis_key": "used_mem",
+      "formula": "float(r.get('mem_total')) - float(r.get('mem_available'))",
+      "host_data": "1",
       "icon": "0xf035b",
       "label": "USED"
+    },
+    {
+      "key": "mem_total",
+      "title": "Total Memory",
+      "unit": "GB",
+      "min": 0,
+      "max": 4096,
+      "read_rate": 1,
+      "redis_key": "mem_total",
+      "host_data": "1",
+      "icon": "0xf035b",
+      "label": "Total"
     },
     {
       "key": "mem_free",
       "title": "Free Memory",
       "unit": "GB",
       "min": 0,
-      "max": 2048,
+      "max": 4096,
       "read_rate": 1,
-      "redis_key": "avail_mem",
+      "redis_key": "mem_available",
+      "host_data": "1",
       "icon": "0xf035b",
       "label": "FREE"
     }
   ],
   "sensor_templates": [
     {
-      "key": "gpu{i}_temp",
+      "key": "gpu_temp_{i}",
       "count": "gpu_count",
       "title": "GPU{i} Temp",
       "unit": "°C",
       "min": 10,
       "max": 120,
       "read_rate": 1,
-      "redis_key": "gpu{i}_gpu_temp",
+      "redis_key": "gpu_temp_{i}",
+      "host_data": "1",
       "icon": "0xf0510",
-      "label": "G{i}"
+      "label": "G{i}_T"
     },
     {
-      "key": "gpu{i}_power",
+      "key": "gpu_power_{i}",
       "count": "gpu_count",
       "title": "GPU{i} Power",
       "unit": "W",
       "min": 0,
-      "max": 700,
+      "max": 1200,
       "read_rate": 1,
-      "redis_key": "gpu{i}_gpu_power",
+      "redis_key": "gpu_curr_pwr_{i}",
+      "host_data": "1",
       "icon": "0xf140b",
-      "label": "G{i}"
+      "label": "G{i}_P"
     },
     {
-      "key": "cpu{i}_temp",
+      "key": "cpu_temp_{i}",
       "count": "cpu_count",
       "title": "CPU{i} Temperature",
       "unit": "°C",
       "min": 10,
       "max": 120,
       "read_rate": 1,
-      "redis_key": "cpu_{i}_temp",
+      "redis_key": "cpu_temp_{i}",
+      "host_data": "1",
       "icon": "0xf0510",
-      "label": "CPU{i}"
+      "label": "CPU{i}_T"
     },
     {
-      "key": "cpu{i}_util",
+      "key": "cpu_power_{i}",
       "count": "cpu_count",
-      "title": "CPU{i} Utilization",
-      "unit": "%",
+      "title": "CPU{i} Power",
+      "unit": "W",
       "min": 0,
-      "max": 100,
+      "max": 600,
       "read_rate": 1,
-      "redis_key": "cpu_{i}_util",
+      "redis_key": "cpu_curr_pwr_{i}",
+      "host_data": "1",
       "icon": "0xf0ee0",
-      "label": "CPU{i}"
+      "label": "CPU{i}_P"
     }
   ],
   "viewers": [
@@ -345,6 +392,22 @@
             "title": "Humidity",
             "sensor_key": "chassis_humid"
           }
+        ],
+        "status_badges": [
+          {
+            "key": "coolant_level",
+            "label": "LEVEL",
+            "ok_value": 1,
+            "ok_text": "OK",
+            "alert_text": "LOW!"
+          },
+          {
+            "key": "coolant_leak",
+            "label": "LEAK",
+            "ok_value": 0,
+            "ok_text": "OK",
+            "alert_text": "LEAK!"
+          }
         ]
       }
     },
@@ -355,10 +418,10 @@
       "params": {
         "temp_title": "GPU Temperature",
         "util_title": "GPU Power",
-        "sensor_keys": "gpu{i}_temp",
+        "sensor_keys": "gpu_temp_{i}",
         "colors": "$GPU_COLORS",
         "labels": "G{i}",
-        "util_keys": "gpu{i}_power"
+        "util_keys": "gpu_power_{i}"
       }
     },
     {
@@ -367,11 +430,11 @@
       "expand": "cpu_count",
       "params": {
         "temp_title": "CPU Temperature",
-        "util_title": "CPU Utilization",
-        "sensor_keys": "cpu{i}_temp",
+        "util_title": "CPU Power",
+        "sensor_keys": "cpu_temp_{i}",
         "colors": "$CPU_COLORS",
         "labels": "CPU{i}",
-        "util_keys": "cpu{i}_util"
+        "util_keys": "cpu_power_{i}"
       }
     },
     {
@@ -435,7 +498,7 @@
       "expand": "gpu_count",
       "params": {
         "title": "GPU Temp 24h",
-        "sensor_keys": "gpu{i}_temp",
+        "sensor_keys": "gpu_temp_{i}",
         "colors": "$GPU_COLORS",
         "labels": "G{i}"
       }
@@ -446,7 +509,7 @@
       "expand": "cpu_count",
       "params": {
         "title": "CPU Temp 24h",
-        "sensor_keys": "cpu{i}_temp",
+        "sensor_keys": "cpu_temp_{i}",
         "colors": "$CPU_COLORS",
         "labels": "CPU{i}"
       }
