@@ -1,205 +1,111 @@
-#!/usr/bin/python
-# -*- coding:utf-8 -*-
-import sys
-sys.path.append('/home/gadgetini/High-Precision-AD-DA-Board-Code/RaspberryPI/ADS1256/python3')
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 import time
 from prometheus_client import start_http_server, CollectorRegistry
 from prometheus_client.core import GaugeMetricFamily
 import redis
 
-client = redis.StrictRedis(host='localhost', port=6379, db=0)
+client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
-def _get_int(key, default=0):
-    v = client.get(key)
-    if v is None:
-        return int(default)
+def get_float(key, default=0.0):
     try:
-        return int(v)
-    except Exception:
-        try:
-            return int(float(v))
-        except Exception:
-            return int(default)
+        v = client.get(key)
+        return float(v) if v is not None else default
+    except:
+        return default
 
-def _get_float(key, default=0.0):
-    v = client.get(key)
-    if v is None:
-        return float(default)
+def get_int(key, default=0):
     try:
-        return float(v)
-    except Exception:
-        try:
-            return float(v.decode("utf-8"))
-        except Exception:
-            return float(default)
+        v = client.get(key)
+        return int(v) if v is not None else default
+    except:
+        return default
 
-class DLC_sensor_Collector(object):
 
+class DLCCollector:
     def collect(self):
-        gauge_metric = GaugeMetricFamily(
-            "DLC_sensors_gauge",
-            "deepgadget DLC sensors telemetry",
-            labels=['server_name','metric','description']
+        g = GaugeMetricFamily(
+            "dlc_system_sensor",
+            "DeepGadget DLC server sensors & telemetry",
+            labels=["server", "component", "metric", "unit", "extra"]
         )
+        srv = "dg5R"
 
-        # Leak detection: leak = 1
-        gauge_metric.add_metric(
-            ["dg5R", "LEAK detection", "if leak: value = 1"],
-            _get_int("coolant_leak")
-        )
+        # ── Leak & Level ───────────────────────────────────────────
+        g.add_metric([srv, "cooling", "leak_detected",      "bool", ""],     get_int("coolant_leak"))
+        g.add_metric([srv, "cooling", "level_full",         "bool", ""],     get_int("coolant_level"))
 
-        # Coolant level: full = 1
-        gauge_metric.add_metric(
-            ["dg5R", "Coolant level", "if full: value = 1"],
-            _get_int("coolant_level")
-        )
+        # ── Coolant temperatures & ΔT ──────────────────────────────
+        for ch in ["1", "2"]:
+            g.add_metric([srv, "cooling", f"inlet{ch}_temp",   "°C",  ""], get_float(f"coolant_temp_inlet{ch}"))
+            g.add_metric([srv, "cooling", f"outlet{ch}_temp",  "°C",  ""], get_float(f"coolant_temp_outlet{ch}"))
+            g.add_metric([srv, "cooling", f"delta_t{ch}",      "°C",  ""], get_float(f"coolant_delta_t{ch}"))
 
-        # Coolant temperatures (Renamed from AD2~AD5 to inlet/outlet) + deltaT
-        # Blue = inlet, Red = outlet
-        gauge_metric.add_metric(
-            ["dg5R", "Coolant temperature inlet1", "degree celcious"],
-            _get_float("coolant_temp_inlet1")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Coolant temperature outlet1", "degree celcious"],
-            _get_float("coolant_temp_outlet1")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Coolant deltaT1", "degree celcious"],
-            _get_float("coolant_delta_t1")
-        )
+        # ── Air (internal) ─────────────────────────────────────────
+        g.add_metric([srv, "environment", "air_temp",        "°C",   ""], get_float("air_temp"))
+        g.add_metric([srv, "environment", "air_humidity",    "%RH",  ""], get_float("air_humit"))
 
-        gauge_metric.add_metric(
-            ["dg5R", "Coolant temperature inlet2", "degree celcious"],
-            _get_float("coolant_temp_inlet2")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Coolant temperature outlet2", "degree celcious"],
-            _get_float("coolant_temp_outlet2")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Coolant deltaT2", "degree celcious"],
-            _get_float("coolant_delta_t2")
-        )
+        # ── GPUs (0~7) ─────────────────────────────────────────────
+        for i in range(8):
+            name_bytes = client.get(f"gpu_name_{i}")
+            gpu_name = name_bytes.strip() if name_bytes else f"GPU{i}"
+            extra = gpu_name.replace(" ", "_").replace("/", "-")
 
-        # Air sensors
-        gauge_metric.add_metric(
-            ["dg5R", "Air temperature", "degree celcious"],
-            _get_float("air_temp")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Air humidity", "%"],
-            _get_float("air_humit")
-        )
+            temp  = get_float(f"gpu_temp_{i}")
+            pwr   = get_float(f"gpu_curr_pwr_{i}")
+            pwr_l = get_float(f"gpu_max_pwr_{i}")
+            mem_u = get_float(f"gpu_curr_mem_{i}")
+            mem_t = get_float(f"gpu_max_mem_{i}")
+            mem_util = (mem_u / mem_t * 100) if mem_t > 10 else 0.0
 
-        # ── GPU metrics (from serial_receiver: gpuN_gpu_*) ──
-        for key in client.keys("*_gpu_temp"):
-            idx = key.decode().split("_")[0].replace("gpu", "")
-            name = client.get(f"gpu{idx}_gpu_name")
-            gpu_label = name.decode() + "_" + idx if name else "GPU_" + idx
+            g.add_metric([srv, f"gpu{i}", "temperature",      "°C",   extra], temp)
+            g.add_metric([srv, f"gpu{i}", "power_current",    "W",    extra], pwr)
+            g.add_metric([srv, f"gpu{i}", "power_limit",      "W",    extra], pwr_l)
+            g.add_metric([srv, f"gpu{i}", "memory_used",      "MiB",  extra], mem_u)
+            g.add_metric([srv, f"gpu{i}", "memory_total",     "MiB",  extra], mem_t)
+            g.add_metric([srv, f"gpu{i}", "memory_util",      "%",    extra], round(mem_util, 1))
 
-            gauge_metric.add_metric(
-                ["dg5R", gpu_label + " asic temperature", "degree celcious"],
-                _get_float(f"gpu{idx}_gpu_temp")
-            )
-            gauge_metric.add_metric(
-                ["dg5R", gpu_label + " current power usage", "W"],
-                _get_float(f"gpu{idx}_gpu_power")
-            )
-            gauge_metric.add_metric(
-                ["dg5R", gpu_label + " Max power limit", "W"],
-                _get_float(f"gpu{idx}_gpu_power_limit")
-            )
-            gauge_metric.add_metric(
-                ["dg5R", gpu_label + " core utilization", "%"],
-                _get_float(f"gpu{idx}_gpu_util")
-            )
-            gauge_metric.add_metric(
-                ["dg5R", gpu_label + " memory utilization", "%"],
-                _get_float(f"gpu{idx}_gpu_mem_util")
-            )
+        # ── CPUs ───────────────────────────────────────────────────
+        g.add_metric([srv, "cpu", "usage_total", "%", ""], get_float("cpu_usage"))
 
-        # ── CPU metrics (from serial_receiver: cpu_N_temp, cpu_util, cpu_power_N) ──
-        for key in client.keys("cpu_*_temp"):
-            idx = key.decode().split("_")[1]
-            gauge_metric.add_metric(
-                ["dg5R", "CPU" + idx + " temperature", "degree celcious"],
-                _get_float(key)
-            )
+        for i in [0, 1]:
+            g.add_metric([srv, f"cpu{i}", "temperature", "°C",  ""], get_float(f"cpu_temp_{i}"))
+            g.add_metric([srv, f"cpu{i}", "power",       "W",   ""], get_float(f"cpu_curr_pwr_{i}"))
 
-        for key in client.keys("cpu_power_*"):
-            idx = key.decode().split("_")[2]
-            gauge_metric.add_metric(
-                ["dg5R", "CPU" + idx + " power usage", "W"],
-                _get_float(key)
-            )
+        # ── System Memory ──────────────────────────────────────────
+        g.add_metric([srv, "memory", "total",     "GiB", ""], get_float("mem_total"))
+        g.add_metric([srv, "memory", "available", "GiB", ""], get_float("mem_available"))
+        g.add_metric([srv, "memory", "usage",     "%",   ""], get_float("mem_usage"))
 
-        gauge_metric.add_metric(
-            ["dg5R", "CPU Usage", "%"],
-            _get_float("cpu_util")
-        )
+        # ── Network Interfaces status ──────────────────────────────
+        nic_patterns = [
+            "ens102f0", "ens102f1",
+            "enP1s125f0np0", "enP1s125f1np1",
+            "enxfef11ad36eb7", "enxee7c7c859844"
+        ]
+        for nic in nic_patterns:
+            key = f"nic_{nic}_stat"
+            if client.exists(key):
+                val = get_int(key)
+                g.add_metric([srv, "network", "link_status", "1=up", nic], val)
 
-        # ── Memory metrics (from serial_receiver: total_mem, avail_mem, etc.) ──
-        gauge_metric.add_metric(
-            ["dg5R", "Memory_total", "GB"],
-            _get_float("total_mem")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Memory_usage", "GB"],
-            _get_float("used_mem")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Memory_available", "GB"],
-            _get_float("avail_mem")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Swap_usage", "GB"],
-            _get_float("used_swp")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "OOM_count", "count"],
-            _get_int("oom_count")
-        )
+        # ── Infiniband NIC ─────────────────────────────────────────
+        if client.exists("ib_nic_temp"):
+            g.add_metric([srv, "ib", "temperature", "°C", ""], get_float("ib_nic_temp"))
 
-        # ── Network metrics (from serial_receiver: net_*) ──
-        gauge_metric.add_metric(
-            ["dg5R", "Network link status", "1=UP 0=DOWN"],
-            _get_int("net_link_status")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Network TX throughput", "Gbps"],
-            _get_float("net_tx_bps")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Network RX throughput", "Gbps"],
-            _get_float("net_rx_bps")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Network errors rate", "%"],
-            _get_float("net_errors_rate")
-        )
-        gauge_metric.add_metric(
-            ["dg5R", "Network drops rate", "%"],
-            _get_float("net_drops_rate")
-        )
+        # ── Host / Server alive ────────────────────────────────────
+        g.add_metric([srv, "system", "host_online", "1=yes", ""], get_int("host_stat"))
 
-        yield gauge_metric
+        yield g
 
 
 if __name__ == "__main__":
-    client = redis.StrictRedis(host='localhost', port=6379, db=0)
-    port = 9003
-    frequency = 2
+    registry = CollectorRegistry()
+    registry.register(DLCCollector())
 
-    try:
-        registry = CollectorRegistry()
-        sensor_collector = DLC_sensor_Collector()
-        registry.register(sensor_collector)
-        start_http_server(port, registry=registry)
-    except Exception:
-        # If exporter init fails, just keep process alive (systemd watchdog 등에서 재기동 가능)
-        pass
+    port = 9003
+    start_http_server(port, registry=registry)
+    print(f"DLC sensor exporter listening on :{port}")
 
     while True:
-        time.sleep(frequency)
-
+        time.sleep(2.5)
