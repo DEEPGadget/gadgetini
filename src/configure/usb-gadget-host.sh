@@ -2,8 +2,7 @@
 
 # --- Variable Configuration ---
 NM_CON_NAME="usb-gadget-host"
-STATIC_IP="10.12.194.2/28"
-STATIC_ROUTE="10.12.194.0/28"
+STATIC_IP="fd12:3456:789a:1::1/64"
 
 echo "Searching for USB Gadget interface..."
 
@@ -28,14 +27,9 @@ echo "Creating new connection profile for $IFNAME..."
 sudo nmcli connection add type ethernet \
   con-name "${NM_CON_NAME}" \
   ifname "${IFNAME}" \
-  ipv4.method manual \
-  ipv4.addresses "${STATIC_IP}" \
+  ipv6.method manual \
+  ipv6.addresses "${STATIC_IP}" \
   connection.autoconnect yes
-
-echo "Modifying routing and metrics..."
-sudo nmcli connection modify "${NM_CON_NAME}" ipv4.routes "${STATIC_ROUTE}"
-sudo nmcli connection modify "${NM_CON_NAME}" ipv4.route-metric 700
-
 echo "Activating connection..."
 sudo nmcli connection up "${NM_CON_NAME}"
 

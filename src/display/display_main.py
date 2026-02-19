@@ -18,7 +18,7 @@ import redis
 #For Debugging
 DEBUG = 0
 USE_VIRTUAL_LCD = False
-USE_REAL_DATA = True
+USE_REAL_DATA = False
 
 if USE_VIRTUAL_LCD:
     from virtual_lcd import VirtualLCD
