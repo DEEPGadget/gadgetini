@@ -11,23 +11,73 @@ import LoadingSpinner from "../utils/LoadingSpinner";
 import { getSelfIP } from "../utils/ip/getSelfIP";
 import { getDisplayConfig } from "../utils/display/getDisplayConfig";
 
-export default function Settings() {
-  // Current IP Info
-  const [currentIP, setCurrentIP] = useState("localhost");
+function Toggle({ value, onChange }) {
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onChange();
+      }}
+      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+        value ? "bg-green-400" : "bg-gray-300"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${
+          value ? "translate-x-5" : "translate-x-0"
+        }`}
+      />
+    </button>
+  );
+}
 
-  // Display Config Info
+function SectionHeader({ label, colorClass }) {
+  return (
+    <div className={`px-4 py-2.5 ${colorClass}`}>
+      <span className="text-xs font-bold uppercase tracking-widest text-white/90">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function GridCard({ label, stateKey, displayMode, setDisplayMode, activeClass }) {
+  const isOn = displayMode[stateKey];
+  return (
+    <button
+      onClick={() =>
+        setDisplayMode((p) => ({ ...p, [stateKey]: !p[stateKey] }))
+      }
+      className={`rounded-xl p-3 flex flex-col gap-2 text-left w-full transition-all duration-200 ${
+        isOn ? activeClass : "bg-gray-100 border border-gray-200 text-gray-400"
+      }`}
+    >
+      <span className="text-sm font-semibold leading-tight">{label}</span>
+      <span className="text-xs font-bold opacity-75">
+        {isOn ? "● ON" : "○ OFF"}
+      </span>
+    </button>
+  );
+}
+
+export default function Settings() {
+  const [currentIP, setCurrentIP] = useState("localhost");
   const [displayMode, setDisplayMode] = useState({
     orientation: "vertical",
-    chassis: true,
-    cpu: false,
-    gpu: false,
-    memory: false,
-    psu: false,
-    rotationTime: 5,
     display: true,
+    coolant: false,
+    coolant_detail: true,
+    chassis: true,
+    cpu: true,
+    gpu: true,
+    memory: true,
+    coolant_daily: true,
+    gpu_daily: true,
+    cpu_daily: true,
+    psu: false,
+    leak: true,
+    rotationTime: 7,
   });
-
-  // Input IP Config Info
   const [IPMode, setIPMode] = useState("dhcp");
   const IPRefs = useRef({
     ip: "",
@@ -41,19 +91,16 @@ export default function Settings() {
     IPRefs.current.mode = IPMode;
   }, [IPMode]);
 
-  // Loading Info
   const [loadingState, setLoadingState] = useState({
     updateIP: false,
     applyDisplayConfig: false,
   });
 
-  // API: Get current IP and display config
   useEffect(() => {
     getDisplayConfig().then(setDisplayMode);
     getSelfIP().then(setCurrentIP);
   }, []);
 
-  // API: Handle IP Update
   const handleIPChange = async () => {
     setLoadingState({ ...loadingState, updateIP: true });
     if (!window.confirm("Are you sure you want to change the IP?")) {
@@ -67,14 +114,12 @@ export default function Settings() {
       dns2: IPRefs.current.dns2?.value || "",
       mode: IPMode,
     };
-
     try {
       const response = await fetch("/api/ip/self", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       if (response.ok) {
         const data = await response.json();
         alert(
@@ -91,18 +136,14 @@ export default function Settings() {
     }
   };
 
-  // API: Handle Display Config Update
   const handleDisplayMode = async () => {
     setLoadingState({ ...loadingState, applyDisplayConfig: true });
     try {
       const response = await fetch("/api/display-config", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(displayMode),
       });
-
       if (response.ok) {
         console.log("Config updated successfully");
       } else {
@@ -116,357 +157,258 @@ export default function Settings() {
     }
   };
 
-  // FE: Toggle display config
-  const toggleStatus = (key) => {
-    const targetKey = key === "On/Off" ? "display" : key.toLowerCase();
-
-    setDisplayMode((prev) => ({
-      ...prev,
-      [targetKey]: !prev[targetKey],
-    }));
-  };
-
   return (
-    <div className="p-4">
-      {/* System Configuration */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold">System Configuration</h2>
+    <div className="p-4 lg:p-6 min-h-screen bg-gray-100">
+      <div className="flex flex-col lg:flex-row gap-5 items-start">
 
-        {/* Display Current IP & Dashboard */}
-        <div className="flex flex-col gap-3 mt-4">
-          <div className="flex items-center flex-wrap gap-4">
-            <p className="text-base">
-              Current Gadgetini IP : <strong>{currentIP}</strong>
-            </p>
-            <a
-              href={`http://${currentIP}/dashboard`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center px-3 py-2 text-white rounded-lg transition-all 
-                bg-gradient-to-br from-orange-600 to-yellow-500 hover:from-orange-700 hover:to-yellow-600 
-                shadow-md hover:shadow-lg text-sm md:text-base"
-            >
-              Dashboard
-              <ArrowTopRightOnSquareIcon className="w-4 h-4 md:w-5 md:h-5 ml-2" />
-            </a>
-          </div>
-        </div>
+        {/* ══════════════════════════════════════
+            LEFT SIDEBAR — System Configuration
+        ══════════════════════════════════════ */}
+        <div className="w-full lg:w-72 flex-shrink-0">
+          <div className="rounded-2xl overflow-hidden shadow-sm">
+            <SectionHeader label="System" colorClass="bg-slate-800" />
+            <div className="bg-white p-4 space-y-4">
 
-        {/* Set Gadgetini IP */}
-        <div className="flex flex-col gap-3 mt-4">
-          <div className="flex items-center flex-wrap gap-4">
-            <p className="text-base">Set Gadgetini IP :</p>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  value="dhcp"
-                  checked={IPMode === "dhcp"}
-                  onChange={() => setIPMode("dhcp")}
-                  className="w-4 h-4 text-blue-500"
-                />
-                <span>DHCP</span>
-              </label>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  value="static"
-                  checked={IPMode === "static"}
-                  onChange={() => setIPMode("static")}
-                  className="w-4 h-4 text-blue-500"
-                />
-                <span>Static</span>
-              </label>
-            </div>
-            {IPMode === "static" && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                <input
-                  type="text"
-                  placeholder="Gadgetini IP Address"
-                  ref={(el) => (IPRefs.current.ip = el)}
-                  className="border p-2 rounded w-42 text-left"
-                />
-                <input
-                  type="text"
-                  placeholder="Netmask"
-                  ref={(el) => (IPRefs.current.netmask = el)}
-                  className="border p-2 rounded w-36 text-left"
-                />
-                <input
-                  type="text"
-                  placeholder="Gateway"
-                  ref={(el) => (IPRefs.current.gateway = el)}
-                  className="border p-2 rounded w-36 text-left"
-                />
-                <input
-                  type="text"
-                  placeholder="DNS 1 (Option)"
-                  ref={(el) => (IPRefs.current.dns1 = el)}
-                  className="border p-2 rounded w-36 text-left"
-                />
-                <input
-                  type="text"
-                  placeholder="DNS 2 (Option)"
-                  ref={(el) => (IPRefs.current.dns2 = el)}
-                  className="border p-2 rounded w-36 text-left"
-                />
+              {/* Current IP */}
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Current IP</p>
+                <p className="text-base font-bold text-gray-900">{currentIP}</p>
               </div>
-            )}
-            <button
-              onClick={handleIPChange}
-              className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
-              disabled={loadingState.updateIP}
-            >
-              {loadingState.updateIP ? "Updating..." : "Update"}
-              <CheckIcon className="w-5 h-5 ml-2" />
-            </button>
-          </div>
 
-          {IPMode === "static" && (
-            <div className="flex flex-wrap gap-2 mt-2"></div>
-          )}
-        </div>
-      </div>
-
-      {/* LCD Control */}
-      <h2 className="text-xl font-bold mb-3">LCD Control</h2>
-
-      {/* Desktop Table */}
-      <table className="hidden md:table w-full bg-white border-separate border-spacing-0 table-auto">
-        <thead>
-          <tr className="border-b-2 border-gray-400">
-            <th className="py-2 px-4 border border-gray-300 text-center w-auto">
-              Info
-            </th>
-            <th className="py-2 px-4 border border-gray-300 text-center w-full">
-              Description
-            </th>
-            <th className="py-2 px-4 border border-gray-300 text-center w-auto">
-              Status / Control
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {/* Orientation Row */}
-          <tr className="border-b border-gray-300">
-            <td className="py-2 px-4 border border-gray-300 text-center">
-              Orientation
-            </td>
-            <td className="py-2 px-4 border border-gray-300 ">
-              Determines the display output orientation.
-            </td>
-            <td className="py-2 px-4 border border-gray-300 flex justify-center gap-2">
-              <button
-                onClick={() =>
-                  setDisplayMode((prev) => ({
-                    ...prev,
-                    orientation: "vertical",
-                  }))
-                }
-                className={`flex items-center bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition-all ${
-                  displayMode.orientation === "vertical"
-                    ? "border-2 border-black"
-                    : ""
-                }`}
+              {/* Dashboard Link */}
+              <a
+                href={`http://${currentIP}/dashboard`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between w-full px-3 py-2 rounded-xl
+                  bg-gradient-to-r from-orange-500 to-yellow-400
+                  hover:from-orange-600 hover:to-yellow-500
+                  text-white text-sm font-semibold shadow transition-all"
               >
-                <ArrowUpIcon className="w-5 h-5 mr-1" />
-                Vertical
-              </button>
-              <button
-                onClick={() =>
-                  setDisplayMode((prev) => ({
-                    ...prev,
-                    orientation: "horizontal",
-                  }))
-                }
-                className={`flex items-center bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition-all ${
-                  displayMode.orientation === "horizontal"
-                    ? "border-2 border-black"
-                    : ""
-                }`}
-              >
-                <ArrowRightIcon className="w-5 h-5 mr-1" />
-                Horizontal
-              </button>
-            </td>
-          </tr>
+                Open Dashboard
+                <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+              </a>
 
-          {/* Display Items */}
-          {Object.entries({
-            "On/Off": "Toggle the display on or off",
-            Chassis:
-              "Front display shows internal temperature and humidity, water leakage detection, and coolant level",
-            CPU: "Front display shows CPU temperature and utilization.",
-            GPU: "Front display shows GPU temperature and utilization.",
-            Memory: "Front display shows memory usage.",
-            PSU: "Front display shows power consumption, PSU temperature",
-          }).map(([key, description]) => {
-            const statusKey = key === "On/Off" ? "display" : key.toLowerCase();
-            const status = displayMode[statusKey];
+              <hr className="border-gray-100" />
 
-            return (
-              <tr key={key} className="border-b border-gray-300">
-                <td className="py-2 px-4 border border-gray-300 text-center">
-                  {key}
-                </td>
-                <td className="py-2 px-4 border border-gray-300">
-                  {description}
-                </td>
-                <td className="py-3 px-4 border border-gray-300">
-                  <div className="flex flex-col items-center justify-center">
+              {/* Network Mode */}
+              <div>
+                <p className="text-xs text-gray-400 mb-2">Network Mode</p>
+                <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                  {["dhcp", "static"].map((mode) => (
                     <button
-                      onClick={() => toggleStatus(key)}
-                      className={`relative flex items-center w-20 h-8 rounded-full border-2 border-gray-400 transition-colors duration-300 ${
-                        status ? "bg-green-500" : "bg-red-500"
+                      key={mode}
+                      onClick={() => setIPMode(mode)}
+                      className={`flex-1 py-1.5 text-xs rounded-md font-bold uppercase tracking-wider transition-all ${
+                        IPMode === mode
+                          ? "bg-slate-800 text-white shadow"
+                          : "text-gray-500 hover:text-gray-700"
                       }`}
-                      disabled={key === "PSU"}
                     >
-                      <span
-                        className={`absolute left-1 transition-transform duration-300 transform ${
-                          status ? "translate-x-11" : "translate-x-0"
-                        } bg-white rounded-full w-6 h-6`}
-                      />
-                      <span
-                        className={`text-white font-bold transition-all duration-300 ${
-                          status ? "ml-2" : "ml-10"
-                        }`}
-                      >
-                        {status ? "On" : "Off"}
-                      </span>
+                      {mode}
                     </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  ))}
+                </div>
+              </div>
 
-      {/* Mobile Cards */}
-      <div className="md:hidden space-y-3">
-        {/* Orientation */}
-        <div className="rounded-xl border p-3 bg-white shadow-sm">
-          <div className="text-sm font-semibold text-gray-700 mb-1">
-            Orientation
-          </div>
-          <div className="text-xs text-gray-500 mb-3">
-            Determines the display output orientation.
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() =>
-                setDisplayMode((prev) => ({ ...prev, orientation: "vertical" }))
-              }
-              className={`flex-1 h-10 rounded-lg text-sm font-medium ${
-                displayMode.orientation === "vertical"
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              Vertical
-            </button>
-            <button
-              onClick={() =>
-                setDisplayMode((prev) => ({
-                  ...prev,
-                  orientation: "horizontal",
-                }))
-              }
-              className={`flex-1 h-10 rounded-lg text-sm font-medium ${
-                displayMode.orientation === "horizontal"
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              Horizontal
-            </button>
+              {/* Static IP Fields */}
+              {IPMode === "static" && (
+                <div className="space-y-2">
+                  {[
+                    { placeholder: "IP Address", refKey: "ip" },
+                    { placeholder: "Netmask", refKey: "netmask" },
+                    { placeholder: "Gateway", refKey: "gateway" },
+                    { placeholder: "DNS 1 (optional)", refKey: "dns1" },
+                    { placeholder: "DNS 2 (optional)", refKey: "dns2" },
+                  ].map(({ placeholder, refKey }) => (
+                    <input
+                      key={refKey}
+                      type="text"
+                      placeholder={placeholder}
+                      ref={(el) => (IPRefs.current[refKey] = el)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Update Button */}
+              <button
+                onClick={handleIPChange}
+                disabled={loadingState.updateIP}
+                className="flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-xl hover:bg-blue-600 transition-all disabled:opacity-50"
+              >
+                {loadingState.updateIP ? "Updating..." : "Update IP"}
+                <CheckIcon className="w-4 h-4 ml-2" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Display Items */}
-        {Object.entries({
-          "On/Off": "Toggle the display on or off",
-          Chassis:
-            "Front display shows internal temperature and humidity, water leakage detection, and coolant level",
-          CPU: "Front display shows CPU temperature and utilization.",
-          GPU: "Front display shows GPU temperature and utilization.",
-          Memory: "Front display shows memory usage.",
-          PSU: "Front display shows power consumption, PSU temperature",
-        }).map(([key, description]) => {
-          const statusKey = key === "On/Off" ? "display" : key.toLowerCase();
-          const status = displayMode[statusKey];
-          const disabled = key === "PSU";
+        {/* ══════════════════════════════════════
+            RIGHT MAIN — LCD Control
+        ══════════════════════════════════════ */}
+        <div className="flex-1 min-w-0 space-y-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">
+            LCD Control
+          </p>
 
-          return (
-            <div key={key} className="rounded-xl border p-2 bg-white shadow-sm">
-              <div className="flex items-start justify-between gap-2">
+          {/* ── General ── */}
+          <div className="rounded-2xl overflow-hidden shadow-sm">
+            <SectionHeader label="General" colorClass="bg-slate-700" />
+            <div className="bg-white p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Display master */}
+              <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                 <div>
-                  <div className="text-sm font-semibold text-gray-800">
-                    {key}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1 line-clamp-2">
-                    {description}
-                  </div>
+                  <p className="text-sm font-semibold text-gray-800">Display</p>
+                  <p className="text-xs text-gray-400">LCD master on/off</p>
                 </div>
-                <button
-                  onClick={() => toggleStatus(key)}
-                  disabled={disabled}
-                  className={`relative w-16 h-9 shrink-0 rounded-full border-2 transition-colors ${
-                    disabled ? "opacity-50 cursor-not-allowed" : ""
-                  } ${
-                    status
-                      ? "bg-green-500 border-green-600"
-                      : "bg-red-500 border-red-600"
-                  }`}
-                >
-                  <span
-                    className={`absolute left-1 top-1 transition-transform ${
-                      status ? "translate-x-7" : "translate-x-0"
-                    } bg-white rounded-full w-6 h-6`}
+                <Toggle
+                  value={displayMode.display}
+                  onChange={() =>
+                    setDisplayMode((p) => ({ ...p, display: !p.display }))
+                  }
+                />
+              </div>
+
+              {/* Orientation */}
+              <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
+                <p className="text-sm font-semibold text-gray-800">Orientation</p>
+                <div className="flex gap-1 bg-white rounded-lg p-1 shadow-sm border border-gray-100">
+                  {[
+                    { label: "V", value: "vertical", Icon: ArrowUpIcon },
+                    { label: "H", value: "horizontal", Icon: ArrowRightIcon },
+                  ].map(({ label, value, Icon }) => (
+                    <button
+                      key={value}
+                      onClick={() =>
+                        setDisplayMode((p) => ({ ...p, orientation: value }))
+                      }
+                      className={`flex items-center gap-1 px-3 py-1 text-xs rounded-md font-bold transition-all ${
+                        displayMode.orientation === value
+                          ? "bg-slate-700 text-white shadow"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      <Icon className="w-3 h-3" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rotation */}
+              <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Rotation</p>
+                  <p className="text-xs text-gray-400">Panel switch interval</p>
+                </div>
+                <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 shadow-sm border border-gray-100">
+                  <input
+                    type="number"
+                    min={1}
+                    value={displayMode.rotationTime}
+                    onChange={(e) => {
+                      const value = Math.floor(Number(e.target.value));
+                      setDisplayMode((p) => ({
+                        ...p,
+                        rotationTime: value < 1 ? 1 : value,
+                      }));
+                    }}
+                    className="w-10 text-center text-sm font-bold focus:outline-none bg-transparent text-gray-800"
                   />
-                </button>
+                  <span className="text-xs text-gray-400">sec</span>
+                </div>
               </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
 
-      {/* Rotation Time + Apply */}
-      <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-end gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-gray-700 font-bold text-sm sm:text-base">
-            Mode rotation time (seconds):
-          </span>
-          <input
-            type="number"
-            min="1"
-            value={displayMode.rotationTime}
-            onChange={(e) => {
-              const value = Math.floor(Number(e.target.value));
-              if (value < 1) {
-                setDisplayMode({ ...displayMode, rotationTime: 1 });
-              } else {
-                setDisplayMode({ ...displayMode, rotationTime: value });
-              }
-            }}
-            className="border p-1 rounded focus:outline-none focus:ring-2 focus:ring-green-500 
-        border-gray-600 w-10 md:w-24 md:p-2"
-          />
+          {/* ── Compute + Cooling side by side ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Compute */}
+            <div className="rounded-2xl overflow-hidden shadow-sm">
+              <SectionHeader label="Compute" colorClass="bg-blue-600" />
+              <div className="bg-blue-50/60 p-3 grid grid-cols-3 gap-2">
+                {[
+                  { label: "CPU", key: "cpu" },
+                  { label: "GPU", key: "gpu" },
+                  { label: "Memory", key: "memory" },
+                ].map(({ label, key }) => (
+                  <GridCard
+                    key={key}
+                    label={label}
+                    stateKey={key}
+                    displayMode={displayMode}
+                    setDisplayMode={setDisplayMode}
+                    activeClass="bg-blue-100 border border-blue-300 text-blue-800"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Cooling & Chassis */}
+            <div className="rounded-2xl overflow-hidden shadow-sm">
+              <SectionHeader label="Cooling & Chassis" colorClass="bg-teal-600" />
+              <div className="bg-teal-50/60 p-3 grid grid-cols-2 gap-2">
+                {[
+                  { label: "Chassis", key: "chassis" },
+                  { label: "Coolant", key: "coolant" },
+                  { label: "Coolant Detail", key: "coolant_detail" },
+                  { label: "Leak", key: "leak" },
+                ].map(({ label, key }) => (
+                  <GridCard
+                    key={key}
+                    label={label}
+                    stateKey={key}
+                    displayMode={displayMode}
+                    setDisplayMode={setDisplayMode}
+                    activeClass="bg-teal-100 border border-teal-300 text-teal-800"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Daily Graphs ── */}
+          <div className="rounded-2xl overflow-hidden shadow-sm">
+            <SectionHeader label="Daily Graphs" colorClass="bg-violet-600" />
+            <div className="bg-violet-50/60 p-3 grid grid-cols-3 gap-2">
+              {[
+                { label: "CPU Daily", key: "cpu_daily" },
+                { label: "GPU Daily", key: "gpu_daily" },
+                { label: "Coolant Daily", key: "coolant_daily" },
+              ].map(({ label, key }) => (
+                <GridCard
+                  key={key}
+                  label={label}
+                  stateKey={key}
+                  displayMode={displayMode}
+                  setDisplayMode={setDisplayMode}
+                  activeClass="bg-violet-100 border border-violet-300 text-violet-800"
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Apply */}
+          <div className="flex justify-end pt-1">
+            <button
+              onClick={handleDisplayMode}
+              disabled={loadingState.applyDisplayConfig}
+              className="inline-flex items-center justify-center h-10 px-6 bg-slate-800 text-white text-sm font-semibold rounded-xl hover:bg-slate-700 transition-all disabled:opacity-50"
+            >
+              {loadingState.applyDisplayConfig ? (
+                <LoadingSpinner color={"white"} />
+              ) : (
+                <>
+                  <CheckIcon className="w-4 h-4 mr-2" />
+                  Apply
+                </>
+              )}
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleDisplayMode}
-          className="inline-flex items-center justify-center h-10 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
-          disabled={loadingState.applyDisplayConfig}
-        >
-          {loadingState.applyDisplayConfig ? (
-            <LoadingSpinner color={"white"} />
-          ) : (
-            <>
-              <CheckIcon className="w-5 h-5 mr-2" />
-              Apply
-            </>
-          )}
-        </button>
+
       </div>
     </div>
   );
