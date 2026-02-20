@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""
+dg5R_alert.json → Grafana Ruler API로 import (비-provisioning, UI 편집 가능)
+
+Usage:
+  python3 import_alerts.py [--host HOST] [--user USER] [--password PASS]
+
+Default: http://localhost:3000  admin/admin
+"""
+
+import json
+import sys
+import urllib.request
+import urllib.error
+import argparse
+import base64
+
+ALERT_JSON = "dg5R_alert.json"
+
+def api(host, user, pw, method, path, body=None):
+    url = f"{host}{path}"
+    cred = base64.b64encode(f"{user}:{pw}".encode()).decode()
+    headers = {"Content-Type": "application/json", "Authorization": f"Basic {cred}"}
+    data = json.dumps(body).encode() if body else None
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        err = e.read().decode()
+        print(f"  HTTP {e.code}: {err[:200]}")
+        return None
+
+def ensure_folder(host, user, pw, title):
+    folders = api(host, user, pw, "GET", "/api/folders") or []
+    for f in folders:
+        if f["title"] == title:
+            print(f"  Folder '{title}' already exists: uid={f['uid']}")
+            return f["uid"]
+    result = api(host, user, pw, "POST", "/api/folders", {"title": title})
+    if result:
+        print(f"  Created folder '{title}': uid={result['uid']}")
+        return result["uid"]
+    return None
+
+def interval_to_duration(s):
+    """'1m' → '1m0s'"""
+    s = s.strip()
+    if s.endswith("m"):
+        return s + "0s"
+    return s
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", default="http://localhost:3000")
+    parser.add_argument("--user", default="admin")
+    parser.add_argument("--password", default="admin")
+    parser.add_argument("--delete", action="store_true", help="기존 rules 삭제 후 재import")
+    args = parser.parse_args()
+
+    host, user, pw = args.host, args.user, args.password
+
+    with open(ALERT_JSON, encoding="utf-8") as f:
+        data = json.load(f)
+
+    folder_title = data["groups"][0]["folder"]
+    print(f"\n[1] Folder: '{folder_title}'")
+    folder_uid = ensure_folder(host, user, pw, folder_title)
+    if not folder_uid:
+        print("ERROR: 폴더 생성 실패")
+        sys.exit(1)
+
+    print(f"\n[2] Alert Rules import ({len(data['groups'])} groups)")
+    for group in data["groups"]:
+        group_name = group["name"]
+        interval = interval_to_duration(group.get("interval", "1m"))
+
+        rules = []
+        for rule in group["rules"]:
+            ruler_rule = {
+                "grafana_alert": {
+                    "uid": rule["uid"],
+                    "title": rule["title"],
+                    "condition": rule["condition"],
+                    "data": rule["data"],
+                    "no_data_state": rule.get("noDataState", "NoData"),
+                    "exec_err_state": rule.get("execErrState", "Error"),
+                    "is_paused": rule.get("isPaused", False),
+                    "missing_series_evals_to_resolve": rule.get("missingSeriesEvalsToResolve", 1),
+                },
+                "keep_firing_for": rule.get("keepFiringFor", "0s"),
+                "for": rule.get("for", "1m"),
+                "labels": rule.get("labels", {}),
+                "annotations": rule.get("annotations", {}),
+            }
+            rules.append(ruler_rule)
+
+        body = {"name": group_name, "interval": interval, "rules": rules}
+
+        print(f"  POST group '{group_name}' ({len(rules)} rules) ... ", end="", flush=True)
+        result = api(host, user, pw, "POST",
+                     f"/api/ruler/grafana/api/v1/rules/{folder_uid}", body)
+        if result is not None:
+            print("OK")
+        else:
+            print("FAILED")
+
+    print("\n[3] 결과 확인")
+    result = api(host, user, pw, "GET",
+                 f"/api/ruler/grafana/api/v1/rules/{folder_uid}") or {}
+    count = 0
+    if isinstance(result, dict):
+        for grp_list in result.values():
+            if isinstance(grp_list, list):
+                for g in grp_list:
+                    count += len(g.get("rules", []))
+    print(f"  Grafana에 등록된 rules: {count}개")
+
+if __name__ == "__main__":
+    main()

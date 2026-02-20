@@ -18,7 +18,7 @@
                 "from": 120,
                 "to": 0
               },
-              "datasourceUid": "${datasource}",
+              "datasourceUid": "fet9pt33egpogb",
               "model": {
                 "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"inlet[0-9]_temp\"}",
                 "instant": true,
@@ -111,7 +111,7 @@
                 "from": 120,
                 "to": 0
               },
-              "datasourceUid": "${datasource}",
+              "datasourceUid": "fet9pt33egpogb",
               "model": {
                 "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"outlet[0-9]_temp\"}",
                 "instant": true,
@@ -183,7 +183,7 @@
                 "from": 120,
                 "to": 0
               },
-              "datasourceUid": "${datasource}",
+              "datasourceUid": "fet9pt33egpogb",
               "model": {
                 "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"delta_t[0-9]\"}",
                 "instant": true,
@@ -255,7 +255,7 @@
                 "from": 120,
                 "to": 0
               },
-              "datasourceUid": "${datasource}",
+              "datasourceUid": "fet9pt33egpogb",
               "model": {
                 "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"leak_detected\"}",
                 "instant": true,
@@ -335,7 +335,7 @@
                 "from": 120,
                 "to": 0
               },
-              "datasourceUid": "${datasource}",
+              "datasourceUid": "fet9pt33egpogb",
               "model": {
                 "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_temp\"}",
                 "instant": true,
@@ -407,7 +407,7 @@
                 "from": 120,
                 "to": 0
               },
-              "datasourceUid": "${datasource}",
+              "datasourceUid": "fet9pt33egpogb",
               "model": {
                 "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"}",
                 "instant": true,
@@ -508,7 +508,7 @@
                 "from": 120,
                 "to": 0
               },
-              "datasourceUid": "${datasource}",
+              "datasourceUid": "fet9pt33egpogb",
               "model": {
                 "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu[0-9]\", metric=\"temperature\"}",
                 "instant": true,
@@ -580,7 +580,7 @@
                 "from": 120,
                 "to": 0
               },
-              "datasourceUid": "${datasource}",
+              "datasourceUid": "fet9pt33egpogb",
               "model": {
                 "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cpu[0-9]\", metric=\"temperature\"}",
                 "instant": true,
@@ -652,7 +652,7 @@
                 "from": 120,
                 "to": 0
               },
-              "datasourceUid": "${datasource}",
+              "datasourceUid": "fet9pt33egpogb",
               "model": {
                 "expr": "dlc_system_sensor{server=\"dg5R\", component=\"memory\", metric=\"available\"} / dlc_system_sensor{server=\"dg5R\", component=\"memory\", metric=\"total\"} * 100",
                 "instant": true,
@@ -732,7 +732,7 @@
                 "from": 120,
                 "to": 0
               },
-              "datasourceUid": "${datasource}",
+              "datasourceUid": "fet9pt33egpogb",
               "model": {
                 "expr": "dlc_system_sensor{server=\"dg5R\", component=\"ib\", metric=\"temperature\"}",
                 "instant": true,
