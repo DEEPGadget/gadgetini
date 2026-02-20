@@ -276,8 +276,8 @@ export default function Settings() {
                 <p className="text-sm font-semibold text-gray-800">Orientation</p>
                 <div className="flex gap-1 bg-white rounded-lg p-1 shadow-sm border border-gray-100">
                   {[
-                    { label: "V", value: "vertical", Icon: ArrowUpIcon },
-                    { label: "H", value: "horizontal", Icon: ArrowRightIcon },
+                    { label: "Vertical", value: "vertical", Icon: ArrowUpIcon },
+                    { label: "Horizontal", value: "horizontal", Icon: ArrowRightIcon },
                   ].map(({ label, value, Icon }) => (
                     <button
                       key={value}
