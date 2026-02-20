@@ -30,7 +30,7 @@ function evalChasH(v){if(v===undefined)return'normal';if(v>80||v<10)return'criti
 function evalGpuT(v){if(v===undefined)return'normal';if(v>90)return'critical';if(v>75)return'warning';return'normal';}
 function evalCpuT(v){if(v===undefined)return'normal';if(v>95)return'critical';if(v>85)return'warning';return'normal';}
 function evalIbTemp(v){if(v===undefined)return'normal';if(v>=115)return'critical';if(v>=105)return'warning';return'normal';}
-function evalMemAvail(total,avail){if(!total||!avail)return'normal';const p=avail/total*100;if(p<10)return'critical';if(p<20)return'warning';return'normal';}
+function evalMemAvail(total,avail){if(!total||!avail)return'normal';const p=avail/total*100;if(p<5)return'critical';if(p<20)return'warning';return'normal';}
 
 const sts=[];
 const i1=m['cooling_inlet1_temp'],i2=m['cooling_inlet2_temp'];

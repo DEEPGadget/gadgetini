@@ -13,7 +13,7 @@ Multi AI Processors - Core Utilization (%)	0–100%	-	-
 Multi CPUs - Temperature (°C)	85°C 이하	86–95°C	>95°C
 Multi CPUs - Power Usage (W)	Intel(R) Xeon(R) 6747PTDP 이하	TDP - Max Power Limit 중간	Max Power Limit
 Multi CPUs - Core Utilization (%)	0–100%	-	-
-Available Memory (%)	20%이상	10–19%	<10%
+Available Memory (%)	20%이상	5–19%	<5%
 Network – Link Status	UP(초록색)DOWN(빨간색)	-	-
 Network - Infiniband NIC chipset temperature - Temperature (°C)	105°C 이하	105~115°C	115°C
 Server - alive status	Online(초록색)Offline(빨간색)	-	-

@@ -4,7 +4,7 @@ data.series.forEach(function(s){if(!s.fields||s.fields.length<2)return;var f=s.f
 function fmt(v,d){return v!==undefined&&v!==null?Number(v).toFixed(d!==undefined?d:1):'-';}
 function evalGpuT(v){if(v===undefined)return'normal';if(v>90)return'critical';if(v>75)return'warning';return'normal';}
 function evalCpuT(v){if(v===undefined)return'normal';if(v>95)return'critical';if(v>85)return'warning';return'normal';}
-function evalMemA(p){if(p===undefined)return'normal';if(p<10)return'critical';if(p<20)return'warning';return'normal';}
+function evalMemA(p){if(p===undefined)return'normal';if(p<5)return'critical';if(p<20)return'warning';return'normal';}
 
 var isBar=(htmlNode.querySelector('input[name=viewMode]:checked')||{}).value==='bar';
 var groupBy=(htmlNode.querySelector('input[name=groupBy]:checked')||{}).value||'device';

@@ -101,99 +101,6 @@
           "isPaused": false
         },
         {
-          "uid": "dg5r-coolant-inlet-warn",
-          "title": "[dg5R] Coolant Inlet Temp Warning",
-          "condition": "C",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 120,
-                "to": 0
-              },
-              "datasourceUid": "${datasource}",
-              "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"inlet[0-9]_temp\"}",
-                "instant": true,
-                "refId": "A"
-              }
-            },
-            {
-              "refId": "C",
-              "relativeTimeRange": {
-                "from": 0,
-                "to": 0
-              },
-              "datasourceUid": "-100",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [
-                        40
-                      ],
-                      "type": "gt"
-                    },
-                    "operator": {
-                      "type": "or"
-                    },
-                    "query": {
-                      "params": [
-                        "A"
-                      ]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  },
-                  {
-                    "evaluator": {
-                      "params": [
-                        22
-                      ],
-                      "type": "lt"
-                    },
-                    "operator": {
-                      "type": "or"
-                    },
-                    "query": {
-                      "params": [
-                        "A"
-                      ]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  }
-                ],
-                "datasource": {
-                  "type": "__expr__",
-                  "uid": "-100"
-                },
-                "refId": "C",
-                "type": "classic_conditions"
-              }
-            }
-          ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
-          "for": "2m",
-          "annotations": {
-            "summary": "Coolant inlet temperature is in warning range (>40°C or <22°C)",
-            "description": "{{ $labels.metric }}: {{ $values.A }}"
-          },
-          "labels": {
-            "severity": "warning",
-            "server": "dg5R",
-            "subsystem": "cooling"
-          },
-          "isPaused": false
-        },
-        {
           "uid": "dg5r-coolant-outlet-crit",
           "title": "[dg5R] Coolant Outlet Temp Critical",
           "condition": "C",
@@ -260,78 +167,6 @@
           },
           "labels": {
             "severity": "critical",
-            "server": "dg5R",
-            "subsystem": "cooling"
-          },
-          "isPaused": false
-        },
-        {
-          "uid": "dg5r-coolant-outlet-warn",
-          "title": "[dg5R] Coolant Outlet Temp Warning",
-          "condition": "C",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 120,
-                "to": 0
-              },
-              "datasourceUid": "${datasource}",
-              "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"outlet[0-9]_temp\"}",
-                "instant": true,
-                "refId": "A"
-              }
-            },
-            {
-              "refId": "C",
-              "relativeTimeRange": {
-                "from": 0,
-                "to": 0
-              },
-              "datasourceUid": "-100",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [
-                        60
-                      ],
-                      "type": "gt"
-                    },
-                    "operator": {
-                      "type": "and"
-                    },
-                    "query": {
-                      "params": [
-                        "A"
-                      ]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  }
-                ],
-                "datasource": {
-                  "type": "__expr__",
-                  "uid": "-100"
-                },
-                "refId": "C",
-                "type": "classic_conditions"
-              }
-            }
-          ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
-          "for": "2m",
-          "annotations": {
-            "summary": "Coolant outlet temperature is in warning range (>60°C)",
-            "description": "{{ $labels.metric }}: {{ $values.A }}"
-          },
-          "labels": {
-            "severity": "warning",
             "server": "dg5R",
             "subsystem": "cooling"
           },
@@ -410,78 +245,6 @@
           "isPaused": false
         },
         {
-          "uid": "dg5r-coolant-deltat-warn",
-          "title": "[dg5R] Coolant Delta T Warning",
-          "condition": "C",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 120,
-                "to": 0
-              },
-              "datasourceUid": "${datasource}",
-              "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=~\"delta_t[0-9]\"}",
-                "instant": true,
-                "refId": "A"
-              }
-            },
-            {
-              "refId": "C",
-              "relativeTimeRange": {
-                "from": 0,
-                "to": 0
-              },
-              "datasourceUid": "-100",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [
-                        15
-                      ],
-                      "type": "gt"
-                    },
-                    "operator": {
-                      "type": "and"
-                    },
-                    "query": {
-                      "params": [
-                        "A"
-                      ]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  }
-                ],
-                "datasource": {
-                  "type": "__expr__",
-                  "uid": "-100"
-                },
-                "refId": "C",
-                "type": "classic_conditions"
-              }
-            }
-          ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
-          "for": "2m",
-          "annotations": {
-            "summary": "Coolant delta T is in warning range (>15°C)",
-            "description": "{{ $labels.metric }}: {{ $values.A }}"
-          },
-          "labels": {
-            "severity": "warning",
-            "server": "dg5R",
-            "subsystem": "cooling"
-          },
-          "isPaused": false
-        },
-        {
           "uid": "dg5r-coolant-leak-crit",
           "title": "[dg5R] Coolant Leak Detected",
           "condition": "C",
@@ -548,78 +311,6 @@
           },
           "labels": {
             "severity": "critical",
-            "server": "dg5R",
-            "subsystem": "cooling"
-          },
-          "isPaused": false
-        },
-        {
-          "uid": "dg5r-coolant-level-warn",
-          "title": "[dg5R] Coolant Level Middle (Warning)",
-          "condition": "C",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 120,
-                "to": 0
-              },
-              "datasourceUid": "${datasource}",
-              "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"level_full\"}",
-                "instant": true,
-                "refId": "A"
-              }
-            },
-            {
-              "refId": "C",
-              "relativeTimeRange": {
-                "from": 0,
-                "to": 0
-              },
-              "datasourceUid": "-100",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [
-                        1
-                      ],
-                      "type": "lt"
-                    },
-                    "operator": {
-                      "type": "and"
-                    },
-                    "query": {
-                      "params": [
-                        "A"
-                      ]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  }
-                ],
-                "datasource": {
-                  "type": "__expr__",
-                  "uid": "-100"
-                },
-                "refId": "C",
-                "type": "classic_conditions"
-              }
-            }
-          ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
-          "for": "2m",
-          "annotations": {
-            "summary": "Coolant level is MIDDLE — refill recommended",
-            "description": "Coolant level sensor reports non-HIGH state (MIDDLE)"
-          },
-          "labels": {
-            "severity": "warning",
             "server": "dg5R",
             "subsystem": "cooling"
           },
@@ -700,78 +391,6 @@
           },
           "labels": {
             "severity": "critical",
-            "server": "dg5R",
-            "subsystem": "environment"
-          },
-          "isPaused": false
-        },
-        {
-          "uid": "dg5r-chassis-temp-warn",
-          "title": "[dg5R] Chassis Temp Warning",
-          "condition": "C",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 120,
-                "to": 0
-              },
-              "datasourceUid": "${datasource}",
-              "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_temp\"}",
-                "instant": true,
-                "refId": "A"
-              }
-            },
-            {
-              "refId": "C",
-              "relativeTimeRange": {
-                "from": 0,
-                "to": 0
-              },
-              "datasourceUid": "-100",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [
-                        40
-                      ],
-                      "type": "gt"
-                    },
-                    "operator": {
-                      "type": "and"
-                    },
-                    "query": {
-                      "params": [
-                        "A"
-                      ]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  }
-                ],
-                "datasource": {
-                  "type": "__expr__",
-                  "uid": "-100"
-                },
-                "refId": "C",
-                "type": "classic_conditions"
-              }
-            }
-          ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
-          "for": "2m",
-          "annotations": {
-            "summary": "Chassis temperature warning (>40°C)",
-            "description": "air_temp: {{ $values.A }}"
-          },
-          "labels": {
-            "severity": "warning",
             "server": "dg5R",
             "subsystem": "environment"
           },
@@ -869,78 +488,6 @@
             "subsystem": "environment"
           },
           "isPaused": false
-        },
-        {
-          "uid": "dg5r-chassis-humid-warn",
-          "title": "[dg5R] Chassis Humidity Warning",
-          "condition": "C",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 120,
-                "to": 0
-              },
-              "datasourceUid": "${datasource}",
-              "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"environment\", metric=\"air_humidity\"}",
-                "instant": true,
-                "refId": "A"
-              }
-            },
-            {
-              "refId": "C",
-              "relativeTimeRange": {
-                "from": 0,
-                "to": 0
-              },
-              "datasourceUid": "-100",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [
-                        60
-                      ],
-                      "type": "gt"
-                    },
-                    "operator": {
-                      "type": "and"
-                    },
-                    "query": {
-                      "params": [
-                        "A"
-                      ]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  }
-                ],
-                "datasource": {
-                  "type": "__expr__",
-                  "uid": "-100"
-                },
-                "refId": "C",
-                "type": "classic_conditions"
-              }
-            }
-          ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
-          "for": "2m",
-          "annotations": {
-            "summary": "Chassis humidity warning (>60%)",
-            "description": "air_humidity: {{ $values.A }}"
-          },
-          "labels": {
-            "severity": "warning",
-            "server": "dg5R",
-            "subsystem": "environment"
-          },
-          "isPaused": false
         }
       ]
     },
@@ -1023,78 +570,6 @@
           "isPaused": false
         },
         {
-          "uid": "dg5r-gpu-temp-warn",
-          "title": "[dg5R] AI Processor Temp Warning",
-          "condition": "C",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 120,
-                "to": 0
-              },
-              "datasourceUid": "${datasource}",
-              "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu[0-9]\", metric=\"temperature\"}",
-                "instant": true,
-                "refId": "A"
-              }
-            },
-            {
-              "refId": "C",
-              "relativeTimeRange": {
-                "from": 0,
-                "to": 0
-              },
-              "datasourceUid": "-100",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [
-                        75
-                      ],
-                      "type": "gt"
-                    },
-                    "operator": {
-                      "type": "and"
-                    },
-                    "query": {
-                      "params": [
-                        "A"
-                      ]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  }
-                ],
-                "datasource": {
-                  "type": "__expr__",
-                  "uid": "-100"
-                },
-                "refId": "C",
-                "type": "classic_conditions"
-              }
-            }
-          ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
-          "for": "2m",
-          "annotations": {
-            "summary": "AI processor temperature warning (>75°C)",
-            "description": "{{ $labels.component }} [{{ $labels.extra }}]: {{ $values.A }}"
-          },
-          "labels": {
-            "severity": "warning",
-            "server": "dg5R",
-            "subsystem": "compute"
-          },
-          "isPaused": false
-        },
-        {
           "uid": "dg5r-cpu-temp-crit",
           "title": "[dg5R] CPU Temp Critical",
           "condition": "C",
@@ -1167,78 +642,6 @@
           "isPaused": false
         },
         {
-          "uid": "dg5r-cpu-temp-warn",
-          "title": "[dg5R] CPU Temp Warning",
-          "condition": "C",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 120,
-                "to": 0
-              },
-              "datasourceUid": "${datasource}",
-              "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"cpu[0-9]\", metric=\"temperature\"}",
-                "instant": true,
-                "refId": "A"
-              }
-            },
-            {
-              "refId": "C",
-              "relativeTimeRange": {
-                "from": 0,
-                "to": 0
-              },
-              "datasourceUid": "-100",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [
-                        85
-                      ],
-                      "type": "gt"
-                    },
-                    "operator": {
-                      "type": "and"
-                    },
-                    "query": {
-                      "params": [
-                        "A"
-                      ]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  }
-                ],
-                "datasource": {
-                  "type": "__expr__",
-                  "uid": "-100"
-                },
-                "refId": "C",
-                "type": "classic_conditions"
-              }
-            }
-          ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
-          "for": "2m",
-          "annotations": {
-            "summary": "CPU temperature warning (>85°C)",
-            "description": "{{ $labels.component }}: {{ $values.A }}"
-          },
-          "labels": {
-            "severity": "warning",
-            "server": "dg5R",
-            "subsystem": "compute"
-          },
-          "isPaused": false
-        },
-        {
           "uid": "dg5r-mem-avail-crit",
           "title": "[dg5R] Memory Available Critical",
           "condition": "C",
@@ -1268,7 +671,7 @@
                   {
                     "evaluator": {
                       "params": [
-                        10
+                        5
                       ],
                       "type": "lt"
                     },
@@ -1300,83 +703,11 @@
           "execErrState": "Error",
           "for": "2m",
           "annotations": {
-            "summary": "Available memory critical (<10%)",
+            "summary": "Available memory critical (<5%)",
             "description": "Available: {{ $values.A }}%"
           },
           "labels": {
             "severity": "critical",
-            "server": "dg5R",
-            "subsystem": "compute"
-          },
-          "isPaused": false
-        },
-        {
-          "uid": "dg5r-mem-avail-warn",
-          "title": "[dg5R] Memory Available Warning",
-          "condition": "C",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 120,
-                "to": 0
-              },
-              "datasourceUid": "${datasource}",
-              "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"memory\", metric=\"available\"} / dlc_system_sensor{server=\"dg5R\", component=\"memory\", metric=\"total\"} * 100",
-                "instant": true,
-                "refId": "A"
-              }
-            },
-            {
-              "refId": "C",
-              "relativeTimeRange": {
-                "from": 0,
-                "to": 0
-              },
-              "datasourceUid": "-100",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [
-                        20
-                      ],
-                      "type": "lt"
-                    },
-                    "operator": {
-                      "type": "and"
-                    },
-                    "query": {
-                      "params": [
-                        "A"
-                      ]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  }
-                ],
-                "datasource": {
-                  "type": "__expr__",
-                  "uid": "-100"
-                },
-                "refId": "C",
-                "type": "classic_conditions"
-              }
-            }
-          ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
-          "for": "3m",
-          "annotations": {
-            "summary": "Available memory warning (<20%)",
-            "description": "Available: {{ $values.A }}%"
-          },
-          "labels": {
-            "severity": "warning",
             "server": "dg5R",
             "subsystem": "compute"
           },
@@ -1420,7 +751,7 @@
                   {
                     "evaluator": {
                       "params": [
-                        115
+                        114
                       ],
                       "type": "gt"
                     },
@@ -1457,78 +788,6 @@
           },
           "labels": {
             "severity": "critical",
-            "server": "dg5R",
-            "subsystem": "ib"
-          },
-          "isPaused": false
-        },
-        {
-          "uid": "dg5r-ib-temp-warn",
-          "title": "[dg5R] IB NIC Temp Warning",
-          "condition": "C",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 120,
-                "to": 0
-              },
-              "datasourceUid": "${datasource}",
-              "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"ib\", metric=\"temperature\"}",
-                "instant": true,
-                "refId": "A"
-              }
-            },
-            {
-              "refId": "C",
-              "relativeTimeRange": {
-                "from": 0,
-                "to": 0
-              },
-              "datasourceUid": "-100",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [
-                        105
-                      ],
-                      "type": "gt"
-                    },
-                    "operator": {
-                      "type": "and"
-                    },
-                    "query": {
-                      "params": [
-                        "A"
-                      ]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  }
-                ],
-                "datasource": {
-                  "type": "__expr__",
-                  "uid": "-100"
-                },
-                "refId": "C",
-                "type": "classic_conditions"
-              }
-            }
-          ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
-          "for": "2m",
-          "annotations": {
-            "summary": "IB NIC temperature warning (>105°C)",
-            "description": "ib_nic_temp: {{ $values.A }}"
-          },
-          "labels": {
-            "severity": "warning",
             "server": "dg5R",
             "subsystem": "ib"
           },
