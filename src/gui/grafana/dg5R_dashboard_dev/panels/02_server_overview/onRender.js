@@ -3,6 +3,7 @@ const nicMap={};
 function medianOf(a){const s=a.slice().sort((x,y)=>x-y);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
 function lastValid(vals,n,maxDev){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;if(s.length===1)return s[0];const med=medianOf(s);for(let i=s.length-1;i>=0;i--){if(Math.abs(s[i]-med)<=maxDev)return s[i];}return med;}
 function majorityVote(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return medianOf(s);}
+function minLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return Math.min(...s);}
 data.series.forEach(s=>{
   if(!s.fields||s.fields.length<2)return;
   const f=s.fields[1];
@@ -14,7 +15,8 @@ data.series.forEach(s=>{
   if(vals&&vals.length>0){
     let val;
     if(component==='cooling'||component==='environment'){
-      if(metric==='leak_detected'||metric==='level_full') val=majorityVote(vals,10);
+      if(metric==='leak_detected') val=minLast(vals,10);
+      else if(metric==='level_full') val=majorityVote(vals,10);
       else if(metric==='air_humidity') val=lastValid(vals,10,20);
       else val=lastValid(vals,10,10);
     } else {

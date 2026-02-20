@@ -7,6 +7,55 @@ import {
 } from "@headlessui/react";
 import { Fragment, useState } from "react";
 
+function Toggle({ value, onChange }) {
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onChange();
+      }}
+      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+        value ? "bg-green-400" : "bg-gray-300"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${
+          value ? "translate-x-5" : "translate-x-0"
+        }`}
+      />
+    </button>
+  );
+}
+
+function SectionHeader({ label, colorClass }) {
+  return (
+    <div className={`px-4 py-2.5 ${colorClass}`}>
+      <span className="text-xs font-bold uppercase tracking-widest text-white/90">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function GridCard({ label, stateKey, displayMode, setDisplayMode, activeClass }) {
+  const isOn = displayMode[stateKey];
+  return (
+    <button
+      onClick={() =>
+        setDisplayMode((p) => ({ ...p, [stateKey]: !p[stateKey] }))
+      }
+      className={`rounded-xl p-3 flex flex-col gap-2 text-left w-full transition-all duration-200 ${
+        isOn ? activeClass : "bg-gray-100 border border-gray-200 text-gray-400"
+      }`}
+    >
+      <span className="text-sm font-semibold leading-tight">{label}</span>
+      <span className="text-xs font-bold opacity-75">
+        {isOn ? "● ON" : "○ OFF"}
+      </span>
+    </button>
+  );
+}
+
 export default function DisplayConfigModal({
   isOpen,
   setIsOpen,
@@ -15,20 +64,20 @@ export default function DisplayConfigModal({
   const [loading, setLoading] = useState(false);
   const [displayMode, setDisplayMode] = useState({
     orientation: "vertical",
+    display: true,
+    coolant: false,
+    coolant_detail: true,
     chassis: true,
-    cpu: false,
-    gpu: false,
-    memory: false,
+    cpu: true,
+    gpu: true,
+    memory: true,
+    coolant_daily: true,
+    gpu_daily: true,
+    cpu_daily: true,
     psu: false,
-    rotationTime: 5,
+    leak: true,
+    rotationTime: 7,
   });
-  const toggleStatus = (key) => {
-    const lowercaseKey = key.toLowerCase();
-    setDisplayMode((prev) => ({
-      ...prev,
-      [lowercaseKey]: !prev[lowercaseKey],
-    }));
-  };
 
   const handleConfigNodesDisplay = async () => {
     try {
@@ -44,11 +93,14 @@ export default function DisplayConfigModal({
       });
       const data = await response.json();
       console.log(data);
+      setIsOpen(false);
     } catch (error) {
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog
@@ -65,7 +117,7 @@ export default function DisplayConfigModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/40" />
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
         </TransitionChild>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -79,122 +131,163 @@ export default function DisplayConfigModal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                <DialogTitle className="text-lg font-medium text-gray-900">
+              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-gray-100 p-5 text-left align-middle shadow-2xl transition-all">
+                <DialogTitle className="text-base font-bold text-gray-900 mb-4 tracking-tight">
                   Display Config
                 </DialogTitle>
-                <div className="mt-4">
-                  {selectedNodes.length === 0 ? (
-                    <p className="text-sm text-gray-500">No nodes selected.</p>
-                  ) : (
-                    <table className="w-full bg-white border-separate border-spacing-0 table-auto">
-                      <thead>
-                        <tr className="border-b-2 border-gray-400">
-                          <th className="py-2 px-4 border border-gray-300 text-center w-auto">
-                            Info
-                          </th>
-                          <th className="py-2 px-4 border border-gray-300 text-center w-auto">
-                            Status / Control
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b border-gray-300">
-                          <td className="py-2 px-4 border border-gray-300 text-center">
-                            Orientation
-                          </td>
-                          <td className="py-2 px-4 border border-gray-300 flex justify-center gap-2">
-                            <button
-                              onClick={() =>
-                                setDisplayMode((prev) => ({
-                                  ...prev,
-                                  orientation: "vertical",
+
+                {selectedNodes.length === 0 ? (
+                  <p className="text-sm text-gray-400">No nodes selected.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {/* ── General ── */}
+                    <div className="rounded-2xl overflow-hidden shadow-sm">
+                      <SectionHeader label="General" colorClass="bg-slate-700" />
+                      <div className="bg-white p-4 space-y-3">
+                        {/* Display master */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">Display</p>
+                            <p className="text-xs text-gray-400">LCD master on/off</p>
+                          </div>
+                          <Toggle
+                            value={displayMode.display}
+                            onChange={() =>
+                              setDisplayMode((p) => ({ ...p, display: !p.display }))
+                            }
+                          />
+                        </div>
+
+                        {/* Orientation */}
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-gray-800">Orientation</p>
+                          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                            {["vertical", "horizontal"].map((o) => (
+                              <button
+                                key={o}
+                                onClick={() =>
+                                  setDisplayMode((p) => ({ ...p, orientation: o }))
+                                }
+                                className={`px-3 py-1 text-xs rounded-md font-bold transition-all ${
+                                  displayMode.orientation === o
+                                    ? "bg-slate-700 text-white shadow"
+                                    : "text-gray-500 hover:text-gray-700"
+                                }`}
+                              >
+                                {o.charAt(0).toUpperCase() + o.slice(1)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Rotation */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">Rotation</p>
+                            <p className="text-xs text-gray-400">Panel switch interval</p>
+                          </div>
+                          <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
+                            <input
+                              type="number"
+                              min={1}
+                              max={60}
+                              value={displayMode.rotationTime}
+                              onChange={(e) =>
+                                setDisplayMode((p) => ({
+                                  ...p,
+                                  rotationTime: Math.max(1, parseInt(e.target.value) || 1),
                                 }))
                               }
-                              className={`flex items-center bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition-all ${
-                                displayMode.orientation === "vertical"
-                                  ? "border-2 border-black"
-                                  : ""
-                              }`}
-                            >
-                              Vertical
-                            </button>
-                            <button
-                              onClick={() =>
-                                setDisplayMode((prevStatus) => ({
-                                  ...prevStatus,
-                                  orientation: "horizontal",
-                                }))
-                              }
-                              className={`flex items-center bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition-all ${
-                                displayMode.orientation === "horizontal"
-                                  ? "border-2 border-black"
-                                  : ""
-                              }`}
-                            >
-                              Horizontal
-                            </button>
-                          </td>
-                        </tr>
-                        {Object.entries({
-                          Chassis:
-                            "Front display shows internal temperature and humidity, water leakage detection, and coolant level",
-                          CPU: "Front display shows CPU temperature and utilization.",
-                          GPU: "Front display shows GPU temperature and utilization.",
-                          Memory: "Front display shows memory usage.",
-                          PSU: "Front display shows power consumption, PSU temperature",
-                        }).map(([key, description]) => {
-                          const status = displayMode[key.toLowerCase()];
-                          return (
-                            <tr key={key} className="border-b border-gray-300 ">
-                              <td className="py-2 px-4 border border-gray-300 text-center">
-                                {key}
-                              </td>
-                              <td className="py-2 px-4 border border-gray-300">
-                                <div className="flex flex-col items-center justify-center ">
-                                  <button
-                                    onClick={() => toggleStatus(key)}
-                                    className={`relative flex items-center w-20 h-8 rounded-full border-2 border-gray-400 transition-colors duration-300 ${
-                                      status ? "bg-green-500" : "bg-red-500"
-                                    }`}
-                                    disabled={key !== "Chassis"}
-                                  >
-                                    <span
-                                      className={`absolute left-1 transition-transform duration-300 transform ${
-                                        status
-                                          ? "translate-x-11"
-                                          : "translate-x-0"
-                                      } bg-white rounded-full w-6 h-6`}
-                                    />
-                                    <span
-                                      className={`text-white font-bold transition-all duration-300 ${
-                                        status ? "ml-2" : "ml-10"
-                                      }`}
-                                    >
-                                      {status ? "On" : "Off"}
-                                    </span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-                <div className="mt-6 flex justify-end">
-                  {selectedNodes > 0 && (
+                              className="w-10 text-center text-sm font-bold focus:outline-none bg-transparent text-gray-800"
+                            />
+                            <span className="text-xs text-gray-400">sec</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── Compute ── */}
+                    <div className="rounded-2xl overflow-hidden shadow-sm">
+                      <SectionHeader label="Compute" colorClass="bg-blue-600" />
+                      <div className="bg-blue-50/60 p-3 grid grid-cols-3 gap-2">
+                        {[
+                          { label: "CPU", key: "cpu" },
+                          { label: "GPU", key: "gpu" },
+                          { label: "Memory", key: "memory" },
+                        ].map(({ label, key }) => (
+                          <GridCard
+                            key={key}
+                            label={label}
+                            stateKey={key}
+                            displayMode={displayMode}
+                            setDisplayMode={setDisplayMode}
+                            activeClass="bg-blue-100 border border-blue-300 text-blue-800"
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* ── Cooling & Chassis ── */}
+                    <div className="rounded-2xl overflow-hidden shadow-sm">
+                      <SectionHeader
+                        label="Cooling & Chassis"
+                        colorClass="bg-teal-600"
+                      />
+                      <div className="bg-teal-50/60 p-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                          { label: "Chassis", key: "chassis" },
+                          { label: "Coolant", key: "coolant" },
+                          { label: "Coolant Detail", key: "coolant_detail" },
+                          { label: "Leak", key: "leak" },
+                        ].map(({ label, key }) => (
+                          <GridCard
+                            key={key}
+                            label={label}
+                            stateKey={key}
+                            displayMode={displayMode}
+                            setDisplayMode={setDisplayMode}
+                            activeClass="bg-teal-100 border border-teal-300 text-teal-800"
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* ── Daily Graphs ── */}
+                    <div className="rounded-2xl overflow-hidden shadow-sm">
+                      <SectionHeader label="Daily Graphs" colorClass="bg-violet-600" />
+                      <div className="bg-violet-50/60 p-3 grid grid-cols-3 gap-2">
+                        {[
+                          { label: "CPU Daily", key: "cpu_daily" },
+                          { label: "GPU Daily", key: "gpu_daily" },
+                          { label: "Coolant Daily", key: "coolant_daily" },
+                        ].map(({ label, key }) => (
+                          <GridCard
+                            key={key}
+                            label={label}
+                            stateKey={key}
+                            displayMode={displayMode}
+                            setDisplayMode={setDisplayMode}
+                            activeClass="bg-violet-100 border border-violet-300 text-violet-800"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-5 flex justify-end gap-2">
+                  {selectedNodes.length > 0 && (
                     <button
                       onClick={handleConfigNodesDisplay}
-                      className="flex items-center px-4 py-2 mr-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                      disabled={loading}
+                      className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-xl hover:bg-slate-700 transition-all disabled:opacity-50"
                     >
                       {loading ? "Updating..." : "Update"}
                     </button>
                   )}
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-700 transition-all"
+                    className="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-300 transition-all"
                   >
                     Close
                   </button>

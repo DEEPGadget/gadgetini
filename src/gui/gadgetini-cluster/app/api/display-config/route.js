@@ -32,13 +32,20 @@ export async function GET() {
     };
 
     const configData = {
-      orientation: getConfigValue("orientation") || "vertical",
+      orientation: getConfigValue("orientation") || "horizontal",
+      display: getConfigValue("display") !== "off",
       chassis: getConfigValue("chassis") === "on",
       cpu: getConfigValue("cpu") === "on",
       gpu: getConfigValue("gpu") === "on",
       memory: getConfigValue("memory") === "on",
       psu: getConfigValue("psu") === "on",
-      rotationTime: parseInt(getConfigValue("time") || "5", 10),
+      coolant: getConfigValue("coolant") === "on",
+      coolantDetail: getConfigValue("coolant_detail") === "on",
+      coolantDaily: getConfigValue("coolant_daily") === "on",
+      gpuDaily: getConfigValue("gpu_daily") === "on",
+      cpuDaily: getConfigValue("cpu_daily") === "on",
+      leak: getConfigValue("leak") === "on",
+      rotationTime: parseInt(getConfigValue("rotation_sec") || "7", 10),
     };
 
     return NextResponse.json(configData);
@@ -66,6 +73,10 @@ export async function POST(request) {
           `orientation=${displayMode.orientation}`
         )
         .replace(
+          /^display\s*=\s*.*/m,
+          `display=${displayMode.display ? "on" : "off"}`
+        )
+        .replace(
           /^chassis\s*=\s*.*/m,
           `chassis=${displayMode.chassis ? "on" : "off"}`
         )
@@ -76,7 +87,34 @@ export async function POST(request) {
           `memory=${displayMode.memory ? "on" : "off"}`
         )
         .replace(/^psu\s*=\s*.*/m, `psu=${displayMode.psu ? "on" : "off"}`)
-        .replace(/^time\s*=\s*.*/m, `time=${displayMode.rotationTime}`);
+        .replace(
+          /^coolant\s*=\s*.*/m,
+          `coolant=${displayMode.coolant ? "on" : "off"}`
+        )
+        .replace(
+          /^coolant_detail\s*=\s*.*/m,
+          `coolant_detail=${displayMode.coolantDetail ? "on" : "off"}`
+        )
+        .replace(
+          /^coolant_daily\s*=\s*.*/m,
+          `coolant_daily=${displayMode.coolantDaily ? "on" : "off"}`
+        )
+        .replace(
+          /^gpu_daily\s*=\s*.*/m,
+          `gpu_daily=${displayMode.gpuDaily ? "on" : "off"}`
+        )
+        .replace(
+          /^cpu_daily\s*=\s*.*/m,
+          `cpu_daily=${displayMode.cpuDaily ? "on" : "off"}`
+        )
+        .replace(
+          /^leak\s*=\s*.*/m,
+          `leak=${displayMode.leak ? "on" : "off"}`
+        )
+        .replace(
+          /^rotation_sec\s*=\s*.*/m,
+          `rotation_sec=${displayMode.rotationTime}`
+        );
 
       await fs.promises.writeFile(configPath, config, "utf-8");
     };

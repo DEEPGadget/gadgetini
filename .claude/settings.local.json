@@ -25,7 +25,9 @@
       "Bash(# Grafana API로 Prometheus datasource UID 조회 curl -s http://admin:admin@localhost:3000/api/datasources)",
       "Bash(# 현재 alert rules 상태 확인 curl -s http://admin:admin@localhost:3000/api/v1/provisioning/alert-rules)",
       "Bash(# ruler API로 확인 \\(UI에서 만든 rules\\) curl -s http://admin:admin@localhost:3000/api/ruler/grafana/api/v1/rules)",
-      "Bash(# DeepGadget 폴더 UID 확인 curl -s http://admin:admin@localhost:3000/api/folders)"
+      "Bash(# DeepGadget 폴더 UID 확인 curl -s http://admin:admin@localhost:3000/api/folders)",
+      "Bash(netstat:*)",
+      "Bash(gh.exe api:*)"
     ]
   }
 }
