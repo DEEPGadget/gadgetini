@@ -70,6 +70,19 @@ def main():
         print("ERROR: 폴더 생성 실패")
         sys.exit(1)
 
+    # 기존에 등록된 rule UID 수집 (신규/업데이트 구분용)
+    existing = api(host, user, pw, "GET",
+                   f"/api/ruler/grafana/api/v1/rules/{folder_uid}") or {}
+    existing_uids = set()
+    if isinstance(existing, dict):
+        for grp_list in existing.values():
+            if isinstance(grp_list, list):
+                for g in grp_list:
+                    for r in g.get("rules", []):
+                        uid = r.get("grafana_alert", {}).get("uid")
+                        if uid:
+                            existing_uids.add(uid)
+
     print(f"\n[2] Alert Rules import ({len(data['groups'])} groups)")
     for group in data["groups"]:
         group_name = group["name"]
@@ -77,17 +90,19 @@ def main():
 
         rules = []
         for rule in group["rules"]:
+            ga = {
+                "title": rule["title"],
+                "condition": rule["condition"],
+                "data": rule["data"],
+                "no_data_state": rule.get("noDataState", "NoData"),
+                "exec_err_state": rule.get("execErrState", "Error"),
+                "is_paused": rule.get("isPaused", False),
+                "missing_series_evals_to_resolve": rule.get("missingSeriesEvalsToResolve", 1),
+            }
+            if rule["uid"] in existing_uids:
+                ga["uid"] = rule["uid"]  # 기존 규칙 업데이트
             ruler_rule = {
-                "grafana_alert": {
-                    "uid": rule["uid"],
-                    "title": rule["title"],
-                    "condition": rule["condition"],
-                    "data": rule["data"],
-                    "no_data_state": rule.get("noDataState", "NoData"),
-                    "exec_err_state": rule.get("execErrState", "Error"),
-                    "is_paused": rule.get("isPaused", False),
-                    "missing_series_evals_to_resolve": rule.get("missingSeriesEvalsToResolve", 1),
-                },
+                "grafana_alert": ga,
                 "keep_firing_for": rule.get("keepFiringFor", "0s"),
                 "for": rule.get("for", "1m"),
                 "labels": rule.get("labels", {}),
