@@ -50,11 +50,25 @@ def interval_to_duration(s):
         return s + "0s"
     return s
 
+def get_prometheus_uid(host, user, pw):
+    datasources = api(host, user, pw, "GET", "/api/datasources") or []
+    for ds in datasources:
+        if ds.get("type") == "prometheus":
+            return ds["uid"]
+    return None
+
+def replace_datasource_uid(rules, old_uid, new_uid):
+    """rule data 안의 datasourceUid를 일괄 교체"""
+    text = json.dumps(rules)
+    text = text.replace(f'"{old_uid}"', f'"{new_uid}"')
+    return json.loads(text)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="http://localhost:3000")
     parser.add_argument("--user", default="admin")
     parser.add_argument("--password", default="admin")
+    parser.add_argument("--datasource-uid", default=None, help="Prometheus datasource UID (미지정 시 자동 감지)")
     parser.add_argument("--delete", action="store_true", help="기존 rules 삭제 후 재import")
     args = parser.parse_args()
 
@@ -62,6 +76,21 @@ def main():
 
     with open(ALERT_JSON, encoding="utf-8") as f:
         data = json.load(f)
+
+    # Datasource UID 결정
+    src_uid = data["groups"][0]["rules"][0]["data"][0]["datasourceUid"]
+    if args.datasource_uid:
+        dst_uid = args.datasource_uid
+    else:
+        dst_uid = get_prometheus_uid(host, user, pw)
+        if not dst_uid:
+            print("ERROR: Prometheus datasource를 찾을 수 없습니다. --datasource-uid로 직접 지정하세요.")
+            sys.exit(1)
+    if src_uid != dst_uid:
+        print(f"\n[0] Datasource UID 교체: {src_uid} → {dst_uid}")
+        data = json.loads(json.dumps(data).replace(f'"{src_uid}"', f'"{dst_uid}"'))
+    else:
+        print(f"\n[0] Datasource UID: {dst_uid} (변경 없음)")
 
     folder_title = data["groups"][0]["folder"]
     print(f"\n[1] Folder: '{folder_title}'")
