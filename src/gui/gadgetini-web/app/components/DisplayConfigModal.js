@@ -15,19 +15,22 @@ export default function DisplayConfigModal({
   const [loading, setLoading] = useState(false);
   const [displayMode, setDisplayMode] = useState({
     orientation: "vertical",
+    display: true,
+    coolant: false,
+    coolant_detail: true,
     chassis: true,
-    cpu: false,
-    gpu: false,
-    memory: false,
+    cpu: true,
+    gpu: true,
+    memory: true,
+    coolant_daily: true,
+    gpu_daily: true,
+    cpu_daily: true,
     psu: false,
-    rotationTime: 5,
+    leak: true,
+    rotationTime: 7,
   });
   const toggleStatus = (key) => {
-    const lowercaseKey = key.toLowerCase();
-    setDisplayMode((prev) => ({
-      ...prev,
-      [lowercaseKey]: !prev[lowercaseKey],
-    }));
+    setDisplayMode((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleConfigNodesDisplay = async () => {
@@ -137,33 +140,37 @@ export default function DisplayConfigModal({
                           </td>
                         </tr>
                         {Object.entries({
-                          Chassis:
-                            "Front display shows internal temperature and humidity, water leakage detection, and coolant level",
-                          CPU: "Front display shows CPU temperature and utilization.",
-                          GPU: "Front display shows GPU temperature and utilization.",
-                          Memory: "Front display shows memory usage.",
-                          PSU: "Front display shows power consumption, PSU temperature",
+                          display: "Turn LCD display on/off entirely.",
+                          coolant: "Coolant overview screen (summary view).",
+                          coolant_detail: "Coolant detail screen (per-loop inlet/outlet/delta temps).",
+                          chassis: "Chassis screen: air temp/humidity, leak detection, coolant level.",
+                          cpu: "CPU screen: temperature and utilization.",
+                          gpu: "GPU screen: temperature and power.",
+                          memory: "Memory screen: available memory.",
+                          coolant_daily: "Coolant daily history chart.",
+                          gpu_daily: "GPU daily history chart.",
+                          cpu_daily: "CPU daily history chart.",
+                          psu: "PSU screen: power consumption and temperature.",
+                          leak: "Show leak alert overlay when leak is detected.",
                         }).map(([key, description]) => {
-                          const status = displayMode[key.toLowerCase()];
+                          const status = displayMode[key];
+                          const label = key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
                           return (
-                            <tr key={key} className="border-b border-gray-300 ">
+                            <tr key={key} className="border-b border-gray-300">
                               <td className="py-2 px-4 border border-gray-300 text-center">
-                                {key}
+                                {label}
                               </td>
                               <td className="py-2 px-4 border border-gray-300">
-                                <div className="flex flex-col items-center justify-center ">
+                                <div className="flex flex-col items-center justify-center">
                                   <button
                                     onClick={() => toggleStatus(key)}
                                     className={`relative flex items-center w-20 h-8 rounded-full border-2 border-gray-400 transition-colors duration-300 ${
                                       status ? "bg-green-500" : "bg-red-500"
                                     }`}
-                                    disabled={key !== "Chassis"}
                                   >
                                     <span
                                       className={`absolute left-1 transition-transform duration-300 transform ${
-                                        status
-                                          ? "translate-x-11"
-                                          : "translate-x-0"
+                                        status ? "translate-x-11" : "translate-x-0"
                                       } bg-white rounded-full w-6 h-6`}
                                     />
                                     <span
@@ -179,6 +186,28 @@ export default function DisplayConfigModal({
                             </tr>
                           );
                         })}
+                        <tr className="border-b border-gray-300">
+                          <td className="py-2 px-4 border border-gray-300 text-center">
+                            Rotation (sec)
+                          </td>
+                          <td className="py-2 px-4 border border-gray-300">
+                            <div className="flex justify-center">
+                              <input
+                                type="number"
+                                min={1}
+                                max={60}
+                                value={displayMode.rotationTime}
+                                onChange={(e) =>
+                                  setDisplayMode((prev) => ({
+                                    ...prev,
+                                    rotationTime: parseInt(e.target.value) || 5,
+                                  }))
+                                }
+                                className="w-20 border border-gray-300 rounded px-2 py-1 text-center"
+                              />
+                            </div>
+                          </td>
+                        </tr>
                       </tbody>
                     </table>
                   )}
