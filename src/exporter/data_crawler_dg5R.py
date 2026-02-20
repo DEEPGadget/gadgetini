@@ -6,11 +6,6 @@ rd = redis.StrictRedis(host='localhost', port=6379, db=0)
 '''
          Key                      : Value
 -------------------------------------------------------
-    cpu_temp                      : float
-    cpu_util                      : float
-    n300_temp                     : float
-    gpu_temp                      : float
-
     coolant_temp_inlet1           : float
     coolant_temp_outlet1          : float
     coolant_delta_t1              : float
