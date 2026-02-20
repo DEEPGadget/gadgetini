@@ -1,0 +1,33 @@
+<div class='compute'>
+  <div class='toolbar'>
+    <span class='tl'>View:</span>
+    <label><input type='radio' name='viewMode' value='table' checked/> Table</label>
+    <label><input type='radio' name='viewMode' value='bar'/> Bar</label>
+    <span class='tb-sep'>|</span>
+    <span class='tl'>Group:</span>
+    <label><input type='radio' name='groupBy' value='device' checked/> Device</label>
+    <label><input type='radio' name='groupBy' value='metric'/> Metric</label>
+    <span class='tb-sep'>|</span>
+    <span class='tl'>Show:</span>
+    <label><input type='checkbox' id='cb-gpu' checked/> AI Proc</label>
+    <label><input type='checkbox' id='cb-cpu' checked/> CPU</label>
+    <label><input type='checkbox' id='cb-mem' checked/> Mem</label>
+  </div>
+  <div class='toolbar sub' id='gpu-metrics'>
+    <span class='tl'>AI Proc:</span>
+    <label><input type='checkbox' id='gm-temp' checked/> Temp</label>
+    <label><input type='checkbox' id='gm-power' checked/> Power</label>
+    <label><input type='checkbox' id='gm-mem' checked/> Mem%</label>
+  </div>
+  <div class='toolbar sub' id='cpu-metrics'>
+    <span class='tl'>CPU:</span>
+    <label><input type='checkbox' id='cm-temp' checked/> Temp</label>
+    <label><input type='checkbox' id='cm-power' checked/> Power</label>
+    <label><input type='checkbox' id='cm-util' checked/> Util%</label>
+  </div>
+  <div class='toolbar sub' id='mem-metrics'>
+    <span class='tl'>Memory:</span>
+    <label><input type='checkbox' id='mm-avail' checked/> Avail%</label>
+  </div>
+  <div class='cards' id='content-area'>Loading...</div>
+</div>
