@@ -93,12 +93,12 @@ if(nicsEl){
     let anyDown=false;
     nics.forEach(nic=>{
       const v=nicMap[nic];
-      const st=v===1?'normal':'critical';
+      const st=v===1?'normal':'normal';
       if(v!==1)anyDown=true;
       html+='<div class="mr"><span class="lb">'+nic+'</span><span class="vl '+st+'">'+(v===1?'UP':'DOWN')+'</span></div>';
     });
     nicsEl.innerHTML=html;
-    sts.push(anyDown?'critical':'normal');
+    sts.push(anyDown?'normal':'normal');
   }
 }
 
