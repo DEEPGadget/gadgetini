@@ -14,7 +14,10 @@
       "Bash(pip3 install:*)",
       "Bash(cat:*)",
       "Bash(grep:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(npm view:*)",
+      "Bash(npm install:*)",
+      "Bash(npm audit:*)"
     ]
   }
 }
