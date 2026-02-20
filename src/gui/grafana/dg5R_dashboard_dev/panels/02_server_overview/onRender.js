@@ -1,5 +1,8 @@
 const m={};
 const nicMap={};
+function medianOf(a){const s=a.slice().sort((x,y)=>x-y);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+function lastValid(vals,n,maxDev){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;if(s.length===1)return s[0];const med=medianOf(s);for(let i=s.length-1;i>=0;i--){if(Math.abs(s[i]-med)<=maxDev)return s[i];}return med;}
+function majorityVote(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return medianOf(s);}
 data.series.forEach(s=>{
   if(!s.fields||s.fields.length<2)return;
   const f=s.fields[1];
@@ -9,7 +12,14 @@ data.series.forEach(s=>{
   const extra=labels.extra||'';
   const vals=f.values;
   if(vals&&vals.length>0){
-    const val=vals[vals.length-1];
+    let val;
+    if(component==='cooling'||component==='environment'){
+      if(metric==='leak_detected'||metric==='level_full') val=majorityVote(vals,10);
+      else if(metric==='air_humidity') val=lastValid(vals,10,20);
+      else val=lastValid(vals,10,10);
+    } else {
+      val=vals[vals.length-1];
+    }
     if(component==='network'&&metric==='link_status'){nicMap[extra]=val;}
     else m[component+'_'+metric]=val;
   }
@@ -43,8 +53,8 @@ s=evalInlet(i1);sts.push(s);setV('v-inlet1',fmt(i1,'\u00b0C'),s);
 s=evalInlet(i2);sts.push(s);setV('v-inlet2',fmt(i2,'\u00b0C'),s);
 s=evalOutlet(o1);sts.push(s);setV('v-outlet1',fmt(o1,'\u00b0C'),s);
 s=evalOutlet(o2);sts.push(s);setV('v-outlet2',fmt(o2,'\u00b0C'),s);
-s=lv===0?'warning':'normal';sts.push(s);setV('v-level',lv===1?'HIGH':'MIDDLE',s);
-s=lk===1?'critical':'normal';sts.push(s);setV('v-leak',lk===1?'LEAKED':'NORMAL',s);
+s=lv<0.5?'warning':'normal';sts.push(s);setV('v-level',lv>=0.5?'HIGH':'MIDDLE',s);
+s=lk>=0.5?'critical':'normal';sts.push(s);setV('v-leak',lk>=0.5?'LEAKED':'NORMAL',s);
 s=evalChasT(ct);sts.push(s);setV('v-ctemp',fmt(ct,'\u00b0C'),s);
 s=evalChasH(ch);sts.push(s);setV('v-chumid',fmt(ch,'%'),s);
 

@@ -252,12 +252,12 @@
             {
               "refId": "A",
               "relativeTimeRange": {
-                "from": 120,
+                "from": 30,
                 "to": 0
               },
               "datasourceUid": "fet9pt33egpogb",
               "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"leak_detected\"}",
+                "expr": "avg_over_time(dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"leak_detected\"}[30s])",
                 "instant": true,
                 "refId": "A"
               }
@@ -274,7 +274,7 @@
                   {
                     "evaluator": {
                       "params": [
-                        0
+                        0.5
                       ],
                       "type": "gt"
                     },
