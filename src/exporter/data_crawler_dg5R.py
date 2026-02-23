@@ -1,6 +1,7 @@
 import redis
 import dlc_sensors_dg5R as dlc_sensors
 from typing import Any
+import time
 rd = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 '''
