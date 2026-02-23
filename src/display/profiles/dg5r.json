@@ -385,11 +385,11 @@
       "params": {
         "panels": [
           {
-            "title": "Air Temperature",
+            "title": "Ambient Temperature",
             "sensor_key": "chassis_temp"
           },
           {
-            "title": "Humidity",
+            "title": "Ambient Humidity",
             "sensor_key": "chassis_humid"
           }
         ],
