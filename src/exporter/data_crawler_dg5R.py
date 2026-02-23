@@ -49,5 +49,7 @@ while True:
     pipe.set("coolant_level", dlc_sensors.get_coolant_level_detection())
     pipe.set("air_temp",      dlc_sensors.get_air_temp())
     pipe.set("air_humit",     dlc_sensors.get_air_humit())
-    rd.set("host_stat", str(is_host_alive(rd, "host_ttl", 5.0)))
+    pipe.set("host_stat", str(is_host_alive(rd, "host_ttl", 5.0)))
+    pipe.execute()
+    time.sleep(1)
 
