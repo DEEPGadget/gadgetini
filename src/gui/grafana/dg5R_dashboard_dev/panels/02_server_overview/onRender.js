@@ -1,8 +1,8 @@
 const m={};
 const nicMap={};
-function medianOf(a){const s=a.slice().sort((x,y)=>x-y);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
-function lastValid(vals,n,maxDev){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;if(s.length===1)return s[0];const med=medianOf(s);for(let i=s.length-1;i>=0;i--){if(Math.abs(s[i]-med)<=maxDev)return s[i];}return med;}
-function majorityVote(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return medianOf(s);}
+function medianOf(a){const s=a.slice().sort((x,y)=>x-y);const mid=Math.floor(s.length/2);return s.length%2?s[mid]:(s[mid-1]+s[mid])/2;}
+function medianLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return medianOf(s);}
+function maxLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return Math.max(...s);}
 function minLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return Math.min(...s);}
 data.series.forEach(s=>{
   if(!s.fields||s.fields.length<2)return;
@@ -15,10 +15,9 @@ data.series.forEach(s=>{
   if(vals&&vals.length>0){
     let val;
     if(component==='cooling'||component==='environment'){
-      if(metric==='leak_detected') val=minLast(vals,10);
-      else if(metric==='level_full') val=majorityVote(vals,10);
-      else if(metric==='air_humidity') val=lastValid(vals,10,20);
-      else val=lastValid(vals,10,10);
+      if(metric==='leak_detected') val=maxLast(vals,10);
+      else if(metric==='level_full') val=minLast(vals,10);
+      else val=medianLast(vals,10);
     } else {
       val=vals[vals.length-1];
     }
@@ -36,7 +35,7 @@ function setV(id,text,cls){
 }
 
 function evalInlet(v){if(v===undefined)return'normal';if(v>45||v<18)return'critical';if(v>40||v<22)return'warning';return'normal';}
-function evalOutlet(v){if(v===undefined)return'normal';if(v>65)return'critical';if(v>60)return'warning';return'normal';}
+function evalOutlet(v){if(v===undefined)return'normal';if(v>65||v<18)return'critical';if(v>60||v<22)return'warning';return'normal';}
 function evalChasT(v){if(v===undefined)return'normal';if(v>50)return'critical';if(v>40)return'warning';return'normal';}
 function evalChasH(v){if(v===undefined)return'normal';if(v>80||v<10)return'critical';if(v>60)return'warning';return'normal';}
 function evalGpuT(v){if(v===undefined)return'normal';if(v>90)return'critical';if(v>75)return'warning';return'normal';}
