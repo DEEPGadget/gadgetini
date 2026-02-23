@@ -269,53 +269,45 @@ def get_CPU_power_telemetry(ipmi_proc=None, ipmi_output=None):
 # power = get_CPU_power_telemetry(ipmi_proc=ipmi)
 # print(power)  # {"cpu1_watts": 82.0, "cpu2_watts": 86.0}
 
-def get_nic_link_status() -> List[Dict[str, bool]]:
+def get_nic_link_status() -> List[Dict[str, int]]:
     """
-    Return NIC link status using only `ip link show` output (no NetworkManager).
+    Return NIC link status using only `ip link show` output.
 
-    Notes:
-    - "UP" flag indicates admin state (interface enabled).
-    - "LOWER_UP" flag indicates lower-layer/physical link is up (carrier-like).
-      This is usually what you want for cable/SFP link detection.
-    - Filters to physical NICs by requiring /sys/class/net/<dev>/device (optional).
+    - Excludes loopback interface "lo"
+    - Uses LOWER_UP flag as physical link indicator
+    - Returns 1 for link up, 0 for link down
+
+    Return format:
+        [
+          {"ens102f1": 1},
+          {"enp1s0": 0},
+          ...
+        ]
     """
     res = subprocess.run(["ip", "-o", "link", "show"], capture_output=True, text=True, check=False)
     if res.returncode != 0:
         raise RuntimeError(f"ip link show failed (rc={res.returncode}): {(res.stderr or res.stdout).strip()}")
 
-    out: List[Dict[str, bool]] = []
+    out: List[Dict[str, int]] = []
 
     for line in (res.stdout or "").splitlines():
-        # Example: "2: ens102f1: <BROADCAST,MULTICAST,UP,LOWER_UP> ..."
         parts = line.split(":", 2)
         if len(parts) < 3:
             continue
 
-        dev = parts[1].strip().split("@", 1)[0]  # Strip veth0@if3 style suffix
-        rest = parts[2]
-
-        # Skip loopback and empty names
+        dev = parts[1].strip().split("@", 1)[0]
         if not dev or dev == "lo":
             continue
 
-        # Optional: keep only physical NICs
-        if not os.path.exists(f"/sys/class/net/{dev}/device"):
-            continue
+        rest = parts[2]
+        flags = rest[rest.find("<") + 1 : rest.find(">")] if "<" in rest and ">" in rest else ""
+        flags_list = [f.strip() for f in flags.split(",") if f.strip()]
 
-        # Extract flags inside "<...>"
-        if "<" in rest and ">" in rest:
-            flags_str = rest[rest.find("<") + 1 : rest.find(">")]
-        else:
-            flags_str = ""
-
-        flags = {f.strip() for f in flags_str.split(",") if f.strip()}
-
-        # Prefer LOWER_UP for physical link status (more accurate than admin UP)
-        link_up = "LOWER_UP" in flags
-
+        link_up = 1 if "LOWER_UP" in flags_list else 0
         out.append({dev: link_up})
 
     return out
+
 
 def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0") -> int:
     """
