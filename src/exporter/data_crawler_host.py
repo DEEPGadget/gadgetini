@@ -345,6 +345,7 @@ def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0") -> int:
     except ValueError as e:
         raise RuntimeError(f"unexpected mget_temp output: {out!r}") from e
 
+HOST_TTL_SEC = 7
 if __name__ == "__main__":
     while True:
         sensors  = get_sensors_output()
@@ -355,47 +356,52 @@ if __name__ == "__main__":
         curr_meminfo = get_memory_usage_mb()
         curr_ipmi_telemetry = get_CPU_power_telemetry(ipmi_proc=ipmi)
         curr_link_status = get_nic_link_status()
+        pipe = client.pipeline(transaction=False)
         # lpush for multi socket cpu, multi gpu 
         for idx, cpu in enumerate(curr_cpusinfo[1]):
             print("cpu_temp_" + str(idx), str(cpu))
-            client.set("cpu_temp_" + str(idx), str(cpu))
+            pipe.set("cpu_temp_" + str(idx), str(cpu))
         # ipmi cpu power
         for idx, key in enumerate(curr_ipmi_telemetry):
-            client.set(str(key), str(curr_ipmi_telemetry[key]))
+            pipe.set(str(key), str(curr_ipmi_telemetry[key]))
             print(curr_ipmi_telemetry)
             print(key)
             print(curr_ipmi_telemetry[key])
 		# nic link status
         for nic in curr_link_status:
             key ,val = next(iter(nic.items()))
-            client.set("nic_"+str(key)+"_stat", str(val))
+            pipe.set("nic_"+str(key)+"_stat", str(val))
             print(key)
             print(val)
         for idx, gpu in enumerate(curr_chipsinfo):
-            client.set("gpu_name_" + str(idx), str(gpu[0]))
+            pipe.set("gpu_name_" + str(idx), str(gpu[0]))
         
         # temperature
         for idx, gpu in enumerate(curr_chipsinfo):
-            client.set("gpu_temp_" + str(idx), str(gpu[1]))
+            pipe.set("gpu_temp_" + str(idx), str(gpu[1]))
 
         # current_pwr_usage
         for idx, gpu in enumerate(curr_chipsinfo):
-            client.set("gpu_curr_pwr_" + str(idx), str(gpu[2]))
+            pipe.set("gpu_curr_pwr_" + str(idx), str(gpu[2]))
 
         # max_pwr
         for idx, gpu in enumerate(curr_chipsinfo):
-            client.set("gpu_max_pwr_" + str(idx), str(gpu[3]))
+            pipe.set("gpu_max_pwr_" + str(idx), str(gpu[3]))
 
         # current_memory_usage
         for idx, gpu in enumerate(curr_chipsinfo):
-            client.set("gpu_curr_mem_" + str(idx), str(gpu[4]))
+            pipe.set("gpu_curr_mem_" + str(idx), str(gpu[4]))
 
         # max_memory
         for idx, gpu in enumerate(curr_chipsinfo):
-            client.set("gpu_max_mem_" + str(idx), str(gpu[5]))
+            pipe.set("gpu_max_mem_" + str(idx), str(gpu[5]))
+        pipe.set("mem_total", curr_meminfo[0])
+        pipe.set("mem_usage", curr_meminfo[1])
+        pipe.set("mem_available", curr_meminfo[2])
+        pipe.set("cpu_usage", get_cpu_usage_percent())
+        pipe.set("ib_nic_temp", get_ib_nic_asic_temp())
+        pipe.set("host_ttl", int(time.time() * 1000))
+        pipe.expire("host_ttl", HOST_TTL_SEC)
+        pipe.execute()
+        time.sleep(1)
 
-        client.set("mem_total", curr_meminfo[0])
-        client.set("mem_usage", curr_meminfo[1])
-        client.set("mem_available", curr_meminfo[2])
-        client.set("cpu_usage", get_cpu_usage_percent())
-        client.set("ib_nic_temp", get_ib_nic_asic_temp())
