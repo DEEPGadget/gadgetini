@@ -19,7 +19,7 @@ from rich.console import Group
 import time
 import math
 from typing import List, Dict
-
+import os
 client = redis.StrictRedis(host='fd12:3456:789a:1::2', port=6379, db=0)
 
 def get_sensors_output():
@@ -263,64 +263,59 @@ def get_CPU_power_telemetry(ipmi_proc=None, ipmi_output=None):
 
     return parse_cpu_power_telemetry(text)
 
+
 # Example:
 # ipmi = get_ipmi_power_output()
 # power = get_CPU_power_telemetry(ipmi_proc=ipmi)
 # print(power)  # {"cpu1_watts": 82.0, "cpu2_watts": 86.0}
 
-def get_nic_link_status() -> List[Dict[str, str]]:
+def get_nic_link_status() -> List[Dict[str, bool]]:
     """
-    Return NIC link status based on NetworkManager (nmcli).
+    Return NIC link status using only `ip link show` output (no NetworkManager).
 
-    - Excludes loopback interface "lo"
-    - Considers only TYPE == "ethernet"
-    - Maps link status to bool:
-        * connected  -> True
-        * connecting -> True  (typically link is up but IP config/DHCP is in progress)
-        * other      -> False (e.g., unavailable, disconnected, unmanaged)
-
-    Return format:
-        [
-          {"ens102f1": True},
-          {"enP1s125f0np0": False},
-          ...
-        ]
+    Notes:
+    - "UP" flag indicates admin state (interface enabled).
+    - "LOWER_UP" flag indicates lower-layer/physical link is up (carrier-like).
+      This is usually what you want for cable/SFP link detection.
+    - Filters to physical NICs by requiring /sys/class/net/<dev>/device (optional).
     """
-    cmd = ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "dev", "status"]
-    res = subprocess.run(cmd, capture_output=True, text=True, check=False)
-
-    # If nmcli fails, raise an error with stderr for debugging
+    res = subprocess.run(["ip", "-o", "link", "show"], capture_output=True, text=True, check=False)
     if res.returncode != 0:
-        raise RuntimeError(f"nmcli failed (rc={res.returncode}): {res.stderr.strip()}")
+        raise RuntimeError(f"ip link show failed (rc={res.returncode}): {(res.stderr or res.stdout).strip()}")
 
-    out: List[Dict[str, str]] = []
+    out: List[Dict[str, bool]] = []
 
-    for line in res.stdout.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-
-        # Split into 3 fields only: DEVICE:TYPE:STATE (STATE may contain spaces/parentheses)
+    for line in (res.stdout or "").splitlines():
+        # Example: "2: ens102f1: <BROADCAST,MULTICAST,UP,LOWER_UP> ..."
         parts = line.split(":", 2)
-        if len(parts) != 3:
+        if len(parts) < 3:
             continue
 
-        dev, nic_type, state = parts[0].strip(), parts[1].strip(), parts[2].strip()
+        dev = parts[1].strip().split("@", 1)[0]  # Strip veth0@if3 style suffix
+        rest = parts[2]
 
-        # Exclude loopback and non-ethernet devices
-        if dev == "lo" or nic_type != "ethernet":
+        # Skip loopback and empty names
+        if not dev or dev == "lo":
             continue
 
-        state_lower = state.lower()
-        print("state_lower", state_lower)
-        # Treat "connected" and "connecting" as link up
-        link_up = 0
-        if state_lower.startswith("connected") or state_lower.startswith("connecting"):
-            link_up = 1
-        out.append({dev: str(link_up)})
+        # Optional: keep only physical NICs
+        if not os.path.exists(f"/sys/class/net/{dev}/device"):
+            continue
+
+        # Extract flags inside "<...>"
+        if "<" in rest and ">" in rest:
+            flags_str = rest[rest.find("<") + 1 : rest.find(">")]
+        else:
+            flags_str = ""
+
+        flags = {f.strip() for f in flags_str.split(",") if f.strip()}
+
+        # Prefer LOWER_UP for physical link status (more accurate than admin UP)
+        link_up = "LOWER_UP" in flags
+
+        out.append({dev: link_up})
 
     return out
-
 
 def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0") -> int:
     """
@@ -345,7 +340,6 @@ def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0") -> int:
     except ValueError as e:
         raise RuntimeError(f"unexpected mget_temp output: {out!r}") from e
 
-HOST_TTL_SEC = 7
 if __name__ == "__main__":
     while True:
         sensors  = get_sensors_output()
@@ -356,52 +350,47 @@ if __name__ == "__main__":
         curr_meminfo = get_memory_usage_mb()
         curr_ipmi_telemetry = get_CPU_power_telemetry(ipmi_proc=ipmi)
         curr_link_status = get_nic_link_status()
-        pipe = client.pipeline(transaction=False)
         # lpush for multi socket cpu, multi gpu 
         for idx, cpu in enumerate(curr_cpusinfo[1]):
             print("cpu_temp_" + str(idx), str(cpu))
-            pipe.set("cpu_temp_" + str(idx), str(cpu))
+            client.set("cpu_temp_" + str(idx), str(cpu))
         # ipmi cpu power
         for idx, key in enumerate(curr_ipmi_telemetry):
-            pipe.set(str(key), str(curr_ipmi_telemetry[key]))
+            client.set(str(key), str(curr_ipmi_telemetry[key]))
             print(curr_ipmi_telemetry)
             print(key)
             print(curr_ipmi_telemetry[key])
 		# nic link status
         for nic in curr_link_status:
             key ,val = next(iter(nic.items()))
-            pipe.set("nic_"+str(key)+"_stat", str(val))
+            client.set("nic_"+str(key)+"_stat", str(val))
             print(key)
             print(val)
         for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_name_" + str(idx), str(gpu[0]))
+            client.set("gpu_name_" + str(idx), str(gpu[0]))
         
         # temperature
         for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_temp_" + str(idx), str(gpu[1]))
+            client.set("gpu_temp_" + str(idx), str(gpu[1]))
 
         # current_pwr_usage
         for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_curr_pwr_" + str(idx), str(gpu[2]))
+            client.set("gpu_curr_pwr_" + str(idx), str(gpu[2]))
 
         # max_pwr
         for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_max_pwr_" + str(idx), str(gpu[3]))
+            client.set("gpu_max_pwr_" + str(idx), str(gpu[3]))
 
         # current_memory_usage
         for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_curr_mem_" + str(idx), str(gpu[4]))
+            client.set("gpu_curr_mem_" + str(idx), str(gpu[4]))
 
         # max_memory
         for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_max_mem_" + str(idx), str(gpu[5]))
-        pipe.set("mem_total", curr_meminfo[0])
-        pipe.set("mem_usage", curr_meminfo[1])
-        pipe.set("mem_available", curr_meminfo[2])
-        pipe.set("cpu_usage", get_cpu_usage_percent())
-        pipe.set("ib_nic_temp", get_ib_nic_asic_temp())
-        pipe.set("host_ttl", int(time.time() * 1000))
-        pipe.expire("host_ttl", HOST_TTL_SEC)
-        pipe.execute()
-        time.sleep(1)
+            client.set("gpu_max_mem_" + str(idx), str(gpu[5]))
 
+        client.set("mem_total", curr_meminfo[0])
+        client.set("mem_usage", curr_meminfo[1])
+        client.set("mem_available", curr_meminfo[2])
+        client.set("cpu_usage", get_cpu_usage_percent())
+        client.set("ib_nic_temp", get_ib_nic_asic_temp())
