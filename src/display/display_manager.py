@@ -287,7 +287,11 @@ class DisplayManager:
         frame = 0
         interval = 1 / FPS
         now = time.monotonic()
-        next_tick = time.monotonic() + interval
+        next_tick = now + interval
+        next_rotation = now + self.viewer_rotation_sec
+        next_update = now + 5
+        self.update_info()
+
         while not self.stop_event.is_set():
             if DEBUG != 0:   
                 print(f"frame={frame}, now={now}, next_tick={next_tick}")
@@ -309,9 +313,14 @@ class DisplayManager:
 
             self._check_leak()
 
-            if (frame % (FPS*5)) == 0:
+            now = time.monotonic()
+            if (now >= next_update):
+            #if (frame % (FPS*5)) == 0:
                 self.update_info()
-            if ((frame != 0) and (frame % (FPS*self.viewer_rotation_sec)) == 0):
+            #if ((frame != 0) and (frame % (FPS*self.viewer_rotation_sec)) == 0):
+            now = time.monotonic()
+            if (now >= next_rotation):
+                next_rotation = now + self.viewer_rotation_sec
                 self.set_next_viewer()
 
 
