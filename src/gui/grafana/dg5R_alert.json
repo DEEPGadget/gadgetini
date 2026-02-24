@@ -326,13 +326,6 @@
                     "query": { "params": ["A"] },
                     "reducer": { "params": [], "type": "last" },
                     "type": "query"
-                  },
-                  {
-                    "evaluator": { "params": [10], "type": "lt" },
-                    "operator": { "type": "or" },
-                    "query": { "params": ["A"] },
-                    "reducer": { "params": [], "type": "last" },
-                    "type": "query"
                   }
                 ],
                 "datasource": { "type": "__expr__", "uid": "-100" },
