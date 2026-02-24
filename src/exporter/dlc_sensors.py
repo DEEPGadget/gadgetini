@@ -2,24 +2,13 @@
 # -*- coding: utf-8 -*-
 import sys
 sys.path.append('/home/gadgetini/High-Precision-AD-DA-Board-Code/RaspberryPI/ADS1256/python3')
-import configparser
 import ADS1256
 import math
 import numpy as np
 import adafruit_dht
 import board
 import time
-
-_config = configparser.ConfigParser()
-_config.read('/home/gadgetini/gadgetini/src/display/config.ini')
-MACHINE = _config.get('PRODUCT', 'name', fallback='unknown').lower()
-
-# dg5r: inlet1=ad2, outlet1=ad3, outlet2=ad4, inlet2=ad5
-# dg5w: inlet1=ad4
-COOLANT_CHANNELS = {
-    'dg5r': {'inlet1': 2, 'outlet1': 3, 'outlet2': 4, 'inlet2': 5},
-    'dg5w': {'inlet1': 4},
-}
+from config import MACHINE, COOLANT_CHANNELS
 
 ADC = ADS1256.ADS1256()
 ADC.ADS1256_init()

@@ -3,6 +3,7 @@
 import redis
 import dlc_sensors
 import time
+from config import MACHINE, COOLANT_CHANNELS
 
 rd = redis.StrictRedis(host='localhost', port=6379, db=0)
 
@@ -14,7 +15,7 @@ def is_host_alive(key: str, dead_after_sec: float = 5.0) -> int:
 
 while True:
     adc = dlc_sensors._collect_adc_samples()
-    channels = dlc_sensors.COOLANT_CHANNELS.get(dlc_sensors.MACHINE, {})
+    channels = COOLANT_CHANNELS.get(MACHINE, {})
 
     pipe = rd.pipeline(transaction=False)
 
@@ -24,6 +25,7 @@ while True:
         temps[name] = temp
         pipe.set(f"coolant_temp_{name}", temp)
 
+    # inlet+outlet 쌍이 존재할 때만 delta_t 계산 (현재 dg5w는 inlet1만 있어 skip)
     if 'inlet1' in temps and 'outlet1' in temps:
         pipe.set("coolant_delta_t1", round(temps['outlet1'] - temps['inlet1'], 2))
     if 'inlet2' in temps and 'outlet2' in temps:
