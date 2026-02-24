@@ -9,18 +9,23 @@ import adafruit_dht
 import time
 import RPi.GPIO as GPIO
 import board
-import random 
+import random
 import time
 import requests
 import adafruit_dht
 import mpu6050 as gyro
-import subprocess 
+import subprocess
 import redis
 import numpy as np
 
 ADC = ADS1256.ADS1256()
 ADC.ADS1256_init()
 dhtDevice = adafruit_dht.DHT11(board.D4)
+
+# ADS1256_GetAll() reads all channels at once.
+# Collect N samples once and share across all channel functions to avoid redundant reads.
+def _collect_adc_samples(n=30):
+    return [ADC.ADS1256_GetAll() for _ in range(n)]
 
 # DHT11 connected to GPIO 4
 # Error happen fairly often, DHT's are hard to read, just keep going
@@ -45,10 +50,10 @@ def get_air_humit():
         except Exception:
             pass
     return float(np.median(samples)) if samples else 0.0
-        
-# Coolant temperature fomula generate by several measured data using linear regression. 
+
+# Coolant temperature fomula generate by several measured data using linear regression.
 # x: Raw sensing data(ADC_Value, y: Degree celcisous)
-def get_coolant_temp(ad_index):
+def get_coolant_temp(ad_index, adc_samples=None):
     VREF = 5.0
     VIN_DIV = 3.3
     R_FIXED = 10000.0
@@ -59,12 +64,10 @@ def get_coolant_temp(ad_index):
     SH_C = 0.000000073454
 
     try:
-        vs = []
-        for _ in range(7):
-            ADC_Value = ADC.ADS1256_GetAll()
-            raw = float(ADC_Value[ad_index])
-            vs.append(raw * VREF / 0x7fffff)
+        if adc_samples is None:
+            adc_samples = _collect_adc_samples()
 
+        vs = [float(s[ad_index]) * VREF / 0x7fffff for s in adc_samples]
         vout = float(np.median(vs))
 
         if vout <= 0.001 or vout >= (VIN_DIV - 0.001):
@@ -83,28 +86,25 @@ def get_coolant_temp(ad_index):
 
 
 # is_leak = 1 is coolant leak detected, 0 is stable.
-def get_coolant_leak_detection():
-    samples = []
-    for _ in range(10):
-        ADC_Value = ADC.ADS1256_GetAll()
-        raw_data = round(float(ADC_Value[7] * 5.0 / 0x7fffff), 3)
-        samples.append(raw_data)
+def get_coolant_leak_detection(adc_samples=None):
+    if adc_samples is None:
+        adc_samples = _collect_adc_samples()
+    samples = [round(float(s[7] * 5.0 / 0x7fffff), 3) for s in adc_samples]
     return 1 if float(np.median(samples)) < 3.0 else 0
 
 # is_full = 0 is coolant tank empty, 1 is full
-def get_coolant_level_detection():
-    samples = []
-    for _ in range(7):
-        ADC_Value = ADC.ADS1256_GetAll()
-        curr_level = round(float(ADC_Value[6] * 5.0 / 0x7fffff), 3)
-        samples.append(curr_level)
+def get_coolant_level_detection(adc_samples=None):
+    if adc_samples is None:
+        adc_samples = _collect_adc_samples()
+    samples = [round(float(s[6] * 5.0 / 0x7fffff), 3) for s in adc_samples]
     return 0 if float(np.median(samples)) > 1.2 else 1
 
-print(get_coolant_level_detection())
-print(get_coolant_leak_detection())
-print(get_coolant_temp(2))
-print(get_coolant_temp(3))
-print(get_coolant_temp(4))
-print(get_coolant_temp(5))
+adc = _collect_adc_samples()
+print(get_coolant_level_detection(adc))
+print(get_coolant_leak_detection(adc))
+print(get_coolant_temp(2, adc))
+print(get_coolant_temp(3, adc))
+print(get_coolant_temp(4, adc))
+print(get_coolant_temp(5, adc))
 print(get_air_temp())
 print(get_air_humit())
