@@ -132,7 +132,7 @@
     },
     {
       "key": "chassis_temp",
-      "title": "Air Temperature",
+      "title": "Ambient Temperature",
       "unit": "°C",
       "min": -20,
       "max": 60,
@@ -338,11 +338,11 @@
       "params": {
         "panels": [
           {
-            "title": "Air Temperature",
+            "title": "Ambient Temperature",
             "sensor_key": "chassis_temp"
           },
           {
-            "title": "Humidity",
+            "title": "Ambient Humidity",
             "sensor_key": "chassis_humid"
           }
         ]

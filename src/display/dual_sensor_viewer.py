@@ -37,7 +37,7 @@ class DualSensorViewer(BaseViewer):
 
     def _draw_panel(self, draw, disp_manager, panel, px, py, panel_idx):
         w = GRAPH_SIZE
-        title_h = 15
+        title_h = 12
         badge_h = 18 if self.status_badges else 0
         graph_h = 88 - badge_h
         value_h = 30
