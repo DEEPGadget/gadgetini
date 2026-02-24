@@ -5,7 +5,7 @@ Coolant Delta Value 1/2 (°C)	≤15°C	15~20°C	>20°C
 Coolant Level	HIGH	MIDDLE	-
 Coolant Leakage	NORMAL	-	LEAKED
 Chassis Temperature (°C)	≤40°C	40~50°C	>50°C
-Chassis Humidity (%)	10~60%	60~80%	<10% 또는 >80%
+Chassis Humidity (%)	10~60%	60~80%  >80%
 Multi AI Processors - Temperature (°C)	≤75°C	75~90°C	>90°C
 Multi AI Processors - Memory Utilization (%)	0–100%	-	-
 Multi AI Processors - Core Utilization (%)	0–100%	-	-
