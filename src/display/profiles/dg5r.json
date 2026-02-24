@@ -186,7 +186,7 @@
       "min": 0,
       "max": 100,
       "read_rate": 1,
-      "redis_key": "mem_usage",
+      "formula": "float(r.get('mem_usage'))/float(r.get('mem_total'))*100",
       "host_data": "1",
       "icon": "0xf035b"
     },
@@ -197,7 +197,7 @@
       "min": 0,
       "max": 4096,
       "read_rate": 1,
-      "formula": "float(r.get('mem_total')) - float(r.get('mem_available'))",
+      "redis_key": "mem_usage",
       "host_data": "1",
       "icon": "0xf035b",
       "label": "USED"
