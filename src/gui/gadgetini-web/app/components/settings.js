@@ -60,8 +60,14 @@ function GridCard({ label, stateKey, displayMode, setDisplayMode, activeClass })
   );
 }
 
+const SERVERS = [
+  { label: "dg5R", value: "dg5r" },
+  { label: "dg5W", value: "dg5w" },
+];
+
 export default function Settings() {
   const [currentIP, setCurrentIP] = useState("localhost");
+  const [serverName, setServerName] = useState("dg5r");
   const [displayMode, setDisplayMode] = useState({
     orientation: "vertical",
     display: true,
@@ -99,7 +105,19 @@ export default function Settings() {
   useEffect(() => {
     getDisplayConfig().then(setDisplayMode);
     getSelfIP().then(setCurrentIP);
+    fetch("/api/server-select")
+      .then((r) => r.json())
+      .then((d) => { if (d.server) setServerName(d.server); });
   }, []);
+
+  const handleServerChange = async (value) => {
+    setServerName(value);
+    await fetch("/api/server-select", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ server: value }),
+    });
+  };
 
   const handleIPChange = async () => {
     setLoadingState({ ...loadingState, updateIP: true });
@@ -173,6 +191,26 @@ export default function Settings() {
               <div>
                 <p className="text-xs text-gray-400 mb-1">Current IP</p>
                 <p className="text-base font-bold text-gray-900">{currentIP}</p>
+              </div>
+
+              {/* Server Select */}
+              <div>
+                <p className="text-xs text-gray-400 mb-2">Server</p>
+                <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                  {SERVERS.map(({ label, value }) => (
+                    <button
+                      key={value}
+                      onClick={() => handleServerChange(value)}
+                      className={`flex-1 py-1.5 text-xs rounded-md font-bold uppercase tracking-wider transition-all ${
+                        serverName === value
+                          ? "bg-slate-800 text-white shadow"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Dashboard Link */}
