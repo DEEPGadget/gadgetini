@@ -44,7 +44,7 @@ class DLCCollector:
         for name in CHANNELS:
             g.add_metric([srv, "cooling", f"{name}_temp", "°C", ""], get_float(f"coolant_temp_{name}"))
 
-        # inlet+outlet 쌍이 존재할 때만 delta_t 노출 (현재 dg5w는 inlet1만 있어 skip)
+        # expose delta_t only when inlet+outlet pair exists (dg5w has inlet1 only for now, skip)
         if 'inlet1' in CHANNELS and 'outlet1' in CHANNELS:
             g.add_metric([srv, "cooling", "delta_t1", "°C", ""], get_float("coolant_delta_t1"))
         if 'inlet2' in CHANNELS and 'outlet2' in CHANNELS:

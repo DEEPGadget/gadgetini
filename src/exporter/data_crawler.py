@@ -25,7 +25,7 @@ while True:
         temps[name] = temp
         pipe.set(f"coolant_temp_{name}", temp)
 
-    # inlet+outlet 쌍이 존재할 때만 delta_t 계산 (현재 dg5w는 inlet1만 있어 skip)
+    # compute delta_t only when inlet+outlet pair exists (dg5w has inlet1 only for now, skip)
     if 'inlet1' in temps and 'outlet1' in temps:
         pipe.set("coolant_delta_t1", round(temps['outlet1'] - temps['inlet1'], 2))
     if 'inlet2' in temps and 'outlet2' in temps:
