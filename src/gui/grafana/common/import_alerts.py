@@ -24,8 +24,10 @@ import urllib.request
 import urllib.error
 import argparse
 import base64
+from pathlib import Path
 
-DEFAULT_ALERT_FILES = ["dg5R_alert.json", "dg5W_alert.json"]
+SCRIPT_DIR = Path(__file__).parent
+DEFAULT_ALERT_FILES = [str(SCRIPT_DIR / "dg5R_alert.json"), str(SCRIPT_DIR / "dg5W_alert.json")]
 
 def api(host, auth_header, method, path, body=None):
     url = f"{host}{path}"
@@ -234,13 +236,15 @@ def main():
 
     host = args.host
     auth = make_auth(args.user, args.password, args.token)
+    # Resolve relative paths against the script's directory
+    files = [str(SCRIPT_DIR / f) if not Path(f).is_absolute() else f for f in args.files]
 
     if args.check_perms:
         check_perms(host, auth)
         return
 
     if args.delete_only:
-        for file_path in args.files:
+        for file_path in files:
             delete_file(file_path, host, auth)
         return
 
@@ -253,7 +257,7 @@ def main():
             print("ERROR: Prometheus datasource not found. Specify it manually with --datasource-uid.")
             sys.exit(1)
 
-    for file_path in args.files:
+    for file_path in files:
         import_file(file_path, host, auth, dst_uid, delete=args.delete)
 
 if __name__ == "__main__":
