@@ -27,7 +27,11 @@ import base64
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
-DEFAULT_ALERT_FILES = [str(SCRIPT_DIR / "dg5R_alert.json"), str(SCRIPT_DIR / "dg5W_alert.json")]
+GRAFANA_DIR = SCRIPT_DIR.parent
+DEFAULT_ALERT_FILES = [
+    str(GRAFANA_DIR / "dg5R" / "dg5R_alert.json"),
+    str(GRAFANA_DIR / "dg5W" / "dg5W_alert.json"),
+]
 
 def api(host, auth_header, method, path, body=None):
     url = f"{host}{path}"
@@ -236,8 +240,8 @@ def main():
 
     host = args.host
     auth = make_auth(args.user, args.password, args.token)
-    # Resolve relative paths against the script's directory
-    files = [str(SCRIPT_DIR / f) if not Path(f).is_absolute() else f for f in args.files]
+    # Resolve relative paths against the grafana root directory
+    files = [str(GRAFANA_DIR / f) if not Path(f).is_absolute() else f for f in args.files]
 
     if args.check_perms:
         check_perms(host, auth)
