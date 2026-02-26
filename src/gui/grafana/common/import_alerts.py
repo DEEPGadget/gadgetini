@@ -5,6 +5,8 @@ Import alert JSON files into Grafana via the Ruler API (non-provisioning, editab
 Usage:
   python3 import_alerts.py [files...]          # default: dg5R_alert.json dg5W_alert.json
   python3 import_alerts.py dg5R_alert.json     # single file
+  python3 import_alerts.py --delete-only       # delete all rules (no reimport)
+  python3 import_alerts.py --delete            # delete then reimport
   python3 import_alerts.py [--host HOST] [--user USER] [--password PASS]
   python3 import_alerts.py [--host HOST] --token <API_TOKEN>
   python3 import_alerts.py --check-perms       # check current user permissions
@@ -56,6 +58,14 @@ def ensure_folder(host, auth, title):
         return result["uid"]
     return None
 
+def get_folder_uid(host, auth, title):
+    """Return existing folder UID or None (does not create)."""
+    folders = api(host, auth, "GET", "/api/folders") or []
+    for f in folders:
+        if f["title"] == title:
+            return f["uid"]
+    return None
+
 def interval_to_duration(s):
     """'1m' → '1m0s'"""
     s = s.strip()
@@ -92,7 +102,39 @@ def check_perms(host, auth):
     else:
         print("  No alert permissions found (→ Service Account Admin token required)")
 
-def import_file(file_path, host, auth, dst_uid):
+def delete_folder_rules(host, auth, folder_uid):
+    """Delete all alert rule groups in a folder."""
+    existing = api(host, auth, "GET",
+                   f"/api/ruler/grafana/api/v1/rules/{folder_uid}") or {}
+    if not isinstance(existing, dict) or not existing:
+        print("  No rules found.")
+        return
+    deleted = 0
+    for group_name in list(existing.keys()):
+        print(f"  DELETE group '{group_name}' ... ", end="", flush=True)
+        result = api(host, auth, "DELETE",
+                     f"/api/ruler/grafana/api/v1/rules/{folder_uid}/{group_name}")
+        if result is not None:
+            print("OK")
+            deleted += 1
+        else:
+            print("FAILED")
+    print(f"  Deleted {deleted} group(s)")
+
+def delete_file(file_path, host, auth):
+    """Delete all rules defined in an alert JSON file."""
+    print(f"\n=== DELETE {file_path} ===")
+    with open(file_path, encoding="utf-8") as f:
+        data = json.load(f)
+    folder_title = data["groups"][0]["folder"]
+    folder_uid = get_folder_uid(host, auth, folder_title)
+    if not folder_uid:
+        print(f"  Folder '{folder_title}' not found, nothing to delete.")
+        return
+    print(f"  Folder: '{folder_title}' (uid={folder_uid})")
+    delete_folder_rules(host, auth, folder_uid)
+
+def import_file(file_path, host, auth, dst_uid, delete=False):
     """Import a single alert JSON file into Grafana."""
     print(f"\n=== {file_path} ===")
 
@@ -113,6 +155,10 @@ def import_file(file_path, host, auth, dst_uid):
     if not folder_uid:
         print("ERROR: Failed to create folder")
         return False
+
+    if delete:
+        print("[1.5] Deleting existing rules before reimport ...")
+        delete_folder_rules(host, auth, folder_uid)
 
     # Collect existing rule UIDs (to distinguish new vs update)
     existing = api(host, auth, "GET",
@@ -181,7 +227,8 @@ def main():
     parser.add_argument("--password", default="deepgadget")
     parser.add_argument("--token", default=None, help="Grafana API token (use instead of --user/--password, recommended on 403 errors)")
     parser.add_argument("--datasource-uid", default=None, help="Prometheus datasource UID (auto-detected if not specified)")
-    parser.add_argument("--delete", action="store_true", help="Delete existing rules before re-importing")
+    parser.add_argument("--delete", action="store_true", help="Delete existing rules then reimport")
+    parser.add_argument("--delete-only", action="store_true", help="Delete all rules and exit (no reimport)")
     parser.add_argument("--check-perms", action="store_true", help="Check current user permissions and exit")
     args = parser.parse_args()
 
@@ -190,6 +237,11 @@ def main():
 
     if args.check_perms:
         check_perms(host, auth)
+        return
+
+    if args.delete_only:
+        for file_path in args.files:
+            delete_file(file_path, host, auth)
         return
 
     # Resolve datasource UID once for all files
@@ -202,7 +254,7 @@ def main():
             sys.exit(1)
 
     for file_path in args.files:
-        import_file(file_path, host, auth, dst_uid)
+        import_file(file_path, host, auth, dst_uid, delete=args.delete)
 
 if __name__ == "__main__":
     main()
