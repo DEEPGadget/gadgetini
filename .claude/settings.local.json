@@ -27,7 +27,17 @@
       "Bash(# ruler API로 확인 \\(UI에서 만든 rules\\) curl -s http://admin:admin@localhost:3000/api/ruler/grafana/api/v1/rules)",
       "Bash(# DeepGadget 폴더 UID 확인 curl -s http://admin:admin@localhost:3000/api/folders)",
       "Bash(netstat:*)",
-      "Bash(gh.exe api:*)"
+      "Bash(gh.exe api:*)",
+      "Bash(git -C /home/jyeongmu/gadgetini rm src/gui/grafana/dg5W_dashboard_dev.json)",
+      "Bash(git mv src/gui/grafana/dg5R_alert.json src/gui/grafana/dg5R/dg5R_alert.json)",
+      "Bash(git mv src/gui/grafana/dg5R_dashboard.json src/gui/grafana/dg5R/dg5R_dashboard.json)",
+      "Bash(git mv src/gui/grafana/dg5R_dashboard_dev src/gui/grafana/dg5R/dg5R_dashboard_dev)",
+      "Bash(git mv src/gui/grafana/dg5W_dashboard.json src/gui/grafana/dg5W/dg5W_dashboard.json)",
+      "Bash(git mv src/gui/grafana/fav32.png src/gui/grafana/common/fav32.png)",
+      "Bash(git mv src/gui/grafana/grafana-config.sh src/gui/grafana/common/grafana-config.sh)",
+      "Bash(git mv src/gui/grafana/grafana_icon.svg src/gui/grafana/common/grafana_icon.svg)",
+      "Bash(git mv src/gui/grafana/import_alerts.py src/gui/grafana/common/import_alerts.py)",
+      "Bash(git mv src/gui/grafana/threshold.md src/gui/grafana/common/threshold.md)"
     ]
   }
 }

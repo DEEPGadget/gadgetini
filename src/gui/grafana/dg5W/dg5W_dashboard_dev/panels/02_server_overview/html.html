@@ -1,0 +1,38 @@
+<div class='overview normal' id='ov'>
+  <div class='status-bar normal' id='sb'><span style='display:flex;align-items:center;gap:16px;'><span>dg5W Server</span><span class='host-badge' id='v-host'><span class='dot'>&#9679;</span> HOST -</span></span><span id='st'>Normal</span></div>
+  <div class='sections'>
+    <div class='section'>
+      <h4>Cooling Health</h4>
+      <div class='mr'><span class='lb'>Inlet 1</span><span class='vl' id='v-inlet1'>-</span></div>
+      <div class='mr'><span class='lb'>Coolant Level</span><span class='vl' id='v-level'>-</span></div>
+      <div class='mr'><span class='lb'>Leakage</span><span class='vl' id='v-leak'>-</span></div>
+      <div class='mr'><span class='lb'>Stability</span><span class='vl' id='v-stab'>-</span></div>
+      <div class='mr'><span class='lb'>Chassis Temp</span><span class='vl' id='v-ctemp'>-</span></div>
+      <div class='mr'><span class='lb'>Chassis Humidity</span><span class='vl' id='v-chumid'>-</span></div>
+    </div>
+    <div class='section wide'>
+      <h4>Compute Health</h4>
+      <div class='cols'>
+        <div>
+          <div class='sub'>AI Processors (avg)</div>
+          <div class='mr'><span class='lb'>Temperature</span><span class='vl' id='v-gpu-temp'>-</span></div>
+          <div class='mr'><span class='lb'>Power</span><span class='vl' id='v-gpu-pwr'>-</span></div>
+          <div class='mr'><span class='lb'>Mem Util</span><span class='vl' id='v-gpu-mem'>-</span></div>
+          <div class='sub'>Memory</div>
+          <div class='mr'><span class='lb'>Available</span><span class='vl' id='v-mem-avail'>-</span></div>
+        </div>
+        <div>
+          <div class='sub'>CPUs (avg)</div>
+          <div class='mr'><span class='lb'>Temperature</span><span class='vl' id='v-cpu-temp'>-</span></div>
+          <div class='mr'><span class='lb'>Power</span><span class='vl' id='v-cpu-pwr'>-</span></div>
+          <div class='mr'><span class='lb'>CPU Util</span><span class='vl' id='v-cpu-util'>-</span></div>
+        </div>
+      </div>
+    </div>
+    <div class='section'>
+      <h4>Network Health</h4>
+      <div id='v-nics'>-</div>
+      <div class='mr' style='margin-top:8px'><span class='lb'>IB NIC Temp</span><span class='vl na' id='v-ib-temp'>-</span></div>
+    </div>
+  </div>
+</div>
