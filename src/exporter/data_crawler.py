@@ -3,7 +3,7 @@
 import redis
 import dlc_sensors
 import time
-from config import MACHINE, COOLANT_CHANNELS
+from machine_config import MACHINE, COOLANT_CHANNELS
 
 rd = redis.StrictRedis(host='localhost', port=6379, db=0)
 

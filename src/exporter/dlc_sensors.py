@@ -8,7 +8,7 @@ import numpy as np
 import adafruit_dht
 import board
 import time
-from config import MACHINE, COOLANT_CHANNELS
+from machine_config import MACHINE, COOLANT_CHANNELS
 
 ADC = ADS1256.ADS1256()
 ADC.ADS1256_init()

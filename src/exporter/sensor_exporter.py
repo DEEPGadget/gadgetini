@@ -4,7 +4,7 @@ import time
 from prometheus_client import start_http_server, CollectorRegistry
 from prometheus_client.core import GaugeMetricFamily
 import redis
-from config import MACHINE, COOLANT_CHANNELS
+from machine_config import MACHINE, COOLANT_CHANNELS
 
 client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
