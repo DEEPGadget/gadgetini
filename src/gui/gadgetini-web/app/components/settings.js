@@ -8,7 +8,6 @@ import {
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/solid";
 import LoadingSpinner from "../utils/LoadingSpinner";
-import { getSelfIP } from "../utils/ip/getSelfIP";
 import { getDisplayConfig } from "../utils/display/getDisplayConfig";
 
 function Toggle({ value, onChange }) {
@@ -67,6 +66,7 @@ const SERVERS = [
 
 export default function Settings() {
   const [currentIP, setCurrentIP] = useState("localhost");
+  const [ethActive, setEthActive] = useState(false);
   const [serverName, setServerName] = useState("dg5r");
   const [displayMode, setDisplayMode] = useState({
     orientation: "vertical",
@@ -104,7 +104,12 @@ export default function Settings() {
 
   useEffect(() => {
     getDisplayConfig().then(setDisplayMode);
-    getSelfIP().then(setCurrentIP);
+    fetch("/api/ip/self")
+      .then((r) => r.json())
+      .then((d) => {
+        setCurrentIP(d?.ip ?? "localhost");
+        setEthActive(d?.ethActive ?? false);
+      });
     fetch("/api/server-select")
       .then((r) => r.json())
       .then((d) => { if (d.server) setServerName(d.server); });
@@ -120,10 +125,10 @@ export default function Settings() {
   };
 
   const handleIPChange = async () => {
-    setLoadingState({ ...loadingState, updateIP: true });
     if (!window.confirm("Are you sure you want to change the IP?")) {
       return;
     }
+    setLoadingState({ ...loadingState, updateIP: true });
     const payload = {
       ip: IPRefs.current.ip?.value || "",
       netmask: IPRefs.current.netmask?.value || "",
@@ -191,6 +196,12 @@ export default function Settings() {
               <div>
                 <p className="text-xs text-gray-400 mb-1">Current IP</p>
                 <p className="text-base font-bold text-gray-900">{currentIP}</p>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ethActive ? "bg-green-400" : "bg-red-400"}`} />
+                  <span className="text-xs text-gray-400">
+                    {ethActive ? "eth0 active" : "eth0 not detected"}
+                  </span>
+                </div>
               </div>
 
               {/* Server Select */}
@@ -254,7 +265,7 @@ export default function Settings() {
                 <div className="space-y-2">
                   {[
                     { placeholder: "IP Address", refKey: "ip" },
-                    { placeholder: "Netmask", refKey: "netmask" },
+                    { placeholder: "Prefix Length (e.g. 24)", refKey: "netmask" },
                     { placeholder: "Gateway", refKey: "gateway" },
                     { placeholder: "DNS 1 (optional)", refKey: "dns1" },
                     { placeholder: "DNS 2 (optional)", refKey: "dns2" },
@@ -268,6 +279,13 @@ export default function Settings() {
                     />
                   ))}
                 </div>
+              )}
+
+              {/* eth warning */}
+              {!ethActive && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  ⚠ eth0 not connected — IP update unavailable
+                </p>
               )}
 
               {/* Update Button */}

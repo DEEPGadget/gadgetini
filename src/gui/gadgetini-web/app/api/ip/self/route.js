@@ -10,23 +10,22 @@ export async function GET() {
   try {
     const interfaces = os.networkInterfaces();
     let ipv4Address = "localhost";
+    let ethActive = false;
 
     for (let iface in interfaces) {
-      if (
-        iface.toLowerCase().includes("wlan") ||
-        iface.toLowerCase().includes("eth")
-      ) {
+      const isEth = iface.toLowerCase().includes("eth");
+      const isWlan = iface.toLowerCase().includes("wlan");
+      if (isEth || isWlan) {
         for (let alias of interfaces[iface]) {
           if (alias.family === "IPv4" && !alias.internal) {
-            ipv4Address = alias.address;
-            break;
+            if (ipv4Address === "localhost") ipv4Address = alias.address;
+            if (isEth) ethActive = true;
           }
         }
       }
-      if (ipv4Address !== "localhost") break;
     }
 
-    return NextResponse.json(ipv4Address);
+    return NextResponse.json({ ip: ipv4Address, ethActive });
   } catch (error) {
     console.error("[ip/self/GET]", error);
     return NextResponse.json({ error: "Failed to fetch IP" }, { status: 500 });
@@ -62,6 +61,13 @@ export async function POST(req) {
   try {
     const payload = await req.json();
     const connectionName = await getActiveConnectionName();
+
+    if (!connectionName) {
+      return NextResponse.json(
+        { error: "No active eth connection found. Connect via eth0 to update IP." },
+        { status: 400 }
+      );
+    }
 
     let command = ``;
     // Change to DHCP or static
