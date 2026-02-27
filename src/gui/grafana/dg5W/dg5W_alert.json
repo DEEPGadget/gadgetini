@@ -1,0 +1,494 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "dg5W-cooling",
+      "folder": "DeepGadget",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "dg5w-coolant-inlet-crit",
+          "title": "[dg5W] Coolant Inlet Temp Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": { "from": 120, "to": 0 },
+              "datasourceUid": "fet9pt33egpogb",
+              "model": {
+                "expr": "quantile_over_time(0.5, dlc_system_sensor{server=\"dg5w\", component=\"cooling\", metric=\"inlet1_temp\"}[2m])",
+                "instant": true,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": { "from": 0, "to": 0 },
+              "datasourceUid": "-100",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": { "params": [45], "type": "gt" },
+                    "operator": { "type": "or" },
+                    "query": { "params": ["A"] },
+                    "reducer": { "params": [], "type": "last" },
+                    "type": "query"
+                  },
+                  {
+                    "evaluator": { "params": [18], "type": "lt" },
+                    "operator": { "type": "or" },
+                    "query": { "params": ["A"] },
+                    "reducer": { "params": [], "type": "last" },
+                    "type": "query"
+                  }
+                ],
+                "datasource": { "type": "__expr__", "uid": "-100" },
+                "refId": "C",
+                "type": "classic_conditions"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "annotations": {
+            "summary": "Coolant inlet temperature is critical (>45°C or <18°C)",
+            "description": "{{ $labels.metric }}: {{ $values.A }}"
+          },
+          "labels": { "severity": "critical", "server": "dg5W", "subsystem": "cooling" },
+          "isPaused": false
+        },
+        {
+          "uid": "dg5w-coolant-level-warn",
+          "title": "[dg5W] Coolant Level Warning",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": { "from": 20, "to": 0 },
+              "datasourceUid": "fet9pt33egpogb",
+              "model": {
+                "expr": "min_over_time(dlc_system_sensor{server=\"dg5w\", component=\"cooling\", metric=\"level_full\"}[20s])",
+                "instant": true,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": { "from": 0, "to": 0 },
+              "datasourceUid": "-100",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": { "params": [1], "type": "lt" },
+                    "operator": { "type": "and" },
+                    "query": { "params": ["A"] },
+                    "reducer": { "params": [], "type": "last" },
+                    "type": "query"
+                  }
+                ],
+                "datasource": { "type": "__expr__", "uid": "-100" },
+                "refId": "C",
+                "type": "classic_conditions"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "0s",
+          "annotations": {
+            "summary": "Coolant level is MIDDLE (not HIGH)",
+            "description": "Coolant level dropped to MIDDLE — check coolant reservoir"
+          },
+          "labels": { "severity": "warning", "server": "dg5W", "subsystem": "cooling" },
+          "isPaused": false
+        },
+        {
+          "uid": "dg5w-coolant-leak-crit",
+          "title": "[dg5W] Coolant Leak Detected",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": { "from": 20, "to": 0 },
+              "datasourceUid": "fet9pt33egpogb",
+              "model": {
+                "expr": "max_over_time(dlc_system_sensor{server=\"dg5w\", component=\"cooling\", metric=\"leak_detected\"}[20s])",
+                "instant": true,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": { "from": 0, "to": 0 },
+              "datasourceUid": "-100",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": { "params": [0], "type": "gt" },
+                    "operator": { "type": "and" },
+                    "query": { "params": ["A"] },
+                    "reducer": { "params": [], "type": "last" },
+                    "type": "query"
+                  }
+                ],
+                "datasource": { "type": "__expr__", "uid": "-100" },
+                "refId": "C",
+                "type": "classic_conditions"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "0s",
+          "annotations": {
+            "summary": "COOLANT LEAK DETECTED",
+            "description": "Leak sensor triggered — immediate inspection required"
+          },
+          "labels": { "severity": "critical", "server": "dg5W", "subsystem": "cooling" },
+          "isPaused": false
+        }
+      ]
+    },
+    {
+      "orgId": 1,
+      "name": "dg5W-environment",
+      "folder": "DeepGadget",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "dg5w-chassis-temp-crit",
+          "title": "[dg5W] Chassis Temp Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": { "from": 120, "to": 0 },
+              "datasourceUid": "fet9pt33egpogb",
+              "model": {
+                "expr": "quantile_over_time(0.5, dlc_system_sensor{server=\"dg5w\", component=\"environment\", metric=\"air_temp\"}[2m])",
+                "instant": true,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": { "from": 0, "to": 0 },
+              "datasourceUid": "-100",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": { "params": [50], "type": "gt" },
+                    "operator": { "type": "and" },
+                    "query": { "params": ["A"] },
+                    "reducer": { "params": [], "type": "last" },
+                    "type": "query"
+                  }
+                ],
+                "datasource": { "type": "__expr__", "uid": "-100" },
+                "refId": "C",
+                "type": "classic_conditions"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "annotations": {
+            "summary": "Chassis temperature critical (>50°C)",
+            "description": "air_temp: {{ $values.A }}"
+          },
+          "labels": { "severity": "critical", "server": "dg5W", "subsystem": "environment" },
+          "isPaused": false
+        },
+        {
+          "uid": "dg5w-chassis-humid-crit",
+          "title": "[dg5W] Chassis Humidity Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": { "from": 120, "to": 0 },
+              "datasourceUid": "fet9pt33egpogb",
+              "model": {
+                "expr": "quantile_over_time(0.5, dlc_system_sensor{server=\"dg5w\", component=\"environment\", metric=\"air_humidity\"}[2m])",
+                "instant": true,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": { "from": 0, "to": 0 },
+              "datasourceUid": "-100",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": { "params": [80], "type": "gt" },
+                    "operator": { "type": "or" },
+                    "query": { "params": ["A"] },
+                    "reducer": { "params": [], "type": "last" },
+                    "type": "query"
+                  }
+                ],
+                "datasource": { "type": "__expr__", "uid": "-100" },
+                "refId": "C",
+                "type": "classic_conditions"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "annotations": {
+            "summary": "Chassis humidity critical (>80%)",
+            "description": "air_humidity: {{ $values.A }}"
+          },
+          "labels": { "severity": "critical", "server": "dg5W", "subsystem": "environment" },
+          "isPaused": false
+        },
+        {
+          "uid": "dg5w-chassis-stabil-crit",
+          "title": "[dg5W] Chassis Stability Alert",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": { "from": 20, "to": 0 },
+              "datasourceUid": "fet9pt33egpogb",
+              "model": {
+                "expr": "min_over_time(dlc_system_sensor{server=\"dg5w\", component=\"chassis\", metric=\"stability\"}[20s])",
+                "instant": true,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": { "from": 0, "to": 0 },
+              "datasourceUid": "-100",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": { "params": [1], "type": "lt" },
+                    "operator": { "type": "and" },
+                    "query": { "params": ["A"] },
+                    "reducer": { "params": [], "type": "last" },
+                    "type": "query"
+                  }
+                ],
+                "datasource": { "type": "__expr__", "uid": "-100" },
+                "refId": "C",
+                "type": "classic_conditions"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "0s",
+          "annotations": {
+            "summary": "Chassis stability alert (movement detected)",
+            "description": "Chassis gyro reports unstable — check server physical status"
+          },
+          "labels": { "severity": "critical", "server": "dg5W", "subsystem": "environment" },
+          "isPaused": false
+        }
+      ]
+    },
+    {
+      "orgId": 1,
+      "name": "dg5W-compute",
+      "folder": "DeepGadget",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "dg5w-gpu-temp-crit",
+          "title": "[dg5W] AI Processor Temp Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": { "from": 120, "to": 0 },
+              "datasourceUid": "fet9pt33egpogb",
+              "model": {
+                "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"gpu[0-9]\", metric=\"temperature\"}",
+                "instant": true,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": { "from": 0, "to": 0 },
+              "datasourceUid": "-100",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": { "params": [90], "type": "gt" },
+                    "operator": { "type": "and" },
+                    "query": { "params": ["A"] },
+                    "reducer": { "params": [], "type": "last" },
+                    "type": "query"
+                  }
+                ],
+                "datasource": { "type": "__expr__", "uid": "-100" },
+                "refId": "C",
+                "type": "classic_conditions"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "annotations": {
+            "summary": "AI processor temperature critical (>90°C)",
+            "description": "{{ $labels.component }} [{{ $labels.extra }}]: {{ $values.A }}"
+          },
+          "labels": { "severity": "critical", "server": "dg5W", "subsystem": "compute" },
+          "isPaused": false
+        },
+        {
+          "uid": "dg5w-cpu-temp-crit",
+          "title": "[dg5W] CPU Temp Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": { "from": 120, "to": 0 },
+              "datasourceUid": "fet9pt33egpogb",
+              "model": {
+                "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"cpu[0-9]\", metric=\"temperature\"}",
+                "instant": true,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": { "from": 0, "to": 0 },
+              "datasourceUid": "-100",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": { "params": [95], "type": "gt" },
+                    "operator": { "type": "and" },
+                    "query": { "params": ["A"] },
+                    "reducer": { "params": [], "type": "last" },
+                    "type": "query"
+                  }
+                ],
+                "datasource": { "type": "__expr__", "uid": "-100" },
+                "refId": "C",
+                "type": "classic_conditions"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "annotations": {
+            "summary": "CPU temperature critical (>95°C)",
+            "description": "{{ $labels.component }}: {{ $values.A }}"
+          },
+          "labels": { "severity": "critical", "server": "dg5W", "subsystem": "compute" },
+          "isPaused": false
+        },
+        {
+          "uid": "dg5w-mem-avail-crit",
+          "title": "[dg5W] Memory Available Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": { "from": 120, "to": 0 },
+              "datasourceUid": "fet9pt33egpogb",
+              "model": {
+                "expr": "dlc_system_sensor{server=\"dg5w\", component=\"memory\", metric=\"available\"} / dlc_system_sensor{server=\"dg5w\", component=\"memory\", metric=\"total\"} * 100",
+                "instant": true,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": { "from": 0, "to": 0 },
+              "datasourceUid": "-100",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": { "params": [10], "type": "lt" },
+                    "operator": { "type": "and" },
+                    "query": { "params": ["A"] },
+                    "reducer": { "params": [], "type": "last" },
+                    "type": "query"
+                  }
+                ],
+                "datasource": { "type": "__expr__", "uid": "-100" },
+                "refId": "C",
+                "type": "classic_conditions"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "2m",
+          "annotations": {
+            "summary": "Available memory critical (<10%)",
+            "description": "Available: {{ $values.A }}%"
+          },
+          "labels": { "severity": "critical", "server": "dg5W", "subsystem": "compute" },
+          "isPaused": false
+        }
+      ]
+    },
+    {
+      "orgId": 1,
+      "name": "dg5W-ib",
+      "folder": "DeepGadget",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "dg5w-ib-temp-crit",
+          "title": "[dg5W] IB NIC Temp Critical",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": { "from": 120, "to": 0 },
+              "datasourceUid": "fet9pt33egpogb",
+              "model": {
+                "expr": "dlc_system_sensor{server=\"dg5w\", component=\"ib\", metric=\"temperature\"}",
+                "instant": true,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": { "from": 0, "to": 0 },
+              "datasourceUid": "-100",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": { "params": [115], "type": "gt" },
+                    "operator": { "type": "and" },
+                    "query": { "params": ["A"] },
+                    "reducer": { "params": [], "type": "last" },
+                    "type": "query"
+                  }
+                ],
+                "datasource": { "type": "__expr__", "uid": "-100" },
+                "refId": "C",
+                "type": "classic_conditions"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "1m",
+          "annotations": {
+            "summary": "IB NIC temperature critical (>115°C)",
+            "description": "ib_nic_temp: {{ $values.A }}"
+          },
+          "labels": { "severity": "critical", "server": "dg5W", "subsystem": "ib" },
+          "isPaused": false
+        }
+      ]
+    }
+  ]
+}
