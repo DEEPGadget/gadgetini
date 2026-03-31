@@ -37,7 +37,9 @@
       "Bash(git mv src/gui/grafana/grafana-config.sh src/gui/grafana/common/grafana-config.sh)",
       "Bash(git mv src/gui/grafana/grafana_icon.svg src/gui/grafana/common/grafana_icon.svg)",
       "Bash(git mv src/gui/grafana/import_alerts.py src/gui/grafana/common/import_alerts.py)",
-      "Bash(git mv src/gui/grafana/threshold.md src/gui/grafana/common/threshold.md)"
+      "Bash(git mv src/gui/grafana/threshold.md src/gui/grafana/common/threshold.md)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git pull:*)"
     ]
   }
 }

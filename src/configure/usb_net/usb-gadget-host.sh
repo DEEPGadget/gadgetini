@@ -32,8 +32,7 @@ sudo nmcli connection add type ethernet \
   connection.autoconnect yes
 
 echo "Modifying routing and metrics..."
-sudo nmcli connection modify "${NM_CON_NAME}" ipv4.routes "${STATIC_ROUTE}"
-sudo nmcli connection modify "${NM_CON_NAME}" ipv4.route-metric 700
+sudo nmcli connection modify "${NM_CON_NAME}" ipv6.route-metric 700
 
 echo "Activating connection..."
 sudo nmcli connection up "${NM_CON_NAME}"
