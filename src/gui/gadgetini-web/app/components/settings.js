@@ -83,6 +83,8 @@ export default function Settings() {
     psu: false,
     leak: true,
     rotationTime: 7,
+    gpuCount: 8,
+    cpuCount: 2,
   });
   const [IPMode, setIPMode] = useState("dhcp");
   const IPRefs = useRef({
@@ -376,6 +378,40 @@ export default function Settings() {
                   <span className="text-xs text-gray-400">sec</span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* ── Hardware Count ── */}
+          <div className="rounded-2xl overflow-hidden shadow-sm">
+            <SectionHeader label="Hardware Count" colorClass="bg-gray-600" />
+            <div className="bg-white p-4 grid grid-cols-2 gap-4">
+              {[
+                { label: "GPU Count", key: "gpuCount", min: 0, max: 8 },
+                { label: "CPU Count", key: "cpuCount", min: 1, max: 4 },
+              ].map(({ label, key, min, max }) => (
+                <div key={key} className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{label}</p>
+                    <p className="text-xs text-gray-400">config.ini {key === "gpuCount" ? "gpu_count" : "cpu_count"}</p>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 shadow-sm border border-gray-100">
+                    <input
+                      type="number"
+                      min={min}
+                      max={max}
+                      value={displayMode[key]}
+                      onChange={(e) => {
+                        const value = Math.floor(Number(e.target.value));
+                        setDisplayMode((p) => ({
+                          ...p,
+                          [key]: Math.max(min, Math.min(max, value)),
+                        }));
+                      }}
+                      className="w-10 text-center text-sm font-bold focus:outline-none bg-transparent text-gray-800"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
