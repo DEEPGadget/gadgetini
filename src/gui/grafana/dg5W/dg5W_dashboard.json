@@ -1,0 +1,1309 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": 6,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "panels": [],
+      "title": "System Summary",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 18,
+        "x": 0,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "SVGBaseFix": true,
+        "add100Percentage": true,
+        "calcsMutation": "standard",
+        "centerAlignContent": false,
+        "codeData": "{\n  \"text\": \"Random text\"\n}",
+        "css": "* { box-sizing: border-box; margin: 0; padding: 0; }\n.overview { width: 100%; height: 100%; padding: 12px; display: flex; flex-direction: column; gap: 8px; border-radius: 8px; font-family: Inter, sans-serif; }\n.overview.normal { border: 2px solid #37872d; }\n.overview.warning { border: 2px solid #e5ac0e; }\n.overview.critical { border: 2px solid #c4162a; }\n.status-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px 14px; border-radius: 4px; color: white; font-weight: 700; font-size: 16px; }\n.status-bar.normal { background: #37872d; }\n.status-bar.warning { background: #e5ac0e; color: #000; }\n.status-bar.critical { background: #c4162a; }\n.sections { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; min-height: 0; }\n.section { flex: 1 1 160px; background: rgba(0,0,0,0.04); border-radius: 6px; padding: 10px; overflow-y: auto; }\n.section.wide { flex: 2 1 260px; }\n.section h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; opacity: 1; color: #777; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; }\n.cols { display: flex; flex-wrap: wrap; gap: 16px; }\n.cols > div { flex: 1 1 120px; }\n.mr { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #1a1a1a; }\n.mr .lb { opacity: 0.6; }\n.mr .vl { font-weight: 600; font-variant-numeric: tabular-nums; }\n.vl.normal { color: #1a1a1a; }\n.vl.warning { color: #b57a00; }\n.vl.critical { color: #c4162a; }\n.vl.na { color: #aaa; font-weight: 400; }\n.sub { font-size: 12px; color: #666; opacity: 1; margin-top: 8px; margin-bottom: 4px; font-weight: 600; }\n.host-badge { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; letter-spacing: 0.5px; background: #fff; color: #1a1a1a; display: inline-flex; align-items: center; gap: 5px; }\n.host-badge .dot { font-size: 10px; }\n.host-badge.on .dot { color: #37872d; }\n.host-badge.off .dot { color: #c4162a; }\n@media (max-width: 480px) {\n  .overview { padding: 8px; }\n  .status-bar { font-size: 13px; padding: 6px 10px; }\n  .section, .section.wide { flex: 1 1 100%; }\n  .cols > div { flex: 1 1 100%; }\n  .mr { font-size: 12px; }\n}",
+        "dynamicData": false,
+        "dynamicFieldDisplayValues": false,
+        "dynamicHtmlGraphics": false,
+        "dynamicProps": false,
+        "html": "<div class='overview normal' id='ov'>\n  <div class='status-bar normal' id='sb'><span style='display:flex;align-items:center;gap:16px;'><span>dg5W Server</span><span class='host-badge' id='v-host'><span class='dot'>&#9679;</span> HOST -</span></span><span id='st'>Normal</span></div>\n  <div class='sections'>\n    <div class='section'>\n      <h4>Cooling Health</h4>\n      <div class='mr'><span class='lb'>Inlet 1</span><span class='vl' id='v-inlet1'>-</span></div>\n      <div class='mr'><span class='lb'>Coolant Level</span><span class='vl' id='v-level'>-</span></div>\n      <div class='mr'><span class='lb'>Leakage</span><span class='vl' id='v-leak'>-</span></div>\n      <div class='mr'><span class='lb'>Stability</span><span class='vl' id='v-stab'>-</span></div>\n      <div class='mr'><span class='lb'>Chassis Temp</span><span class='vl' id='v-ctemp'>-</span></div>\n      <div class='mr'><span class='lb'>Chassis Humidity</span><span class='vl' id='v-chumid'>-</span></div>\n    </div>\n    <div class='section wide'>\n      <h4>Compute Health</h4>\n      <div class='cols'>\n        <div>\n          <div class='sub'>AI Processors (avg)</div>\n          <div class='mr'><span class='lb'>Temperature</span><span class='vl' id='v-gpu-temp'>-</span></div>\n          <div class='mr'><span class='lb'>Power</span><span class='vl' id='v-gpu-pwr'>-</span></div>\n          <div class='mr'><span class='lb'>Mem Util</span><span class='vl' id='v-gpu-mem'>-</span></div>\n          <div class='sub'>Memory</div>\n          <div class='mr'><span class='lb'>Available</span><span class='vl' id='v-mem-avail'>-</span></div>\n        </div>\n        <div>\n          <div class='sub'>CPUs (avg)</div>\n          <div class='mr'><span class='lb'>Temperature</span><span class='vl' id='v-cpu-temp'>-</span></div>\n          <div class='mr'><span class='lb'>Power</span><span class='vl' id='v-cpu-pwr'>-</span></div>\n          <div class='mr'><span class='lb'>CPU Util</span><span class='vl' id='v-cpu-util'>-</span></div>\n        </div>\n      </div>\n    </div>\n    <div class='section'>\n      <h4>Network Health</h4>\n      <div id='v-nics'>-</div>\n      <div class='mr' style='margin-top:8px'><span class='lb'>IB NIC Temp</span><span class='vl na' id='v-ib-temp'>-</span></div>\n    </div>\n  </div>\n</div>",
+        "onInit": "",
+        "onInitOnResize": false,
+        "onRender": "const m={};\nconst nicMap={};\nfunction medianOf(a){const s=a.slice().sort((x,y)=>x-y);const mid=Math.floor(s.length/2);return s.length%2?s[mid]:(s[mid-1]+s[mid])/2;}\nfunction medianLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return medianOf(s);}\nfunction maxLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return Math.max(...s);}\nfunction minLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return Math.min(...s);}\ndata.series.forEach(s=>{\n  if(!s.fields||s.fields.length<2)return;\n  const f=s.fields[1];\n  const labels=f.labels||{};\n  const component=labels.component||'';\n  const metric=labels.metric||'';\n  const extra=labels.extra||'';\n  const vals=f.values;\n  if(vals&&vals.length>0){\n    let val;\n    if(component==='cooling'||component==='environment'){\n      if(metric==='leak_detected') val=maxLast(vals,10);\n      else if(metric==='level_full') val=minLast(vals,10);\n      else val=medianLast(vals,10);\n    } else {\n      val=vals[vals.length-1];\n    }\n    if(component==='network'&&metric==='link_status'){nicMap[extra]=val;}\n    else m[component+'_'+metric]=val;\n  }\n});\nfunction fmt(v,u,d){return v!==undefined&&v!==null?v.toFixed(d!==undefined?d:1)+u:'-';}\nfunction el(id){return htmlNode.querySelector('#'+id);}\nfunction setV(id,text,cls){const e=el(id);if(!e)return;e.textContent=text;e.className='vl '+(cls||'normal');}\nfunction evalInlet(v){if(v===undefined)return'normal';if(v>45||v<18)return'critical';if(v>40||v<22)return'warning';return'normal';}\nfunction evalChasT(v){if(v===undefined)return'normal';if(v>50)return'critical';if(v>40)return'warning';return'normal';}\nfunction evalChasH(v){if(v===undefined)return'normal';if(v>80)return'critical';if(v>60)return'warning';return'normal';}\nfunction evalGpuT(v){if(v===undefined)return'normal';if(v>90)return'critical';if(v>75)return'warning';return'normal';}\nfunction evalCpuT(v){if(v===undefined)return'normal';if(v>95)return'critical';if(v>85)return'warning';return'normal';}\nfunction evalIbTemp(v){if(v===undefined)return'normal';if(v>=115)return'critical';if(v>=105)return'warning';return'normal';}\nfunction evalMemAvail(total,avail){if(!total||!avail)return'normal';const p=avail/total*100;if(p<5)return'critical';if(p<20)return'warning';return'normal';}\nconst sts=[];\nconst i1=m['cooling_inlet1_temp'];\nconst lv=m['cooling_level_full'],lk=m['cooling_leak_detected'];\nconst stab=m['chassis_stability'];\nconst ct=m['environment_air_temp'],ch=m['environment_air_humidity'];\nlet s;\ns=evalInlet(i1);sts.push(s);setV('v-inlet1',fmt(i1,'\\u00b0C'),s);\ns=lv===undefined||lv===null?'normal':lv<0.5?'warning':'normal';sts.push(s);setV('v-level',lv===undefined||lv===null?'-':lv>=0.5?'HIGH':'MIDDLE',s);\ns=lk===undefined||lk===null?'normal':lk>=0.5?'critical':'normal';sts.push(s);setV('v-leak',lk===undefined||lk===null?'-':lk>=0.5?'LEAKED':'NORMAL',s);\ns=stab===undefined||stab===null?'normal':stab<0.5?'critical':'normal';sts.push(s);setV('v-stab',stab===undefined||stab===null?'-':stab>=0.5?'STABLE':'UNSTABLE',s);\ns=evalChasT(ct);sts.push(s);setV('v-ctemp',fmt(ct,'\\u00b0C'),s);\ns=evalChasH(ch);sts.push(s);setV('v-chumid',fmt(ch,'%'),s);\nconst gpuTs=[],gpuPs=[],gpuMs=[];\nObject.keys(m).forEach(k=>{\n  if(k.match(/^gpu\\d+_temperature$/))gpuTs.push(m[k]);\n  if(k.match(/^gpu\\d+_power_current$/))gpuPs.push(m[k]);\n  if(k.match(/^gpu\\d+_memory_available$/))gpuMs.push(m[k]);\n});\nfunction avg(a){return a.length?a.reduce((s,v)=>s+v,0)/a.length:undefined;}\nconst gaT=avg(gpuTs),gaP=avg(gpuPs),gaM=avg(gpuMs);\ns=evalGpuT(gaT);sts.push(s);setV('v-gpu-temp',fmt(gaT,'\\u00b0C'),s);\nsetV('v-gpu-pwr',fmt(gaP,'W'),'normal');\nsetV('v-gpu-mem',fmt(gaM,'%'),'normal');\nconst cpuTs=[],cpuPs=[];\nObject.keys(m).forEach(k=>{\n  if(k.match(/^cpu\\d+_temperature$/))cpuTs.push(m[k]);\n  if(k.match(/^cpu\\d+_power$/))cpuPs.push(m[k]);\n});\nconst caT=avg(cpuTs),caP=avg(cpuPs),cuU=m['cpu_usage_total'];\ns=evalCpuT(caT);sts.push(s);setV('v-cpu-temp',fmt(caT,'\\u00b0C'),s);\nsetV('v-cpu-pwr',fmt(caP,'W'),'normal');\nsetV('v-cpu-util',fmt(cuU,'%'),'normal');\nconst mT=m['memory_total'],mA=m['memory_available'];\ns=evalMemAvail(mT,mA);sts.push(s);setV('v-mem-avail',mT&&mA?((mA/mT*100).toFixed(1)+'%'):'-',s);\nconst hostEl=el('v-host');\nif(hostEl){const hv=m['system_host_online'];if(hv===undefined||hv===null){hostEl.className='host-badge off';hostEl.innerHTML='<span class=\"dot\">&#9679;</span> HOST -';}else if(hv>=0.5){hostEl.className='host-badge on';hostEl.innerHTML='<span class=\"dot\">&#9679;</span> HOST ON';}else{hostEl.className='host-badge off';hostEl.innerHTML='<span class=\"dot\">&#9679;</span> HOST OFF';}}\nconst ibT=m['ib_temperature'];\nconst ibEl=el('v-ib-temp');\nif(ibEl){if(ibT===undefined||ibT===null){ibEl.className='vl na';ibEl.textContent='-';}else{const st=evalIbTemp(ibT);sts.push(st);ibEl.className='vl '+st;ibEl.textContent=ibT.toFixed(1)+'\\u00b0C';}}\nconst nicsEl=el('v-nics');\nif(nicsEl){const nics=Object.keys(nicMap).sort();if(!nics.length){nicsEl.innerHTML='-';}else{let html='';let anyDown=false;nics.forEach(nic=>{const v=nicMap[nic];if(v!==1)anyDown=true;html+='<div class=\"mr\"><span class=\"lb\">'+nic+'</span><span class=\"vl normal\">'+(v===1?'UP':'DOWN')+'</span></div>';});nicsEl.innerHTML=html;sts.push(anyDown?'normal':'normal');}}\nlet worst='normal';\nsts.forEach(v=>{if(v==='critical')worst='critical';else if(v==='warning'&&worst!=='critical')worst='warning';});\nconst ov=el('ov');if(ov)ov.className='overview '+worst;\nconst sb=el('sb');if(sb)sb.className='status-bar '+worst;\nconst stEl=el('st');if(stEl)stEl.textContent=worst==='critical'?'Critical':worst==='warning'?'Warning':'Normal';",
+        "overflow": "auto",
+        "panelupdateOnMount": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull",
+            "last",
+            "firstNotNull",
+            "first",
+            "min",
+            "max",
+            "mean",
+            "sum",
+            "count",
+            "range",
+            "delta",
+            "step",
+            "diff",
+            "logmin",
+            "allIsZero",
+            "allIsNull",
+            "diffperc"
+          ]
+        },
+        "renderOnMount": true,
+        "rootCSS": "",
+        "useGrafanaScrollbar": true
+      },
+      "pluginVersion": "2.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\"}",
+          "instant": true,
+          "legendFormat": "{{metric}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Server Overview",
+      "type": "gapit-htmlgraphics-panel"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 19,
+      "options": {
+        "alertInstanceLabelFilter": "",
+        "alertName": "",
+        "dashboardAlerts": false,
+        "groupBy": [],
+        "groupMode": "default",
+        "maxItems": 20,
+        "showInactiveAlerts": false,
+        "sortOrder": 1,
+        "stateFilter": {
+          "error": true,
+          "firing": true,
+          "noData": false,
+          "normal": false,
+          "pending": true,
+          "recovering": true
+        },
+        "viewMode": "list"
+      },
+      "pluginVersion": "12.1.0",
+      "title": "Active Alerts",
+      "type": "alertlist"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 4,
+      "panels": [],
+      "title": "Detailed",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      },
+      "id": 5,
+      "options": {
+        "SVGBaseFix": true,
+        "add100Percentage": true,
+        "calcsMutation": "standard",
+        "centerAlignContent": false,
+        "codeData": "{\n  \"text\": \"Random text\"\n}",
+        "css": "* { box-sizing: border-box; margin: 0; padding: 0; }\n.cool { width: 100%; height: 100%; padding: 2px; font-family: Inter, sans-serif; color: #1a1a1a; display: flex; flex-direction: column; }\n.diagram { flex: 1; position: relative; min-height: 0; }\nsvg { width: 100%; height: 100%; }\n.sv { font-size: 8px; font-weight: 700; font-family: monospace; }\n.sv.normal { fill: #1a1a1a; }\n.sv.warning { fill: #b57a00; }\n.sv.critical { fill: #c4162a; }\n.cl { font-size: 8px; fill: #333; font-weight: 600; }\n.cl-sm { font-size: 6.5px; fill: rgba(0,0,0,0.45); font-weight: 400; }\n.cb { fill: rgba(0,0,0,0.05); stroke: rgba(0,0,0,0.2); stroke-width: 1; rx: 4; }\n.pipe-cold { stroke: #4A9BF5; stroke-width: 1.5; fill: none; marker-end: url(#arrowBlue); }\n.pipe-hot { stroke: #F2495C; stroke-width: 1.5; fill: none; marker-end: url(#arrowRed); }\n.sep { stroke: rgba(0,0,0,0.12); stroke-width: 1; }",
+        "dynamicData": false,
+        "dynamicFieldDisplayValues": false,
+        "dynamicHtmlGraphics": false,
+        "dynamicProps": false,
+        "html": "<div class='cool'>\n<div class='diagram'>\n<svg viewBox='0 0 575 138' xmlns='http://www.w3.org/2000/svg'>\n  <defs>\n    <linearGradient id='gCold' x1='0' y1='0' x2='0' y2='1'>\n      <stop offset='0%' stop-color='rgba(74,155,245,0.25)'/>\n      <stop offset='100%' stop-color='rgba(74,155,245,0.08)'/>\n    </linearGradient>\n    <linearGradient id='gHot' x1='0' y1='0' x2='0' y2='1'>\n      <stop offset='0%' stop-color='rgba(242,73,92,0.22)'/>\n      <stop offset='100%' stop-color='rgba(242,73,92,0.07)'/>\n    </linearGradient>\n    <marker id='arrowBlue' markerWidth='3' markerHeight='3' refX='2.5' refY='1.5' orient='auto'><path d='M0,0 L3,1.5 L0,3 Z' fill='#4A9BF5'/></marker>\n    <marker id='arrowRed' markerWidth='3' markerHeight='3' refX='2.5' refY='1.5' orient='auto'><path d='M0,0 L3,1.5 L0,3 Z' fill='#F2495C'/></marker>\n  </defs>\n\n  <!-- Fan + Radiator -->\n  <rect class='cb' x='8' y='10' width='70' height='38'/>\n  <text class='cl' x='43' y='32' text-anchor='middle'>Fan + Radiator</text>\n\n  <!-- cold pipe → Reservoir -->\n  <path class='pipe-cold' d='M78,29 L96,29'/>\n\n  <!-- Reservoir -->\n  <rect x='96' y='10' width='70' height='38' fill='url(#gCold)' stroke='rgba(74,155,245,0.55)' stroke-width='1' rx='4'/>\n  <text class='cl' x='131' y='22' text-anchor='middle'>Reservoir</text>\n  <text class='sv normal' id='sv-lev' x='131' y='34' text-anchor='middle'>Level: -</text>\n\n  <!-- cold pipe → Pump -->\n  <path class='pipe-cold' d='M166,29 L184,29'/>\n\n  <!-- Pump -->\n  <rect class='cb' x='184' y='10' width='50' height='38'/>\n  <text class='cl' x='209' y='32' text-anchor='middle'>Pump</text>\n\n  <!-- cold pipe → Inlet Manifold -->\n  <path class='pipe-cold' d='M234,29 L252,29'/>\n\n  <!-- Coolant Inlet Manifold -->\n  <rect x='252' y='10' width='88' height='38' fill='url(#gCold)' stroke='rgba(74,155,245,0.55)' stroke-width='1' rx='4'/>\n  <text class='cl' x='296' y='20' text-anchor='middle'>Coolant Inlet</text>\n  <text class='cl' x='296' y='30' text-anchor='middle'>Manifold</text>\n  <text class='sv normal' id='sv-in1' x='296' y='40' text-anchor='middle'>Inlet 1: -</text>\n\n  <!-- cold pipe → Heat Source -->\n  <path class='pipe-cold' d='M340,29 L358,29'/>\n\n  <!-- Heat Source -->\n  <rect x='358' y='10' width='100' height='38' fill='url(#gHot)' stroke='rgba(242,73,92,0.55)' stroke-width='1' rx='4'/>\n  <text class='cl' x='408' y='24' text-anchor='middle'>Heat Source</text>\n  <text class='cl-sm' x='408' y='35' text-anchor='middle'>(CPU / AI Processor / NIC)</text>\n\n  <!-- hot pipe → Outlet Manifold -->\n  <path class='pipe-hot' d='M458,29 L476,29'/>\n\n  <!-- Coolant Outlet Manifold -->\n  <rect x='476' y='10' width='88' height='38' fill='url(#gHot)' stroke='rgba(242,73,92,0.55)' stroke-width='1' rx='4'/>\n  <text class='cl' x='520' y='25' text-anchor='middle'>Coolant Outlet</text>\n  <text class='cl' x='520' y='37' text-anchor='middle'>Manifold</text>\n\n  <!-- Hot pipe return: Outlet Manifold bottom → back to Radiator bottom -->\n  <path class='pipe-hot' d='M520,48 L520,66 L43,66 L43,48'/>\n\n  <!-- separator -->\n  <line class='sep' x1='8' y1='78' x2='564' y2='78'/>\n\n  <!-- Status metrics -->\n  <text class='cl' x='10' y='90'>Leak Detection</text>\n  <text class='sv normal' id='sv-leak' x='564' y='90' text-anchor='end'>-</text>\n  <text class='cl' x='10' y='104'>Chassis Stability</text>\n  <text class='sv normal' id='sv-stab' x='564' y='104' text-anchor='end'>-</text>\n  <text class='cl' x='10' y='118'>Chassis Temp</text>\n  <text class='sv normal' id='sv-ct' x='564' y='118' text-anchor='end'>-</text>\n  <text class='cl' x='10' y='132'>Chassis Humidity</text>\n  <text class='sv normal' id='sv-ch' x='564' y='132' text-anchor='end'>-</text>\n</svg>\n</div>\n</div>\n",
+        "onInit": "",
+        "onInitOnResize": false,
+        "onRender": "const m={};\nfunction medianOf(a){const s=a.slice().sort((x,y)=>x-y);const mid=Math.floor(s.length/2);return s.length%2?s[mid]:(s[mid-1]+s[mid])/2;}\nfunction medianLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return medianOf(s);}\nfunction maxLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return Math.max(...s);}\nfunction minLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return Math.min(...s);}\ndata.series.forEach(s=>{\n  if(!s.fields||s.fields.length<2)return;\n  const f=s.fields[1];\n  const metric=(f.labels||{}).metric||'';\n  const vals=f.values;\n  if(vals&&vals.length>0){\n    if(metric==='leak_detected') m[metric]=maxLast(vals,10);\n    else if(metric==='level_full') m[metric]=minLast(vals,10);\n    else m[metric]=medianLast(vals,10);\n  }\n});\nfunction fmt(v,d){return v!==undefined&&v!==null?v.toFixed(d!==undefined?d:1):'-';}\nfunction cls(st){return 'sv '+st;}\nfunction evalInlet(v){if(v===undefined)return'normal';if(v>45||v<18)return'critical';if(v>40||v<22)return'warning';return'normal';}\nfunction evalChasT(v){if(v===undefined)return'normal';if(v>50)return'critical';if(v>40)return'warning';return'normal';}\nfunction evalChasH(v){if(v===undefined)return'normal';if(v>80)return'critical';if(v>60)return'warning';return'normal';}\nfunction setEl(id,text,status){const e=htmlNode.querySelector('#'+id);if(!e)return;e.textContent=text;e.setAttribute('class',cls(status));}\nconst i1=m['inlet1_temp'];\nconst stab=m['stability'];\nconst lv=m['level_full'],lk=m['leak_detected'];\nconst ct=m['air_temp'],ch=m['air_humidity'];\nsetEl('sv-in1','Inlet 1: '+fmt(i1)+'\\u00b0C',evalInlet(i1));\nsetEl('sv-lev','Level: '+(lv===undefined||lv===null?'-':lv>=0.5?'HIGH':'MIDDLE'),lv===undefined||lv===null?'normal':lv<0.5?'warning':'normal');\nsetEl('sv-leak',lk===undefined||lk===null?'-':lk>=0.5?'LEAKED':'NORMAL',lk===undefined||lk===null?'normal':lk>=0.5?'critical':'normal');\nsetEl('sv-stab',stab===undefined||stab===null?'-':stab>=0.5?'STABLE':'UNSTABLE',stab===undefined||stab===null?'normal':stab<0.5?'critical':'normal');\nsetEl('sv-ct',fmt(ct)+'\\u00b0C',evalChasT(ct));\nsetEl('sv-ch',fmt(ch)+'%',evalChasH(ch));",
+        "overflow": "hidden",
+        "panelupdateOnMount": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull",
+            "last",
+            "firstNotNull",
+            "first",
+            "min",
+            "max",
+            "mean",
+            "sum",
+            "count",
+            "range",
+            "delta",
+            "step",
+            "diff",
+            "logmin",
+            "allIsZero",
+            "allIsNull",
+            "diffperc"
+          ]
+        },
+        "renderOnMount": true,
+        "rootCSS": "",
+        "useGrafanaScrollbar": true
+      },
+      "pluginVersion": "2.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"cooling|environment|chassis\"}",
+          "instant": true,
+          "legendFormat": "{{metric}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Cooling Health",
+      "type": "gapit-htmlgraphics-panel"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      },
+      "id": 7,
+      "options": {
+        "SVGBaseFix": true,
+        "add100Percentage": true,
+        "calcsMutation": "standard",
+        "centerAlignContent": false,
+        "codeData": "{\n  \"text\": \"Random text\"\n}",
+        "css": "* { box-sizing: border-box; margin: 0; padding: 0; }\n.network { width: 100%; height: 100%; padding: 14px; font-family: Inter, sans-serif; color: #1a1a1a; display: flex; flex-direction: column; gap: 10px; }\n.net-card { background: rgba(0,0,0,0.04); border-radius: 6px; padding: 14px; }\n.net-card h4 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; }\n.nic-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13px; }\n.nic-name { opacity: 0.6; font-size: 12px; }\n.nic-badge { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }\n.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }\n.dot.up { background: #37872d; }\n.dot.down { background: #c4162a; }\n.badge-up { color: #37872d; }\n.badge-down { color: #c4162a; }\n.mr { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }\n.lb { opacity: 0.6; font-size: 13px; }\n.vl { font-weight: 700; font-variant-numeric: tabular-nums; }\n.vl.normal { color: #1a1a1a; }\n.vl.warning { color: #b57a00; }\n.vl.critical { color: #c4162a; }\n.vl.na { color: #aaa; font-weight: 400; }",
+        "dynamicData": false,
+        "dynamicFieldDisplayValues": false,
+        "dynamicHtmlGraphics": false,
+        "dynamicProps": false,
+        "html": "<div class='network'>\n  <div class='net-card'>\n    <h4>NIC Link Status</h4>\n    <div id='nic-list'>-</div>\n  </div>\n  <div class='net-card'>\n    <h4>InfiniBand NIC Temp</h4>\n    <div class='mr'><span class='lb'>Chipset Temp</span><span class='vl na' id='ib-temp'>-</span></div>\n  </div>\n</div>",
+        "onInit": "",
+        "onInitOnResize": false,
+        "onRender": "const nicMap={};\nlet ibTemp=undefined;\ndata.series.forEach(s=>{\n  if(!s.fields||s.fields.length<2)return;\n  const f=s.fields[1];\n  const labels=f.labels||{};\n  const component=labels.component||'';\n  const metric=labels.metric||'';\n  const extra=labels.extra||'';\n  const vals=f.values;\n  if(!vals||!vals.length)return;\n  const val=vals[vals.length-1];\n  if(component==='network'&&metric==='link_status'){nicMap[extra]=val;}\n  else if(component==='ib'&&metric==='temperature'){ibTemp=val;}\n});\nconst listEl=htmlNode.querySelector('#nic-list');\nif(listEl){\n  const nics=Object.keys(nicMap).sort();\n  if(!nics.length){listEl.innerHTML='<span style=\"color:#aaa;font-size:13px\">No data</span>';}\n  else{\n    let html='';\n    nics.forEach(nic=>{\n      const up=nicMap[nic]===1;\n      html+='<div class=\"nic-row\"><span class=\"nic-name\">'+nic+'</span><span class=\"nic-badge\"><span class=\"dot '+(up?'up':'down')+'\"></span><span class=\"badge-'+(up?'up':'down')+'\">'+(up?'UP':'DOWN')+'</span></span></div>';\n    });\n    listEl.innerHTML=html;\n  }\n}\nconst ibEl=htmlNode.querySelector('#ib-temp');\nif(ibEl){\n  if(ibTemp===undefined||ibTemp===null){ibEl.className='vl na';ibEl.textContent='N/A';}\n  else{const cls=ibTemp>=115?'critical':ibTemp>=105?'warning':'normal';ibEl.className='vl '+cls;ibEl.textContent=ibTemp.toFixed(1)+'\\u00b0C';}\n}",
+        "overflow": "auto",
+        "panelupdateOnMount": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull",
+            "last",
+            "firstNotNull",
+            "first",
+            "min",
+            "max",
+            "mean",
+            "sum",
+            "count",
+            "range",
+            "delta",
+            "step",
+            "diff",
+            "logmin",
+            "allIsZero",
+            "allIsNull",
+            "diffperc"
+          ]
+        },
+        "renderOnMount": true,
+        "rootCSS": "",
+        "useGrafanaScrollbar": true
+      },
+      "pluginVersion": "2.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"network\", metric=\"link_status\"}",
+          "instant": true,
+          "legendFormat": "{{extra}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"ib\", metric=\"temperature\"}",
+          "instant": true,
+          "legendFormat": "IB temp",
+          "refId": "B"
+        }
+      ],
+      "title": "Network Health",
+      "type": "gapit-htmlgraphics-panel"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 17,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 6,
+      "options": {
+        "SVGBaseFix": true,
+        "add100Percentage": true,
+        "calcsMutation": "standard",
+        "centerAlignContent": false,
+        "codeData": "{\n  \"text\": \"Random text\"\n}",
+        "css": "* { box-sizing: border-box; margin: 0; padding: 0; }\n.compute { width: 100%; height: 100%; padding: 10px; font-family: Inter, sans-serif; color: #1a1a1a; display: flex; flex-direction: column; gap: 6px; }\n.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,0.1); }\n.toolbar.sub { padding: 3px 0 3px 10px; border-bottom: 1px solid rgba(0,0,0,0.07); }\n.toolbar label { font-size: 12px; color: #333; display: flex; align-items: center; gap: 4px; cursor: pointer; }\n.toolbar.sub label { font-size: 11px; }\n.toolbar input[type=radio], .toolbar input[type=checkbox] { accent-color: #4A9BF5; cursor: pointer; width: 13px; height: 13px; }\n.tl { font-size: 11px; color: rgba(0,0,0,0.45); }\n.tb-sep { color: #aaa; margin: 0 4px; }\n.cards { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 6px; }\n.card { background: rgba(0,0,0,0.04); border-radius: 6px; padding: 10px; }\n.card h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; color: #555; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; }\n.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }\n.tbl th { text-align: left; font-weight: 600; padding: 4px 8px; color: #555; font-size: 12px; border-bottom: 1px solid rgba(0,0,0,0.1); }\n.tbl td { padding: 4px 8px; font-variant-numeric: tabular-nums; color: #1a1a1a; }\n.tbl td.normal { color: #1a1a1a; }\n.tbl td.warning { color: #b57a00; }\n.tbl td.critical { color: #c4162a; }\n.bar-legend { display: flex; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }\n.bar-lg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(0,0,0,0.65); }\n.bar-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }\n.bar-group-label { font-size: 12px; color: rgba(0,0,0,0.55); margin: 8px 0 3px 0; font-weight: 600; }\n.bar-row { display: flex; align-items: center; margin: 3px 0; }\n.bar-label { width: 80px; font-size: 11px; color: rgba(0,0,0,0.6); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n.bar-track { flex: 1; height: 16px; background: rgba(0,0,0,0.08); border-radius: 3px; position: relative; overflow: hidden; }\n.bar-fill { height: 100%; border-radius: 3px; position: absolute; left: 0; top: 0; }\n.bar-val { font-size: 11px; width: 65px; text-align: right; flex-shrink: 0; margin-left: 6px; font-variant-numeric: tabular-nums; }\n.bar-val.normal { color: #1a1a1a; }\n.bar-val.warning { color: #b57a00; }\n.bar-val.critical { color: #c4162a; }",
+        "dynamicData": false,
+        "dynamicFieldDisplayValues": false,
+        "dynamicHtmlGraphics": false,
+        "dynamicProps": false,
+        "html": "<div class='compute'>\n  <div class='toolbar'>\n    <span class='tl'>View:</span>\n    <label><input type='radio' name='viewMode' value='table' checked/> Table</label>\n    <label><input type='radio' name='viewMode' value='bar'/> Bar</label>\n    <span class='tb-sep'>|</span>\n    <span class='tl'>Group:</span>\n    <label><input type='radio' name='groupBy' value='device' checked/> Device</label>\n    <label><input type='radio' name='groupBy' value='metric'/> Metric</label>\n    <span class='tb-sep'>|</span>\n    <span class='tl'>Show:</span>\n    <label><input type='checkbox' id='cb-gpu' checked/> AI Proc</label>\n    <label><input type='checkbox' id='cb-cpu' checked/> CPU</label>\n    <label><input type='checkbox' id='cb-mem' checked/> Util%</label>\n  </div>\n  <div class='toolbar sub' id='gpu-metrics'>\n    <span class='tl'>AI Proc:</span>\n    <label><input type='checkbox' id='gm-temp' checked/> Temp</label>\n    <label><input type='checkbox' id='gm-power' checked/> Power</label>\n    <label><input type='checkbox' id='gm-mem' checked/> Mem Util%</label>\n  </div>\n  <div class='toolbar sub' id='cpu-metrics'>\n    <span class='tl'>CPU:</span>\n    <label><input type='checkbox' id='cm-temp' checked/> Temp</label>\n    <label><input type='checkbox' id='cm-power' checked/> Power</label>\n    <label><input type='checkbox' id='cm-util' checked/> Util%</label>\n  </div>\n  <div class='toolbar sub' id='mem-metrics'>\n    <span class='tl'>Memory:</span>\n    <label><input type='checkbox' id='mm-avail' checked/> Avail%</label>\n  </div>\n  <div class='cards' id='content-area'>Loading...</div>\n</div>",
+        "onInit": "htmlNode._doRender=function(data){\nvar m={};\ndata.series.forEach(function(s){if(!s.fields||s.fields.length<2)return;var f=s.fields[1];var labels=f.labels||{};var key=(labels.component||'')+'_'+(labels.metric||'');var vals=f.values;if(vals&&vals.length>0)m[key]=vals[vals.length-1];});\nfunction fmt(v,d){return v!==undefined&&v!==null?Number(v).toFixed(d!==undefined?d:1):'-';}\nfunction evalGpuT(v){if(v===undefined)return'normal';if(v>90)return'critical';if(v>75)return'warning';return'normal';}\nfunction evalCpuT(v){if(v===undefined)return'normal';if(v>95)return'critical';if(v>85)return'warning';return'normal';}\nfunction evalMemA(p){if(p===undefined)return'normal';if(p<5)return'critical';if(p<20)return'warning';return'normal';}\nvar isBar=(htmlNode.querySelector('input[name=viewMode]:checked')||{}).value==='bar';\nvar groupBy=(htmlNode.querySelector('input[name=groupBy]:checked')||{}).value||'device';\nvar showGpu=htmlNode.querySelector('#cb-gpu')?htmlNode.querySelector('#cb-gpu').checked:true;\nvar showCpu=htmlNode.querySelector('#cb-cpu')?htmlNode.querySelector('#cb-cpu').checked:true;\nvar showMem=htmlNode.querySelector('#cb-mem')?htmlNode.querySelector('#cb-mem').checked:true;\nfunction chk(id){var e=htmlNode.querySelector('#'+id);return e?e.checked:true;}\nvar gpuMbar=htmlNode.querySelector('#gpu-metrics'),cpuMbar=htmlNode.querySelector('#cpu-metrics'),memMbar=htmlNode.querySelector('#mem-metrics');\nif(gpuMbar)gpuMbar.style.display=showGpu?'':'none';\nif(cpuMbar)cpuMbar.style.display=showCpu?'':'none';\nif(memMbar)memMbar.style.display=showMem?'':'none';\nvar gpus={};\nObject.keys(m).forEach(function(k){var x;\nif(x=k.match(/^(gpu\\d+)_temperature$/)){gpus[x[1]]=gpus[x[1]]||{};gpus[x[1]].temp=m[k];}\nif(x=k.match(/^(gpu\\d+)_power_current$/)){gpus[x[1]]=gpus[x[1]]||{};gpus[x[1]].power=m[k];}\nif(x=k.match(/^(gpu\\d+)_memory_available$/)){gpus[x[1]]=gpus[x[1]]||{};gpus[x[1]].memU=m[k];}\n});\nvar cpuD={};\nObject.keys(m).forEach(function(k){var x;\nif(x=k.match(/^(cpu\\d+)_temperature$/)){cpuD[x[1]]=cpuD[x[1]]||{};cpuD[x[1]].temp=m[k];}\nif(x=k.match(/^(cpu\\d+)_power$/)){cpuD[x[1]]=cpuD[x[1]]||{};cpuD[x[1]].power=m[k];}\n});\nvar cpuU=m['cpu_usage_total'];\nObject.keys(cpuD).forEach(function(k){cpuD[k].util=cpuU;});\nvar mT=m['memory_total'],mA=m['memory_available'];\nvar maPct=mT&&mA?(mA/mT*100):undefined;\nvar bMax={gt:99,gp:770,gm:110,ct:104.5,cp:330,cu:110,ma:110};\nvar bClr={temp:'#4A9BF5',power:'#73BF69',memU:'#B877D9',util:'#FFD664'};\nvar content=htmlNode.querySelector('#content-area');if(!content)return;\nvar h='';\nfunction barRow(lb,val,unit,max,color,ev){var pct=(val!==undefined&&val!==null&&max)?Math.min(Math.abs(val)/max*100,100):0;var cls=ev?ev(val):'normal';var clr=cls==='critical'?'#F2495C':cls==='warning'?'#FADE2A':color;return '<div class=\"bar-row\"><span class=\"bar-label\">'+lb+'</span><div class=\"bar-track\"><div class=\"bar-fill\" style=\"width:'+pct+'%;background:'+clr+'\"></div></div><span class=\"bar-val '+cls+'\">'+fmt(val)+unit+'</span></div>';}\nif(!isBar){\nif(groupBy==='device'){\nif(showGpu){h+='<div class=\"card\"><h4>AI Processors</h4>';var gc=[];if(chk('gm-temp'))gc.push({k:'temp',l:'Temp',u:'\\u00b0C',ev:evalGpuT});if(chk('gm-power'))gc.push({k:'power',l:'Power',u:'W',ev:null});if(chk('gm-mem'))gc.push({k:'memU',l:'Mem%',u:'%',ev:null});h+='<table class=\"tbl\"><tr><th>Device</th>';gc.forEach(function(c){h+='<th>'+c.l+'</th>';});h+='</tr>';var gk=Object.keys(gpus).sort();gk.forEach(function(n){var g=gpus[n];h+='<tr><td>'+n+'</td>';gc.forEach(function(c){var v=g[c.k];var cl=c.ev?c.ev(v):'normal';h+='<td class=\"'+cl+'\">'+fmt(v)+c.u+'</td>';});h+='</tr>';});if(!gk.length)h+='<tr><td colspan=\"'+(gc.length+1)+'\" style=\"color:#666\">No data</td></tr>';h+='</table></div>';}\nif(showCpu){h+='<div class=\"card\"><h4>CPUs</h4>';var cc=[];if(chk('cm-temp'))cc.push({k:'temp',l:'Temp',u:'\\u00b0C',ev:evalCpuT});if(chk('cm-power'))cc.push({k:'power',l:'Power',u:'W',ev:null});if(chk('cm-util'))cc.push({k:'util',l:'Util%',u:'%',ev:null});h+='<table class=\"tbl\"><tr><th>Device</th>';cc.forEach(function(c){h+='<th>'+c.l+'</th>';});h+='</tr>';var ck=Object.keys(cpuD).sort();ck.forEach(function(n){var c2=cpuD[n];h+='<tr><td>'+n+'</td>';cc.forEach(function(c){var v=c2[c.k];var cl=c.ev?c.ev(v):'normal';h+='<td class=\"'+cl+'\">'+fmt(v)+c.u+'</td>';});h+='</tr>';});if(!ck.length)h+='<tr><td colspan=\"'+(cc.length+1)+'\" style=\"color:#666\">No data</td></tr>';h+='</table></div>';}\nif(showMem){h+='<div class=\"card\"><h4>Memory</h4><table class=\"tbl\">';if(chk('mm-avail'))h+='<tr><td>Available</td><td class=\"'+evalMemA(maPct)+'\">'+fmt(maPct)+'%</td></tr>';h+='</table></div>';}\n}else{\nif(showGpu){h+='<div class=\"card\"><h4>AI Processors</h4>';var gk=Object.keys(gpus).sort();h+='<table class=\"tbl\"><tr><th>Metric</th>';gk.forEach(function(n){h+='<th>'+n+'</th>';});h+='</tr>';var gm=[];if(chk('gm-temp'))gm.push({k:'temp',l:'Temp',u:'\\u00b0C',ev:evalGpuT});if(chk('gm-power'))gm.push({k:'power',l:'Power',u:'W',ev:null});if(chk('gm-mem'))gm.push({k:'memU',l:'Mem%',u:'%',ev:null});gm.forEach(function(r){h+='<tr><td>'+r.l+'</td>';gk.forEach(function(n){var v=gpus[n][r.k];var cl=r.ev?r.ev(v):'normal';h+='<td class=\"'+cl+'\">'+fmt(v)+r.u+'</td>';});h+='</tr>';});if(!gk.length)h+='<tr><td colspan=\"2\" style=\"color:#666\">No data</td></tr>';h+='</table></div>';}\nif(showCpu){h+='<div class=\"card\"><h4>CPUs</h4>';var ck=Object.keys(cpuD).sort();h+='<table class=\"tbl\"><tr><th>Metric</th>';ck.forEach(function(n){h+='<th>'+n+'</th>';});h+='</tr>';var cm=[];if(chk('cm-temp'))cm.push({k:'temp',l:'Temp',u:'\\u00b0C',ev:evalCpuT});if(chk('cm-power'))cm.push({k:'power',l:'Power',u:'W',ev:null});if(chk('cm-util'))cm.push({k:'util',l:'Util%',u:'%',ev:null});cm.forEach(function(r){h+='<tr><td>'+r.l+'</td>';ck.forEach(function(n){var v=cpuD[n][r.k];var cl=r.ev?r.ev(v):'normal';h+='<td class=\"'+cl+'\">'+fmt(v)+r.u+'</td>';});h+='</tr>';});if(!ck.length)h+='<tr><td colspan=\"2\" style=\"color:#666\">No data</td></tr>';h+='</table></div>';}\nif(showMem){h+='<div class=\"card\"><h4>Memory</h4><table class=\"tbl\">';if(chk('mm-avail'))h+='<tr><td>Available</td><td class=\"'+evalMemA(maPct)+'\">'+fmt(maPct)+'%</td></tr>';h+='</table></div>';}\n}\n}else{\nif(showGpu){h+='<div class=\"card\"><h4>AI Processors</h4>';var gm=[];if(chk('gm-temp'))gm.push({k:'temp',l:'Temp',u:'\\u00b0C',mx:bMax.gt,c:bClr.temp,ev:evalGpuT});if(chk('gm-power'))gm.push({k:'power',l:'Power',u:'W',mx:bMax.gp,c:bClr.power,ev:null});if(chk('gm-mem'))gm.push({k:'memU',l:'Mem%',u:'%',mx:bMax.gm,c:bClr.memU,ev:null});h+='<div class=\"bar-legend\">';gm.forEach(function(x){h+='<span class=\"bar-lg\"><span class=\"bar-swatch\" style=\"background:'+x.c+'\"></span>'+x.l+'</span>';});h+='</div>';Object.keys(gpus).sort().forEach(function(n){var g=gpus[n];h+='<div class=\"bar-group-label\">'+n+'</div>';gm.forEach(function(x){h+=barRow(x.l,g[x.k],x.u,x.mx,x.c,x.ev);});});h+='</div>';}\nif(showCpu){h+='<div class=\"card\"><h4>CPUs</h4>';var cm=[];if(chk('cm-temp'))cm.push({k:'temp',l:'Temp',u:'\\u00b0C',mx:bMax.ct,c:bClr.temp,ev:evalCpuT});if(chk('cm-power'))cm.push({k:'power',l:'Power',u:'W',mx:bMax.cp,c:bClr.power,ev:null});if(chk('cm-util'))cm.push({k:'util',l:'Util%',u:'%',mx:bMax.cu,c:bClr.util,ev:null});h+='<div class=\"bar-legend\">';cm.forEach(function(x){h+='<span class=\"bar-lg\"><span class=\"bar-swatch\" style=\"background:'+x.c+'\"></span>'+x.l+'</span>';});h+='</div>';Object.keys(cpuD).sort().forEach(function(n){var c2=cpuD[n];h+='<div class=\"bar-group-label\">'+n+'</div>';cm.forEach(function(x){h+=barRow(x.l,c2[x.k],x.u,x.mx,x.c,x.ev);});});h+='</div>';}\nif(showMem){h+='<div class=\"card\"><h4>Memory</h4>';if(chk('mm-avail'))h+=barRow('Available',maPct,'%',bMax.ma,bClr.temp,evalMemA);h+='</div>';}\n}\ncontent.innerHTML=h;\n};\nhtmlNode.querySelectorAll('input[type=radio],input[type=checkbox]').forEach(function(inp){inp.addEventListener('change',function(){if(htmlNode._lastData)htmlNode._doRender(htmlNode._lastData);});});",
+        "onInitOnResize": false,
+        "onRender": "htmlNode._lastData=data;\nif(htmlNode._doRender)htmlNode._doRender(data);",
+        "overflow": "auto",
+        "panelupdateOnMount": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull",
+            "last",
+            "firstNotNull",
+            "first",
+            "min",
+            "max",
+            "mean",
+            "sum",
+            "count",
+            "range",
+            "delta",
+            "step",
+            "diff",
+            "logmin",
+            "allIsZero",
+            "allIsNull",
+            "diffperc"
+          ]
+        },
+        "renderOnMount": true,
+        "rootCSS": "",
+        "useGrafanaScrollbar": true
+      },
+      "pluginVersion": "2.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"cpu.*|gpu.*|memory\"}",
+          "instant": true,
+          "legendFormat": "{{metric}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Compute Health",
+      "type": "gapit-htmlgraphics-panel"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "id": 8,
+      "panels": [],
+      "title": "History",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 40
+              },
+              {
+                "color": "red",
+                "value": 45
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 12,
+        "x": 0,
+        "y": 42
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"cooling\", metric=\"inlet1_temp\"}",
+          "legendFormat": "{{metric}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Coolant Inlet Temperature",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 40
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Air humidity"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 10
+                    },
+                    {
+                      "color": "green",
+                      "value": 20
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 60
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 42
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"environment\", metric=\"air_temp\"}",
+          "legendFormat": "{{metric}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"environment\", metric=\"air_humidity\"}",
+          "legendFormat": "Air humidity",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Chassis Temperature & Humidity",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 10
+              },
+              {
+                "color": "green",
+                "value": 20
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 50
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"memory\", metric=\"available\"} / ignoring(metric, unit) dlc_system_sensor{server=\"dg5w\", component=\"memory\", metric=\"total\"} * 100",
+          "legendFormat": "Available %",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Memory Available %",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 18,
+        "w": 12,
+        "x": 0,
+        "y": 57
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"gpu.\", metric=\"temperature\"}",
+          "legendFormat": "{{component}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "AI Processor Temperature",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 600
+              },
+              {
+                "color": "red",
+                "value": 700
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 18,
+        "w": 12,
+        "x": 12,
+        "y": 57
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"gpu.\", metric=\"power_current\"}",
+          "legendFormat": "{{component}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "AI Processor Power Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 85
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 75
+      },
+      "id": 17,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"cpu[0-9]\", metric=\"temperature\"}",
+          "legendFormat": "{{component}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Temperature",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 250
+              },
+              {
+                "color": "red",
+                "value": 300
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 75
+      },
+      "id": 18,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"cpu[0-9]\", metric=\"power\"}",
+          "legendFormat": "{{component}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Power Usage",
+      "type": "timeseries"
+    }
+  ],
+  "preload": false,
+  "refresh": "10s",
+  "schemaVersion": 41,
+  "tags": [
+    "dg5W",
+    "DLC"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "prometheus",
+          "value": "fet9pt33egpogb"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "label": "datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "dg5W Dashboard",
+  "uid": "dg5W-dashboard-v1",
+  "version": 5
+}

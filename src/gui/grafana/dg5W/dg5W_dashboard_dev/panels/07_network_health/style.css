@@ -1,0 +1,19 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.network { width: 100%; height: 100%; padding: 14px; font-family: Inter, sans-serif; color: #1a1a1a; display: flex; flex-direction: column; gap: 10px; }
+.net-card { background: rgba(0,0,0,0.04); border-radius: 6px; padding: 14px; }
+.net-card h4 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; }
+.nic-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13px; }
+.nic-name { opacity: 0.6; font-size: 12px; }
+.nic-badge { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+.dot.up { background: #37872d; }
+.dot.down { background: #c4162a; }
+.badge-up { color: #37872d; }
+.badge-down { color: #c4162a; }
+.mr { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+.lb { opacity: 0.6; font-size: 13px; }
+.vl { font-weight: 700; font-variant-numeric: tabular-nums; }
+.vl.normal { color: #1a1a1a; }
+.vl.warning { color: #b57a00; }
+.vl.critical { color: #c4162a; }
+.vl.na { color: #aaa; font-weight: 400; }

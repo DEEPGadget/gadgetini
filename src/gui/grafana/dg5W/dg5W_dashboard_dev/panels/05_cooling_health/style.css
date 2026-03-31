@@ -1,0 +1,14 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.cool { width: 100%; height: 100%; padding: 2px; font-family: Inter, sans-serif; color: #1a1a1a; display: flex; flex-direction: column; }
+.diagram { flex: 1; position: relative; min-height: 0; }
+svg { width: 100%; height: 100%; }
+.sv { font-size: 8px; font-weight: 700; font-family: monospace; }
+.sv.normal { fill: #1a1a1a; }
+.sv.warning { fill: #b57a00; }
+.sv.critical { fill: #c4162a; }
+.cl { font-size: 8px; fill: #333; font-weight: 600; }
+.cl-sm { font-size: 6.5px; fill: rgba(0,0,0,0.45); font-weight: 400; }
+.cb { fill: rgba(0,0,0,0.05); stroke: rgba(0,0,0,0.2); stroke-width: 1; rx: 4; }
+.pipe-cold { stroke: #4A9BF5; stroke-width: 1.5; fill: none; marker-end: url(#arrowBlue); }
+.pipe-hot { stroke: #F2495C; stroke-width: 1.5; fill: none; marker-end: url(#arrowRed); }
+.sep { stroke: rgba(0,0,0,0.12); stroke-width: 1; }

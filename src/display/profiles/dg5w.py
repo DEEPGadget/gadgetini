@@ -7,7 +7,7 @@ def create_sensors(redis, config=None):
     return {
         "coolant_temp": SensorData(
             "Coolant Temperature", "\u00b0C", 25, 50,
-            read_rate=1, redis=r, redis_key='coolant_temp',
+            read_rate=1, redis=r, redis_key='coolant_temp_inlet1',
             icon="\U000f0510"),
         "chassis_temp": SensorData(
             "Chassis Temperature", "\u00b0C", -20, 60,
@@ -82,7 +82,7 @@ def create_fallback_sensors(redis):
     return {
         "coolant_temp": SensorData(
             "Coolant Temperature", "\u00b0C", 25, 50,
-            read_rate=1, redis=r, redis_key='coolant_temp',
+            read_rate=1, redis=r, redis_key='coolant_temp_inlet1',
             icon="\U000f0510"),
         "chassis_temp": SensorData(
             "Chassis Temperature", "\u00b0C", -20, 60,

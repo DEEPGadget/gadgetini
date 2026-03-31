@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 3,
+  "id": 1,
   "links": [],
   "panels": [
     {
@@ -53,7 +53,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -65,7 +65,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 12,
+        "h": 13,
         "w": 18,
         "x": 0,
         "y": 1
@@ -77,7 +77,7 @@
         "calcsMutation": "standard",
         "centerAlignContent": false,
         "codeData": "{\n  \"text\": \"Random text\"\n}",
-        "css": "* { box-sizing: border-box; margin: 0; padding: 0; }\n.overview { width: 100%; height: 100%; padding: 12px; display: flex; flex-direction: column; gap: 8px; border-radius: 8px; font-family: Inter, sans-serif; }\n.overview.normal { border: 2px solid #37872d; }\n.overview.warning { border: 2px solid #e5ac0e; }\n.overview.critical { border: 2px solid #c4162a; }\n.status-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; border-radius: 4px; color: white; font-weight: 700; font-size: 16px; }\n.status-bar.normal { background: #37872d; }\n.status-bar.warning { background: #e5ac0e; color: #000; }\n.status-bar.critical { background: #c4162a; }\n.sections { display: flex; gap: 8px; flex: 1; min-height: 0; }\n.section { flex: 1; background: rgba(0,0,0,0.04); border-radius: 6px; padding: 10px; overflow-y: auto; }\n.section.wide { flex: 2; }\n.section h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; opacity: 1; color: #777; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; }\n.cols { display: flex; gap: 16px; }\n.cols > div { flex: 1; }\n.mr { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #1a1a1a; }\n.mr .lb { opacity: 0.6; }\n.mr .vl { font-weight: 600; font-variant-numeric: tabular-nums; }\n.vl.normal { color: #1a1a1a; }\n.vl.warning { color: #b57a00; }\n.vl.critical { color: #c4162a; }\n.vl.na { color: #aaa; font-weight: 400; }\n.sub { font-size: 12px; color: #666; opacity: 1; margin-top: 8px; margin-bottom: 4px; font-weight: 600; }\n.host-badge { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; letter-spacing: 0.5px; background: #fff; color: #1a1a1a; display: inline-flex; align-items: center; gap: 5px; }\n.host-badge .dot { font-size: 10px; }\n.host-badge.on .dot { color: #37872d; }\n.host-badge.off .dot { color: #c4162a; }",
+        "css": "* { box-sizing: border-box; margin: 0; padding: 0; }\n.overview { width: 100%; height: 100%; padding: 12px; display: flex; flex-direction: column; gap: 8px; border-radius: 8px; font-family: Inter, sans-serif; }\n.overview.normal { border: 2px solid #37872d; }\n.overview.warning { border: 2px solid #e5ac0e; }\n.overview.critical { border: 2px solid #c4162a; }\n.status-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px 14px; border-radius: 4px; color: white; font-weight: 700; font-size: 16px; }\n.status-bar.normal { background: #37872d; }\n.status-bar.warning { background: #e5ac0e; color: #000; }\n.status-bar.critical { background: #c4162a; }\n.sections { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; min-height: 0; }\n.section { flex: 1 1 160px; background: rgba(0,0,0,0.04); border-radius: 6px; padding: 10px; overflow-y: auto; }\n.section.wide { flex: 2 1 260px; }\n.section h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; opacity: 1; color: #777; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; }\n.cols { display: flex; flex-wrap: wrap; gap: 16px; }\n.cols > div { flex: 1 1 120px; }\n.mr { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #1a1a1a; }\n.mr .lb { opacity: 0.6; }\n.mr .vl { font-weight: 600; font-variant-numeric: tabular-nums; }\n.vl.normal { color: #1a1a1a; }\n.vl.warning { color: #b57a00; }\n.vl.critical { color: #c4162a; }\n.vl.na { color: #aaa; font-weight: 400; }\n.sub { font-size: 12px; color: #666; opacity: 1; margin-top: 8px; margin-bottom: 4px; font-weight: 600; }\n.host-badge { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; letter-spacing: 0.5px; background: #fff; color: #1a1a1a; display: inline-flex; align-items: center; gap: 5px; }\n.host-badge .dot { font-size: 10px; }\n.host-badge.on .dot { color: #37872d; }\n.host-badge.off .dot { color: #c4162a; }\n@media (max-width: 480px) {\n  .overview { padding: 8px; }\n  .status-bar { font-size: 13px; padding: 6px 10px; }\n  .section, .section.wide { flex: 1 1 100%; }\n  .cols > div { flex: 1 1 100%; }\n  .mr { font-size: 12px; }\n}",
         "dynamicData": false,
         "dynamicFieldDisplayValues": false,
         "dynamicHtmlGraphics": false,
@@ -131,17 +131,17 @@
       "type": "gapit-htmlgraphics-panel"
     },
     {
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "h": 12,
+        "h": 13,
         "w": 6,
         "x": 18,
         "y": 1
       },
-      "id": 3,
+      "id": 19,
       "options": {
         "alertInstanceLabelFilter": "",
         "alertName": "",
@@ -149,20 +149,31 @@
         "groupBy": [],
         "groupMode": "default",
         "maxItems": 20,
-        "showInactiveAlerts": false,
         "sortOrder": 1,
         "stateFilter": {
           "error": true,
           "firing": true,
           "noData": false,
           "normal": false,
-          "pending": true,
-          "recovering": true
+          "pending": true
         },
         "viewMode": "list"
       },
-      "pluginVersion": "12.1.0",
-      "title": "Alert List",
+      "pluginVersion": "2.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "dlc_system_sensor{server=\"dg5R\"}",
+          "instant": true,
+          "legendFormat": "{{metric}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Server Overview",
       "type": "alertlist"
     },
     {
@@ -171,7 +182,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 14
       },
       "id": 4,
       "panels": [],
@@ -191,7 +202,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -206,7 +217,7 @@
         "h": 20,
         "w": 7,
         "x": 0,
-        "y": 14
+        "y": 15
       },
       "id": 5,
       "options": {
@@ -281,7 +292,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -296,7 +307,7 @@
         "h": 20,
         "w": 11,
         "x": 7,
-        "y": 14
+        "y": 15
       },
       "id": 6,
       "options": {
@@ -371,7 +382,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -386,7 +397,7 @@
         "h": 20,
         "w": 6,
         "x": 18,
-        "y": 14
+        "y": 15
       },
       "id": 7,
       "options": {
@@ -465,7 +476,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 35
       },
       "id": 8,
       "panels": [],
@@ -521,7 +532,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -549,7 +560,7 @@
                   "steps": [
                     {
                       "color": "green",
-                      "value": 0
+                      "value": null
                     },
                     {
                       "color": "#EAB839",
@@ -577,7 +588,7 @@
                   "steps": [
                     {
                       "color": "green",
-                      "value": 0
+                      "value": null
                     },
                     {
                       "color": "#EAB839",
@@ -595,10 +606,10 @@
         ]
       },
       "gridPos": {
-        "h": 14,
+        "h": 15,
         "w": 12,
         "x": 0,
-        "y": 35
+        "y": 36
       },
       "id": 9,
       "options": {
@@ -684,7 +695,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -720,7 +731,7 @@
                   "steps": [
                     {
                       "color": "red",
-                      "value": 0
+                      "value": null
                     },
                     {
                       "color": "#EAB839",
@@ -749,7 +760,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 35
+        "y": 36
       },
       "id": 10,
       "options": {
@@ -846,7 +857,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": 0
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -863,10 +874,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 12,
         "x": 12,
-        "y": 43
+        "y": 44
       },
       "id": 14,
       "options": {
@@ -952,7 +963,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -969,10 +980,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 17,
+        "h": 18,
         "w": 12,
         "x": 0,
-        "y": 49
+        "y": 51
       },
       "id": 11,
       "options": {
@@ -1058,7 +1069,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -1075,10 +1086,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 17,
+        "h": 18,
         "w": 12,
         "x": 12,
-        "y": 49
+        "y": 51
       },
       "id": 12,
       "options": {
@@ -1164,7 +1175,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -1184,7 +1195,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 66
+        "y": 69
       },
       "id": 17,
       "options": {
@@ -1270,7 +1281,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -1290,7 +1301,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 66
+        "y": 69
       },
       "id": 18,
       "options": {
@@ -1328,9 +1339,8 @@
       "type": "timeseries"
     }
   ],
-  "preload": false,
   "refresh": "10s",
-  "schemaVersion": 41,
+  "schemaVersion": 39,
   "tags": [
     "dg5R",
     "DLC"
@@ -1339,17 +1349,20 @@
     "list": [
       {
         "current": {
+          "selected": false,
           "text": "prometheus",
-          "value": "fet9pt33egpogb"
+          "value": "cfe2jprzbtwcgd"
         },
         "hide": 2,
         "includeAll": false,
         "label": "datasource",
+        "multi": false,
         "name": "datasource",
         "options": [],
         "query": "prometheus",
         "refresh": 1,
         "regex": "",
+        "skipUrlSync": false,
         "type": "datasource"
       }
     ]
@@ -1362,5 +1375,6 @@
   "timezone": "browser",
   "title": "dg5R Dashboard",
   "uid": "dg5R-dashboard-v1",
-  "version": 9
+  "version": 7,
+  "weekStart": ""
 }

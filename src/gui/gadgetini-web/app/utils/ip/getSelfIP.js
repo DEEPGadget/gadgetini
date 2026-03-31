@@ -4,8 +4,8 @@ export const getSelfIP = async () => {
     if (!response.ok) {
       throw new Error("Failed to fetch IPv4");
     }
-    const ip = await response.json();
-    return ip;
+    const data = await response.json();
+    return data?.ip ?? data;
   } catch (error) {
     console.error(error);
   }

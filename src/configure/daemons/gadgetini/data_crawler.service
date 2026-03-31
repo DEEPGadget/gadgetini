@@ -1,9 +1,9 @@
 [Unit]
-Description=dg5w DLC system sensor data crawling data.
+Description=DLC system sensor data crawler.
 After=redis.service
 [Service]
 Type=simple
-ExecStart=python3 /home/gadgetini/gadgetini/src/exporter/data_crawler_dg5R.py
+ExecStart=python3 /home/gadgetini/gadgetini/src/exporter/data_crawler.py
 Restart=always
 RestartSec=5
 User=gadgetini
