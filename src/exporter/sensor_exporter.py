@@ -1,5 +1,70 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+# Redis Keys written by data_crawler.py / data_crawler_host.py
+# Writer column: gadgetini = data_crawler.py, host = data_crawler_host.py
+#
+# ┌─────────────────────────────────────────────────────────────────────────────┐
+# │ MACHINE: dg5r                                                               │
+# ├─────────────────────────┬────────────┬────────┬───────────────────────────┤
+# │ Key                     │ Unit       │ Writer │ Description                │
+# ├─────────────────────────┼────────────┼────────┼───────────────────────────┤
+# │ coolant_temp_inlet1     │ °C         │ gadget │ inlet  temp ch1 (ADC2)    │
+# │ coolant_temp_inlet2     │ °C         │ gadget │ inlet  temp ch2 (ADC5)    │
+# │ coolant_temp_outlet1    │ °C         │ gadget │ outlet temp ch1 (ADC3)    │
+# │ coolant_temp_outlet2    │ °C         │ gadget │ outlet temp ch2 (ADC4)    │
+# │ coolant_delta_t1        │ °C         │ gadget │ ΔT = outlet1 - inlet1     │
+# │ coolant_delta_t2        │ °C         │ gadget │ ΔT = outlet2 - inlet2     │
+# │ coolant_leak            │ 0/1 bool   │ gadget │ leak detected (1=Leak)    │
+# │ coolant_level           │ 0/1 bool   │ gadget │ coolant level (1=OK)      │
+# │ air_temp                │ °C         │ gadget │ internal air temp (DHT11) │
+# │ air_humit               │ %RH        │ gadget │ internal air humidity     │
+# │ gpu_name_{0~7}          │ string     │ host   │ GPU model name            │
+# │ gpu_temp_{0~7}          │ °C         │ host   │ GPU temperature           │
+# │ gpu_curr_pwr_{0~7}      │ W          │ host   │ GPU current power         │
+# │ gpu_max_pwr_{0~7}       │ W          │ host   │ GPU power limit           │
+# │ gpu_curr_mem_{0~7}      │ MiB        │ host   │ GPU VRAM used             │
+# │ gpu_max_mem_{0~7}       │ MiB        │ host   │ GPU VRAM total            │
+# │ cpu_usage               │ %          │ host   │ total CPU usage           │
+# │ cpu_temp_{0~1}          │ °C         │ host   │ CPU package temp/socket   │
+# │ cpu_curr_pwr_{0~1}      │ W          │ host   │ CPU power/socket (IPMI)   │
+# │ mem_total               │ GiB        │ host   │ total system memory       │
+# │ mem_usage               │ GiB        │ host   │ memory in use             │
+# │ mem_available           │ GiB        │ host   │ memory available          │
+# │ nic_{ifname}_stat       │ 0/1 bool   │ host   │ NIC link (1=UP)           │
+# │ ib_nic_temp             │ °C         │ host   │ IB NIC ASIC temp (opt.)   │
+# │ host_stat               │ 0/1 bool   │ gadget │ host online (1=online)    │
+# │ host_ttl                │ ms epoch   │ host   │ TTL key; expires in 5s    │
+# └─────────────────────────┴────────────┴────────┴───────────────────────────┘
+#
+# ┌─────────────────────────────────────────────────────────────────────────────┐
+# │ MACHINE: dg5w                                                               │
+# ├─────────────────────────┬────────────┬────────┬───────────────────────────┤
+# │ Key                     │ Unit       │ Writer │ Description                │
+# ├─────────────────────────┼────────────┼────────┼───────────────────────────┤
+# │ coolant_temp_inlet1     │ °C         │ gadget │ inlet temp ch1 (ADC4)     │
+# │ coolant_leak            │ 0/1 bool   │ gadget │ leak detected (1=Leak)    │
+# │ coolant_level           │ 0/1 bool   │ gadget │ coolant level (1=OK)      │
+# │ air_temp                │ °C         │ gadget │ internal air temp (DHT11) │
+# │ air_humit               │ %RH        │ gadget │ internal air humidity     │
+# │ chassis_stabil          │ 0/1 bool   │ gadget │ chassis stable (MPU6050)  │
+# │ gpu_name_{0~7}          │ string     │ host   │ GPU model name            │
+# │ gpu_temp_{0~7}          │ °C         │ host   │ GPU temperature           │
+# │ gpu_curr_pwr_{0~7}      │ W          │ host   │ GPU current power         │
+# │ gpu_max_pwr_{0~7}       │ W          │ host   │ GPU power limit           │
+# │ gpu_curr_mem_{0~7}      │ MiB        │ host   │ GPU VRAM used             │
+# │ gpu_max_mem_{0~7}       │ MiB        │ host   │ GPU VRAM total            │
+# │ cpu_usage               │ %          │ host   │ total CPU usage           │
+# │ cpu_temp_{0~1}          │ °C         │ host   │ CPU package temp/socket   │
+# │ cpu_curr_pwr_{0~1}      │ W          │ host   │ CPU power/socket (IPMI)   │
+# │ mem_total               │ GiB        │ host   │ total system memory       │
+# │ mem_usage               │ GiB        │ host   │ memory in use             │
+# │ mem_available           │ GiB        │ host   │ memory available          │
+# │ nic_{ifname}_stat       │ 0/1 bool   │ host   │ NIC link (1=UP)           │
+# │ ib_nic_temp             │ °C         │ host   │ IB NIC ASIC temp (opt.)   │
+# │ host_stat               │ 0/1 bool   │ gadget │ host online (1=online)    │
+# │ host_ttl                │ ms epoch   │ host   │ TTL key; expires in 5s    │
+# └─────────────────────────┴────────────┴────────┴───────────────────────────┘
+
 import time
 from prometheus_client import start_http_server, CollectorRegistry
 from prometheus_client.core import GaugeMetricFamily
