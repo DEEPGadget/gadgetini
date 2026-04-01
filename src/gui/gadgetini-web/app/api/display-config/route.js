@@ -46,6 +46,8 @@ export async function GET() {
       psu: getConfigValue("psu") === "on",
       leak: getConfigValue("leak") === "on",
       rotationTime: parseInt(getConfigValue("rotation_sec") || "5", 10),
+      gpuCount: parseInt(getConfigValue("gpu_count") || "8", 10),
+      cpuCount: parseInt(getConfigValue("cpu_count") || "2", 10),
     };
 
     return NextResponse.json(configData);
@@ -82,7 +84,9 @@ export async function POST(request) {
         .replace(/^cpu_daily\s*=\s*.*/m, `cpu_daily=${onOff(displayMode.cpu_daily)}`)
         .replace(/^psu\s*=\s*.*/m, `psu=${onOff(displayMode.psu)}`)
         .replace(/^leak\s*=\s*.*/m, `leak=${onOff(displayMode.leak)}`)
-        .replace(/^rotation_sec\s*=\s*.*/m, `rotation_sec=${displayMode.rotationTime}`);
+        .replace(/^rotation_sec\s*=\s*.*/m, `rotation_sec=${displayMode.rotationTime}`)
+        .replace(/^gpu_count\s*=\s*.*/m, `gpu_count=${displayMode.gpuCount}`)
+        .replace(/^cpu_count\s*=\s*.*/m, `cpu_count=${displayMode.cpuCount}`);
 
       await fs.promises.writeFile(configPath, config, "utf-8");
     };
