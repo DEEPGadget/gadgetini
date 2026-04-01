@@ -23,7 +23,7 @@ class LeakAlertViewer:
             draw=draw, text="WARNING", font_size=60, fill=text_color,
             box=(0, h // 2 - 30, w, 60),
             align="center", halign="center",
-            font_path=EXTRABOLD_FONT_PATH)
+            font_path=EXTRABOLD_FONT_PATH, autoscale=True)
 
         draw_aligned_text(
             draw=draw, text="COOLANT LEAK DETECTED", font_size=14, fill=text_color,
