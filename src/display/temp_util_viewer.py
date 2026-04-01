@@ -40,18 +40,20 @@ class TempUtilViewer(BaseViewer):
         if disp_manager.horizontal == 1:
             lx = offset[0]
             rx = offset[0] + GRAPH_SIZE + 5
-            base_y = offset[1]
+            l_base_y = offset[1]
+            r_base_y = offset[1]
             full_w = GRAPH_SIZE * 2 + 5
         else:
             lx = offset[0]
             rx = offset[0]
-            base_y = offset[1]
+            l_base_y = offset[1]
+            r_base_y = offset[1] + title_h + graph_h + 5
             full_w = GRAPH_SIZE
 
         # === LEFT: Temperature multi-graph ===
-        self._draw_title(draw, self.temp_title, lx, base_y, GRAPH_SIZE, h=title_h)
+        self._draw_title(draw, self.temp_title, lx, l_base_y, GRAPH_SIZE, h=title_h)
 
-        gx1, gy1 = lx, base_y + title_h
+        gx1, gy1 = lx, l_base_y + title_h
         gx2, gy2 = lx + GRAPH_SIZE, gy1 + graph_h
 
         if DEBUG == 1:
@@ -66,9 +68,9 @@ class TempUtilViewer(BaseViewer):
                              (gx1, gy1, gx2, gy2))
 
         # === RIGHT: Utilization/Power multi-graph ===
-        self._draw_title(draw, self.util_title, rx, base_y, GRAPH_SIZE, h=title_h)
+        self._draw_title(draw, self.util_title, rx, r_base_y, GRAPH_SIZE, h=title_h)
 
-        ux1, uy1 = rx, base_y + title_h
+        ux1, uy1 = rx, r_base_y + title_h
         ux2, uy2 = rx + GRAPH_SIZE, uy1 + graph_h
 
         if DEBUG == 1:
@@ -83,7 +85,7 @@ class TempUtilViewer(BaseViewer):
                              (ux1, uy1, ux2, uy2))
 
         # === LEGEND (full width, below both graphs) ===
-        legend_y = base_y + title_h + graph_h
+        legend_y = r_base_y + title_h + graph_h
 
         if num <= 4:
             cols = num
@@ -102,7 +104,7 @@ class TempUtilViewer(BaseViewer):
             self._draw_legend_row(draw, s, label, color, cx, cy, row_h_l, col_w)
 
         # FOOTERS
-        ft_y = base_y + GRAPH_SIZE - footer_h
+        ft_y = legend_y + legend_h
         if disp_manager.horizontal == 1:
             self._draw_footer(draw, disp_manager, lx, ft_y, GRAPH_SIZE, h=footer_h,
                               mode='left')
