@@ -33,9 +33,7 @@ class TempUtilViewer(BaseViewer):
 
         # Layout
         title_h = 15
-        graph_h = 95
         footer_h = 12
-        legend_h = GRAPH_SIZE - title_h - graph_h - footer_h
 
         if disp_manager.horizontal == 1:
             lx = offset[0]
@@ -43,14 +41,18 @@ class TempUtilViewer(BaseViewer):
             l_base_y = offset[1]
             r_base_y = offset[1]
             full_w = GRAPH_SIZE * 2 + 5
+            graph_h = 95
         else:
             lx = offset[0]
             rx = offset[0]
             l_base_y = offset[1]
-            r_base_y = offset[1] + title_h + graph_h + 5
+            r_base_y = offset[1] + GRAPH_SIZE + 5
             full_w = GRAPH_SIZE
+            graph_h = 80
 
-        # === LEFT: Temperature multi-graph ===
+        legend_h = GRAPH_SIZE - title_h - graph_h - footer_h
+
+        # === Temperature multi-graph ===
         self._draw_title(draw, self.temp_title, lx, l_base_y, GRAPH_SIZE, h=title_h)
 
         gx1, gy1 = lx, l_base_y + title_h
@@ -67,7 +69,7 @@ class TempUtilViewer(BaseViewer):
             draw_multi_graph(draw, sensor_list, norm_list, self.colors,
                              (gx1, gy1, gx2, gy2))
 
-        # === RIGHT: Utilization/Power multi-graph ===
+        # === Utilization/Power multi-graph ===
         self._draw_title(draw, self.util_title, rx, r_base_y, GRAPH_SIZE, h=title_h)
 
         ux1, uy1 = rx, r_base_y + title_h
@@ -84,13 +86,13 @@ class TempUtilViewer(BaseViewer):
             draw_multi_graph(draw, util_list, u_norm, self.colors,
                              (ux1, uy1, ux2, uy2))
 
-        # === LEGEND (full width, below both graphs) ===
+        # === LEGEND (below util graph) ===
         legend_y = r_base_y + title_h + graph_h
 
-        if num <= 4:
-            cols = num
+        if disp_manager.horizontal == 1:
+            cols = min(num, 4)
         else:
-            cols = 4
+            cols = min(num, 2)
         rows = (num + cols - 1) // cols
         row_h_l = min(14, legend_h // max(rows, 1))
         col_w = full_w // max(cols, 1)
@@ -103,12 +105,17 @@ class TempUtilViewer(BaseViewer):
             cy = legend_y + row * row_h_l
             self._draw_legend_row(draw, s, label, color, cx, cy, row_h_l, col_w)
 
-        # FOOTERS
-        ft_y = legend_y + legend_h
+        # === FOOTERS ===
         if disp_manager.horizontal == 1:
+            ft_y = l_base_y + GRAPH_SIZE - footer_h
             self._draw_footer(draw, disp_manager, lx, ft_y, GRAPH_SIZE, h=footer_h,
                               mode='left')
             self._draw_footer(draw, disp_manager, rx, ft_y, GRAPH_SIZE, h=footer_h,
                               mode='right')
         else:
-            self._draw_footer(draw, disp_manager, lx, ft_y, full_w, h=footer_h)
+            self._draw_footer(draw, disp_manager, lx,
+                              l_base_y + GRAPH_SIZE - footer_h,
+                              GRAPH_SIZE, h=footer_h, mode='left')
+            self._draw_footer(draw, disp_manager, rx,
+                              r_base_y + GRAPH_SIZE - footer_h,
+                              GRAPH_SIZE, h=footer_h, mode='right')
