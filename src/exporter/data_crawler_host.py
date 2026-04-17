@@ -237,31 +237,77 @@ def parse_cpu_power_telemetry(ipmi_text: str):
 
     return result
 
-def get_CPU_power_telemetry(ipmi_proc=None, ipmi_output=None):
+def parse_cpu_power_from_sensors(sensors_data):
+    """
+    Fallback: parse CPU power from sensors -j output when ipmitool is unavailable.
+    Looks for power1_input / power2_input under k10temp or coretemp entries.
+    Returns same format as parse_cpu_power_telemetry:
+      {"cpu_curr_pwr_0": float|None, "cpu_curr_pwr_1": float|None}
+    """
+    result = {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
+    if isinstance(sensors_data, str):
+        sensors_data = json.loads(sensors_data)
+
+    pattern = r"(k10temp-pci-[a-f0-9]+|coretemp-isa-[0-9]+)"
+    cpu_idx = 0
+    for key in sensors_data.keys():
+        if not re.search(pattern, key):
+            continue
+        metrics = sensors_data[key]
+        for metric_name, metric_value in metrics.items():
+            if not isinstance(metric_value, dict):
+                continue
+            for field, val in metric_value.items():
+                if "power" in field and "input" in field and val is not None:
+                    result[f"cpu_curr_pwr_{cpu_idx}"] = round(float(val), 1)
+                    cpu_idx += 1
+    return result
+
+
+def get_CPU_power_telemetry(ipmi_proc=None, ipmi_output=None, sensors_data=None):
     """
     Fetch and parse CPU power telemetry.
 
     Usage patterns:
       - If ipmi_output is provided (string), parse it directly.
       - Otherwise, ipmi_proc must be a subprocess.Popen handle and we read stdout/stderr.
+      - If ipmitool fails, fall back to sensors_data (sensors -j output).
+      - If both fail, return empty result (skip).
 
     Returns:
-      {"cpu1_watts": float|None, "cpu2_watts": float|None}
+      {"cpu_curr_pwr_0": float|None, "cpu_curr_pwr_1": float|None}
     """
-    if ipmi_output is not None:
-        if not isinstance(ipmi_output, str):
-            raise TypeError("ipmi_output must be a string")
-        text = ipmi_output
-    else:
-        if ipmi_proc is None:
-            raise ValueError("ipmi_proc is required when ipmi_output is not provided")
+    # Try ipmitool first
+    try:
+        if ipmi_output is not None:
+            if not isinstance(ipmi_output, str):
+                raise TypeError("ipmi_output must be a string")
+            text = ipmi_output
+        elif ipmi_proc is not None:
+            out, err = ipmi_proc.communicate()
+            if ipmi_proc.returncode not in (0, None) and not out:
+                raise RuntimeError(f"ipmitool failed: {err.strip()}")
+            text = out
+        else:
+            raise RuntimeError("no ipmi source available")
 
-        out, err = ipmi_proc.communicate()
-        if ipmi_proc.returncode not in (0, None) and not out:
-            raise RuntimeError(f"ipmitool failed: {err.strip()}")
-        text = out
+        result = parse_cpu_power_telemetry(text)
+        if any(v is not None for v in result.values()):
+            return result
+        raise RuntimeError("ipmitool returned no valid readings")
+    except Exception as e:
+        print(f"[WARN] ipmitool failed, trying sensors fallback: {e}")
 
-    return parse_cpu_power_telemetry(text)
+    # Fallback to sensors -j
+    try:
+        if sensors_data is not None:
+            return parse_cpu_power_from_sensors(sensors_data)
+    except Exception as e:
+        print(f"[WARN] sensors fallback also failed: {e}")
+
+    # Both failed — skip
+    print("[WARN] CPU power telemetry unavailable, skipping")
+    return {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
 
 
 # Example:
@@ -337,10 +383,12 @@ if __name__ == "__main__":
         sensors  = get_sensors_output()
         ipmi = get_ipmi_power_output()
         #curr_chipsinfo = get_amd_gpu_telemetry(sensors)
-        curr_chipsinfo = get_nvidia_gpu_telemetry() 
-        curr_cpusinfo = get_CPU_telemetry(sensors)
+        curr_chipsinfo = get_nvidia_gpu_telemetry()
+        sensors_out, _ = sensors.communicate()
+        sensors_dict = json.loads(sensors_out)
+        curr_cpusinfo = get_CPU_telemetry(sensors_output=sensors_dict)
         curr_meminfo = get_memory_usage_mb()
-        curr_ipmi_telemetry = get_CPU_power_telemetry(ipmi_proc=ipmi)
+        curr_ipmi_telemetry = get_CPU_power_telemetry(ipmi_proc=ipmi, sensors_data=sensors_dict)
         curr_link_status = get_nic_link_status()
         pipe = client.pipeline(transaction=False)
         # lpush for multi socket cpu, multi gpu 
@@ -349,10 +397,11 @@ if __name__ == "__main__":
             pipe.set("cpu_temp_" + str(idx), str(cpu))
         # ipmi cpu power
         for idx, key in enumerate(curr_ipmi_telemetry):
-            pipe.set(str(key), str(curr_ipmi_telemetry[key]))
-            print(curr_ipmi_telemetry)
-            print(key)
-            print(curr_ipmi_telemetry[key])
+            if curr_ipmi_telemetry[key] is not None:
+                pipe.set(str(key), str(curr_ipmi_telemetry[key]))
+                print(curr_ipmi_telemetry)
+                print(key)
+                print(curr_ipmi_telemetry[key])
 		# nic link status
         for nic in curr_link_status:
             key ,val = next(iter(nic.items()))
