@@ -143,10 +143,11 @@ def parse_cpu_telemetry(sensors_data):
                 pkg_temp = metric_value.get('temp1_input')
                 if pkg_temp is not None:
                     package_temp_list.append(round(pkg_temp, 1))
-    #print("cpusinfo", cpusinfo)
-    cpusinfo = [temp_list, package_temp_list]
-    #print("cpusinfo", cpusinfo)
-    print("cpusinfo", package_temp_list)
+    # AMD has Tctl only (no "Package id"), Intel has "Package id" only
+    # Use temp_list as fallback when package_temp_list is empty
+    effective_temp_list = package_temp_list if package_temp_list else temp_list
+    cpusinfo = [temp_list, effective_temp_list]
+    print("cpusinfo", effective_temp_list)
     return cpusinfo
 
 def get_CPU_telemetry(sensors=None, sensors_output=None):
@@ -248,7 +249,7 @@ def parse_cpu_power_from_sensors(sensors_data):
     if isinstance(sensors_data, str):
         sensors_data = json.loads(sensors_data)
 
-    pattern = r"(k10temp-pci-[a-f0-9]+|coretemp-isa-[0-9]+)"
+    pattern = r"(k10temp-pci-[a-f0-9]+|coretemp-isa-[0-9]+|amd_hsmp_hwmon-isa-[0-9]+)"
     cpu_idx = 0
     for key in sensors_data.keys():
         if not re.search(pattern, key):
