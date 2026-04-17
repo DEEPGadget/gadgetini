@@ -20,6 +20,7 @@ sudo apt install -y python3.12-venv
 sudo python3 -m venv /opt/gadgetini/venv
 sudo /opt/gadgetini/venv/bin/python -m pip install --upgrade pip
 sudo /opt/gadgetini/venv/bin/python -m pip install redis jsons rich
+sudo cp -f "${SCRIPT_DIR}/../../../exporter/data_crawler_host.py" /opt/gadgetini/
 echo "  venv ready at /opt/gadgetini/venv"
 
 echo ""
