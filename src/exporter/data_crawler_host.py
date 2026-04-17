@@ -435,7 +435,10 @@ if __name__ == "__main__":
         pipe.set("mem_usage", curr_meminfo[1])
         pipe.set("mem_available", curr_meminfo[2])
         pipe.set("cpu_usage", get_cpu_usage_percent())
-        pipe.set("ib_nic_temp", get_ib_nic_asic_temp())
+        try:
+            pipe.set("ib_nic_temp", get_ib_nic_asic_temp())
+        except Exception:
+            pass
         pipe.set("host_ttl", int(time.time() * 1000))
         pipe.expire("host_ttl", 7)
         pipe.execute()
