@@ -5,14 +5,49 @@ sys.path.append('/home/gadgetini/High-Precision-AD-DA-Board-Code/RaspberryPI/ADS
 import ADS1256
 import math
 import numpy as np
-import adafruit_dht
 import board
 import time
 from machine_config import MACHINE, COOLANT_CHANNELS
 
 ADC = ADS1256.ADS1256()
 ADC.ADS1256_init()
-dhtDevice = adafruit_dht.DHT11(board.D4)
+
+
+def _probe_dht11():
+    try:
+        import adafruit_dht
+        dev = adafruit_dht.DHT11(board.D4)
+        for _ in range(5):
+            try:
+                if dev.temperature is not None and dev.humidity is not None:
+                    return dev
+            except Exception:
+                pass
+            time.sleep(1)
+    except Exception:
+        pass
+    return None
+
+
+def _probe_hdc302x():
+    try:
+        import busio
+        import adafruit_hdc302x
+        i2c = busio.I2C(board.SCL, board.SDA)
+        dev = adafruit_hdc302x.HDC302x(i2c)
+        _ = dev.temperature
+        return dev
+    except Exception:
+        return None
+
+
+tempHumidDevice = _probe_dht11()
+tempHumidType = 'dht11' if tempHumidDevice is not None else None
+if tempHumidDevice is None:
+    tempHumidDevice = _probe_hdc302x()
+    tempHumidType = 'hdc302x' if tempHumidDevice is not None else None
+print(f"Temp/humid sensor: {tempHumidType or 'none'}")
+
 
 gyroDevice = None
 if MACHINE == 'dg5w':
@@ -28,11 +63,27 @@ def _collect_adc_samples(n=30):
     return [ADC.ADS1256_GetAll() for _ in range(n)]
 
 
+def _read_temp_once():
+    if tempHumidDevice is None:
+        return None
+    return tempHumidDevice.temperature
+
+
+def _read_humid_once():
+    if tempHumidDevice is None:
+        return None
+    if tempHumidType == 'dht11':
+        return tempHumidDevice.humidity
+    return tempHumidDevice.relative_humidity
+
+
 def get_air_temp():
+    if tempHumidDevice is None:
+        return 0.0
     samples = []
     for _ in range(5):
         try:
-            v = dhtDevice.temperature
+            v = _read_temp_once()
             if v is not None:
                 samples.append(v)
         except Exception:
@@ -41,10 +92,12 @@ def get_air_temp():
 
 
 def get_air_humit():
+    if tempHumidDevice is None:
+        return 0.0
     samples = []
     for _ in range(5):
         try:
-            v = dhtDevice.humidity
+            v = _read_humid_once()
             if v is not None:
                 samples.append(v)
         except Exception:
