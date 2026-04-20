@@ -19,14 +19,38 @@ class LeakAlertViewer:
 
         draw.rectangle((0, 0, w, h), fill=bg)
 
-        draw_aligned_text(
-            draw=draw, text="WARNING", font_size=60, fill=text_color,
-            box=(0, h // 2 - 30, w, 60),
-            align="center", halign="center",
-            font_path=EXTRABOLD_FONT_PATH, autoscale=True)
+        pad = 4
+        box_w = w - pad * 2
 
-        draw_aligned_text(
-            draw=draw, text="COOLANT LEAK DETECTED", font_size=14, fill=text_color,
-            box=(0, h // 2 + 30, w, 20),
-            align="center", halign="center",
-            font_path=BOLD_FONT_PATH, autoscale=True)
+        if disp_manager.horizontal == 1:
+            # Horizontal: 320×170
+            draw_aligned_text(
+                draw=draw, text="WARNING", font_size=60, fill=text_color,
+                box=(pad, h // 2 - 30, box_w, 60),
+                align="center", halign="center",
+                font_path=EXTRABOLD_FONT_PATH, autoscale=True)
+
+            draw_aligned_text(
+                draw=draw, text="COOLANT LEAK DETECTED", font_size=14, fill=text_color,
+                box=(pad, h // 2 + 30, box_w, 20),
+                align="center", halign="center",
+                font_path=BOLD_FONT_PATH, autoscale=True)
+        else:
+            # Vertical: 170×320
+            draw_aligned_text(
+                draw=draw, text="WARNING", font_size=34, fill=text_color,
+                box=(pad, h // 2 - 30, box_w, 40),
+                align="center", halign="center",
+                font_path=EXTRABOLD_FONT_PATH, autoscale=True)
+
+            draw_aligned_text(
+                draw=draw, text="COOLANT LEAK", font_size=14, fill=text_color,
+                box=(pad, h // 2 + 15, box_w, 18),
+                align="center", halign="center",
+                font_path=BOLD_FONT_PATH, autoscale=True)
+
+            draw_aligned_text(
+                draw=draw, text="DETECTED", font_size=14, fill=text_color,
+                box=(pad, h // 2 + 33, box_w, 18),
+                align="center", halign="center",
+                font_path=BOLD_FONT_PATH, autoscale=True)
