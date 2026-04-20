@@ -14,9 +14,14 @@ ADC = ADS1256.ADS1256()
 ADC.ADS1256_init()
 dhtDevice = adafruit_dht.DHT11(board.D4)
 
+gyroDevice = None
 if MACHINE == 'dg5w':
-    import mpu6050 as gyro
-    gyroDevice = gyro.mpu6050(0x68)
+    try:
+        import mpu6050 as gyro
+        gyroDevice = gyro.mpu6050(0x68)
+    except Exception as e:
+        print(f"Gyro (MPU6050) init failed, chassis stability will report stable: {e}")
+        gyroDevice = None
 
 
 def _collect_adc_samples(n=30):
@@ -90,15 +95,20 @@ def get_coolant_level_detection(adc_samples=None):
 def get_chassis_stabil():
     if MACHINE != 'dg5w':
         return None
-    current = gyroDevice.get_gyro_data()
-    curr_x = current['x']
-    curr_y = current['y']
-    curr_z = current['z']
-    time.sleep(0.01)
-    init = gyroDevice.get_gyro_data()
-    init_x = init['x']
-    init_y = init['y']
-    init_z = init['z']
-    if abs(curr_x - init_x) > 5 and abs(curr_y - init_y) > 5 or abs(curr_z - init_z) > 5:
-        return 0
-    return 1
+    if gyroDevice is None:
+        return 1
+    try:
+        current = gyroDevice.get_gyro_data()
+        curr_x = current['x']
+        curr_y = current['y']
+        curr_z = current['z']
+        time.sleep(0.01)
+        init = gyroDevice.get_gyro_data()
+        init_x = init['x']
+        init_y = init['y']
+        init_z = init['z']
+        if abs(curr_x - init_x) > 5 and abs(curr_y - init_y) > 5 or abs(curr_z - init_z) > 5:
+            return 0
+        return 1
+    except Exception:
+        return 1
