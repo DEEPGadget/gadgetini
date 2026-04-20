@@ -8,7 +8,7 @@ REDIS_CONF="/etc/redis/redis.conf"
 GADGET_IPV6="fd12:3456:789a:1::2"
 SYSCTL_DROPIN="/etc/sysctl.d/99-gadgetini.conf"
 
-if [ ! -f "$REDIS_CONF" ]; then
+if ! sudo test -f "$REDIS_CONF"; then
     echo "Error: $REDIS_CONF not found. Install redis first." >&2
     exit 1
 fi
