@@ -69,7 +69,7 @@ import time
 from prometheus_client import start_http_server, CollectorRegistry
 from prometheus_client.core import GaugeMetricFamily
 import redis
-from machine_config import MACHINE, COOLANT_CHANNELS
+from machine_config import MACHINE, COOLANT_CHANNELS, GPU_COUNT, CPU_COUNT
 
 client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
@@ -123,8 +123,8 @@ class DLCCollector:
         g.add_metric([srv, "environment", "air_temp",     "°C",  ""], get_float("air_temp"))
         g.add_metric([srv, "environment", "air_humidity", "%RH", ""], get_float("air_humit"))
 
-        # GPUs (0~7)
-        for i in range(8):
+        # GPUs
+        for i in range(GPU_COUNT):
             gpu_name = (client.get(f"gpu_name_{i}") or f"GPU{i}").strip()
             extra = (gpu_name.replace(" ", "_").replace("/", "-")
                              .replace(",", "").replace("(", "").replace(")", ""))
@@ -140,7 +140,7 @@ class DLCCollector:
 
         # CPU
         g.add_metric([srv, "cpu", "usage_total", "%", ""], get_float("cpu_usage"))
-        for i in [0, 1]:
+        for i in range(CPU_COUNT):
             g.add_metric([srv, f"cpu{i}", "temperature", "°C", ""], get_float(f"cpu_temp_{i}"))
             g.add_metric([srv, f"cpu{i}", "power",       "W",  ""], get_float(f"cpu_curr_pwr_{i}"))
 

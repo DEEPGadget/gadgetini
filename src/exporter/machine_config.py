@@ -4,6 +4,8 @@ _cfg = configparser.ConfigParser()
 _cfg.read('/home/gadgetini/gadgetini/src/display/config.ini')
 
 MACHINE = _cfg.get('PRODUCT', 'name', fallback='unknown').lower()
+GPU_COUNT = _cfg.getint('PRODUCT', 'gpu_count', fallback=8)
+CPU_COUNT = _cfg.getint('PRODUCT', 'cpu_count', fallback=2)
 
 # dg5r: inlet1=ad2, outlet1=ad3, outlet2=ad4, inlet2=ad5
 # dg5w: inlet1=ad4 (add outlet channels here when extended, delta_t is computed automatically)

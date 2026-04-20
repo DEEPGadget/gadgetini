@@ -27,7 +27,7 @@ gadgetini is a comprehensive server monitoring system especially specialized for
 # Installation and Usage
 gadgetini network configuration
 
-![gadgetini_v0 3_image](https://github.com/user-attachments/assets/b907ec54-d0a1-45f2-80e8-b2e9830059a9)
+![gadgetini_architecture](docs/images/Architecture.png)
 ## Node exporter setting
 
 ## gadgetini device exporter setting

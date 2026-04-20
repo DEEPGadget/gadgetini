@@ -9,30 +9,35 @@ Gadgetini is a server monitoring system for Direct Liquid Cooling (DLC) systems 
 ## Architecture
 
 ```
-HOST MACHINE                         GADGETINI (Raspberry Pi)
-┌─────────────────┐                 ┌──────────────────┐
-│ CPU/GPU Metrics │                 │ DLC Sensors      │
-│ (psutil)        │◄───Serial───────│ (DHT11, NTC,     │
-└────────┬────────┘     UART        │  MPU6050, ADS1256)│
-         │                          └────────┬─────────┘
-         │                                   │
-         └───────────────┬───────────────────┘
-                         ▼
-                   ┌──────────┐
-                   │  Redis   │  (central data hub)
-                   └────┬─────┘
-         ┌──────────────┼──────────────┐
-         ▼              ▼              ▼
-   ┌──────────┐  ┌───────────┐  ┌────────────┐
-   │Prometheus│  │ Next.js   │  │ TFT Display│
-   │ :9003    │  │ Web :3000 │  │ (ST7789)   │
-   └──────────┘  └───────────┘  └────────────┘
+ HOST (dg5W)              GADGETINI (Raspberry Pi 4)
+                          ┌─────────────────────────────────────────────┐
+┌──────────────┐          │ ┌──────────┐    ┌──────────────┐           │
+│data_crawler_ │─USB Net─▶│ │          │◀───│data_crawler  │◀─Sensors  │
+│host.py       │ TCP/IPv6 │ │  Redis   │    │.py           │  (NTC,    │
+│(CPU/GPU/NIC) │          │ │          │    └──────────────┘   DHT11,  │
+└──────────────┘          │ └────┬─────┘                       MPU6050)│
+                          │      │                                     │
+                          │ ┌────┴─────────────┐                       │
+                          │ ▼                   ▼                       │
+                          │ ┌────────┐   ┌──────────┐                  │
+                          │ │  TFT   │   │ Exporter │                  │
+                          │ │Display │   │  :9003   │                  │
+                          │ └────────┘   └────┬─────┘                  │
+                          │      ▲            ▼                        │
+                          │ ┌─────────┐  ┌──────────┐  ┌────────┐     │
+                          │ │Next.js  │  │Prometheus│─▶│Grafana │     │
+                          │ │Web:3001 │  │  :9090   │  │ :3000  │     │
+                          │ └─────────┘  └──────────┘  └────────┘     │
+                          │ (config.ini)                               │
+                          └─────────────────────────────────────────────┘
 ```
 
 **Key data flow:**
-- `data_crawler.py` / `data_crawler_host.py` → collect sensor/system metrics → Redis
-- `serial_sender_v2.py` ↔ `serial_receiver_v2.py` → bidirectional host-gadgetini communication via async serial (SYN/SYN-ACK/DATA handshake)
-- All consumers (display, web, prometheus) read from Redis
+- Host: `data_crawler_host.py` collects CPU/GPU/NIC metrics → writes directly to Gadgetini Redis via USB gadget network (TCP/IPv6)
+- Gadgetini: `data_crawler.py` collects DLC sensor metrics (coolant, leak, gyro) → Redis
+- Redis → Exporter (:9003) → Prometheus (:9090) → Grafana (:3000)
+- Redis → TFT Display (reads sensor data)
+- Next.js Web (:3001) is a configuration UI for the TFT display (config.ini), not a Redis consumer
 
 ## Directory Structure
 
