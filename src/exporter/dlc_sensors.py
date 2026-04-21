@@ -17,13 +17,14 @@ def _probe_dht11():
     try:
         import adafruit_dht
         dev = adafruit_dht.DHT11(board.D4)
-        for _ in range(5):
+        for _ in range(10):
             try:
-                if dev.temperature is not None and dev.humidity is not None:
+                dev.measure()
+                if dev._temperature is not None and dev._humidity is not None:
                     return dev
             except Exception:
                 pass
-            time.sleep(1)
+            time.sleep(2)
     except Exception:
         pass
     return None
