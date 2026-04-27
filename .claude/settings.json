@@ -15,7 +15,11 @@
       "Bash(sudo python3 *)",
       "Bash(chmod +x /home/gadgetini/gadgetini/src/control_board/install.sh)",
       "Bash(bash -n /home/gadgetini/gadgetini/src/control_board/install.sh)",
-      "Bash(systemctl cat *)"
+      "Bash(systemctl cat *)",
+      "Bash(systemctl is-active *)",
+      "Bash(systemctl is-enabled *)",
+      "Bash(redis-cli keys *)",
+      "Bash(redis-cli mget *)"
     ]
   }
 }

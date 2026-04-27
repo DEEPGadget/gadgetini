@@ -28,29 +28,47 @@ class PCB:
         except Exception: pass
 
     def probe(self):
-        rr = self.cli.read_input_registers(0, count=1, device_id=self.slave)
-        return rr is not None and not rr.isError()
+        try:
+            rr = self.cli.read_input_registers(0, count=1, device_id=self.slave)
+            return rr is not None and not rr.isError()
+        except Exception:
+            return False
 
     def read_input_registers(self, address, count):
-        rr = self.cli.read_input_registers(address, count=count, device_id=self.slave)
-        if rr is None or rr.isError():
+        try:
+            rr = self.cli.read_input_registers(address, count=count, device_id=self.slave)
+            if rr is None or rr.isError():
+                return None
+            return rr.registers
+        except Exception:
             return None
-        return rr.registers
 
     def read_holding_registers(self, address, count):
-        rr = self.cli.read_holding_registers(address, count=count, device_id=self.slave)
-        if rr is None or rr.isError():
+        try:
+            rr = self.cli.read_holding_registers(address, count=count, device_id=self.slave)
+            if rr is None or rr.isError():
+                return None
+            return rr.registers
+        except Exception:
             return None
-        return rr.registers
 
     def write_register(self, address, value):
-        rr = self.cli.write_register(address, value, device_id=self.slave)
-        return rr is not None and not rr.isError()
+        try:
+            rr = self.cli.write_register(address, value, device_id=self.slave)
+            return rr is not None and not rr.isError()
+        except Exception:
+            return False
 
     def write_registers(self, address, values):
-        rr = self.cli.write_registers(address, values, device_id=self.slave)
-        return rr is not None and not rr.isError()
+        try:
+            rr = self.cli.write_registers(address, values, device_id=self.slave)
+            return rr is not None and not rr.isError()
+        except Exception:
+            return False
 
     def write_coil(self, address, value):
-        rr = self.cli.write_coil(address, value, device_id=self.slave)
-        return rr is not None and not rr.isError()
+        try:
+            rr = self.cli.write_coil(address, value, device_id=self.slave)
+            return rr is not None and not rr.isError()
+        except Exception:
+            return False

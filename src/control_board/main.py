@@ -48,22 +48,30 @@ def apply_initial_state(pcb, cfg):
     log.info("initial PWM duty + DOUT applied")
 
 
+def _resolve_pcb(mb):
+    """port may be a single string or a list (try in order). Returns connected PCB or None."""
+    ports = mb['port'] if isinstance(mb['port'], list) else [mb['port']]
+    for port in ports:
+        pcb = PCB(port=port, baud=mb['baud'], slave=mb['slave'],
+                  timeout=float(mb.get('timeout_seconds', 1.0)))
+        if pcb.connect() and pcb.probe():
+            return pcb, port
+        pcb.close()
+    return None, None
+
+
 def main():
     cfg = load_config()
     log.info("config loaded: %s", CONFIG_PATH)
     log.info("env temp/humid: %s", env_sensors.temp_humid_kind() or 'none')
 
     mb = cfg['modbus']
-    pcb = PCB(port=mb['port'], baud=mb['baud'], slave=mb['slave'],
-              timeout=float(mb.get('timeout_seconds', 1.0)))
-    if not pcb.connect():
-        log.error("cannot open serial port %s", mb['port'])
+    pcb, port = _resolve_pcb(mb)
+    if pcb is None:
+        log.error("PCB not found on %s @ %d slave %d",
+                  mb['port'], mb['baud'], mb['slave'])
         return 1
-    if not pcb.probe():
-        log.error("PCB no response on %s slave %d", mb['port'], mb['slave'])
-        pcb.close()
-        return 1
-    log.info("PCB connected on %s @ %d, slave %d", mb['port'], mb['baud'], mb['slave'])
+    log.info("PCB connected on %s @ %d, slave %d", port, mb['baud'], mb['slave'])
 
     rd = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 

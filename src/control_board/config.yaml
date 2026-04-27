@@ -6,7 +6,10 @@
 # === Modbus 통신 ===
 
 modbus:
-  port: /dev/serial0     # Pi 내장 UART symlink (운영). USB-RS485 어댑터 사용 시 /dev/ttyUSB0
+  # 순서대로 try — /dev/serial0 (Pi 내장 UART, 운영) 안 되면 /dev/ttyUSB0 (USB-RS485 어댑터)
+  port:
+    - /dev/serial0
+    - /dev/ttyUSB0
   baud: 115200           # DIP6 ON
   slave: 1               # DIP1~5 (모두 OFF → ID 1)
   parity: N
