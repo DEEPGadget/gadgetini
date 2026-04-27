@@ -1,0 +1,14 @@
+[Unit]
+Description=Detect PCB and select cooling collector.
+After=redis.service
+Before=sensor_exporter.service display_pannel.service data_crawler.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/python3 /home/gadgetini/gadgetini/src/control_board/pcb_bootstrap.py
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
