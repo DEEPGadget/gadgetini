@@ -95,10 +95,10 @@ thresholds:
     critical_below: 8
     critical_above: 80
 
-  # 수위 (2=HIGH normal, 1=MIDDLE warning, 0=LOW critical)
+  # 수위 — 단일 센서 (D02). 1=정상(HIGH), 0=부족(LOW=critical)
   coolant_level:
     keys: [coolant_level]
-    warning_at: 1
+    warning_at: null
     critical_at: 0
 
   # 누수 (1 = LEAKED → critical)
@@ -117,25 +117,25 @@ thresholds:
 # 미연결 항목은 null. NTC 자동 감지(-999)로도 일부 fallback 가능.
 
 wiring:
-  # NTC 입력 (IR 28~31, CH13~16)
+  # NTC 입력 (IR 28~31, CH13~16) — dg5r: 4개 모두 사용
   ntc:
-    inlet1: null   # 예: 13
-    outlet1: null  # 예: 14
-    inlet2: null
-    outlet2: null
+    inlet1: 13
+    outlet1: 14
+    inlet2: 15
+    outlet2: 16
 
-  # DIN 입력 (IR 25 bit0~5 = DIN1~6)
+  # DIN 입력 (IR 25 bit0~5 = DIN1~6) — D01=누수, D02=수위 (단일)
   din:
-    leak_bit: null
-    level_high_bit: null
-    level_low_bit: null
+    leak_bit: 0    # DIN1
+    level_bit: 1   # DIN2
 
   # Pulse Freq 입력 (IR 13~24, CH1~12)
+  # 가정: PWM 출력 CH N의 Tach가 같은 번호 Pulse 입력 CH N으로 라우팅
   pulse:
-    pump_tach_ch: null     # 펌프 Tach가 연결된 Pulse 채널 (단일)
-    fan_tach_ch: []        # 팬 Tach Pulse 채널 list (복수 가능)
+    pump_tach_chs: [1, 2, 3, 4]   # 펌프 4대 Tach
+    fan_tach_chs:  [9, 10]        # 팬 2채널 Tach
 
   # PWM 출력 (HR 0~11, CH1~12)
   pwm:
-    pump_ch: []            # 실제로 펌프가 결선된 채널 (예: [1] or [1,2])
-    fan_ch:  []            # 실제로 팬이 결선된 채널
+    pump_ch: [1, 2, 3, 4]   # 펌프 4대 (TIM1, 동일 duty)
+    fan_ch:  [9, 10]        # 팬 2채널 (TIM8)

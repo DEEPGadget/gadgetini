@@ -1,15 +1,17 @@
 [Unit]
 Description=DLC PCB collector (gateway service).
 After=redis.service
-# Conflicts=data_crawler.service          # Phase 2 — main.py 구현 후 활성화
+Conflicts=data_crawler.service
 
 [Service]
-# Phase 1 stub — main.py 미구현 상태. 부팅 흐름만 검증.
-# Phase 2: Type=simple, ExecStart=/usr/bin/python3 .../control_board/main.py, Restart=always
-Type=oneshot
-ExecStart=/bin/bash -c 'echo "control_board: main.py not yet implemented (Phase 1 stub)"'
+Type=simple
+WorkingDirectory=/home/gadgetini/gadgetini/src
+ExecStart=/usr/bin/python3 -m control_board.main
+Restart=always
+RestartSec=5
 User=gadgetini
 Group=gadgetini
+SupplementaryGroups=dialout
 
 [Install]
 # WantedBy 없음 — pcb_bootstrap.service가 직접 start.

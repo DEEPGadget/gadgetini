@@ -6,7 +6,16 @@
       "Read(//dev/**)",
       "Bash(dmesg)",
       "WebSearch",
-      "Bash(pip install *)"
+      "Bash(pip install *)",
+      "Bash(sudo cp *)",
+      "Bash(sudo systemctl *)",
+      "Read(//etc/systemd/system/**)",
+      "Bash(systemctl status *)",
+      "Bash(sudo journalctl *)",
+      "Bash(sudo python3 *)",
+      "Bash(chmod +x /home/gadgetini/gadgetini/src/control_board/install.sh)",
+      "Bash(bash -n /home/gadgetini/gadgetini/src/control_board/install.sh)",
+      "Bash(systemctl cat *)"
     ]
   }
 }
