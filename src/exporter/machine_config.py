@@ -8,8 +8,9 @@ GPU_COUNT = _cfg.getint('PRODUCT', 'gpu_count', fallback=8)
 CPU_COUNT = _cfg.getint('PRODUCT', 'cpu_count', fallback=2)
 
 # dg5r: inlet1=ad2, outlet1=ad3, outlet2=ad4, inlet2=ad5
-# dg5w: inlet1=ad4 (add outlet channels here when extended, delta_t is computed automatically)
+# dg5w: inlet1=ad4, outlet1=ad5 (older units may not have outlet1 wired;
+#       disconnected NTC is auto-detected at the sensor layer and the key is omitted)
 COOLANT_CHANNELS = {
     'dg5r': {'inlet1': 2, 'outlet1': 3, 'outlet2': 4, 'inlet2': 5},
-    'dg5w': {'inlet1': 4},
+    'dg5w': {'inlet1': 4, 'outlet1': 5},
 }

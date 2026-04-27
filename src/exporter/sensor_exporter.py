@@ -41,7 +41,11 @@
 # ├─────────────────────────┬────────────┬────────┬───────────────────────────┤
 # │ Key                     │ Unit       │ Writer │ Description                │
 # ├─────────────────────────┼────────────┼────────┼───────────────────────────┤
-# │ coolant_temp_inlet1     │ °C         │ gadget │ inlet temp ch1 (ADC4)     │
+# │ coolant_temp_inlet1     │ °C         │ gadget │ inlet  temp ch1 (ADC4)    │
+# │ coolant_temp_outlet1    │ °C         │ gadget │ outlet temp ch1 (ADC5,    │
+# │                         │            │        │   omitted on older units) │
+# │ coolant_delta_t1        │ °C         │ gadget │ ΔT = outlet1 - inlet1     │
+# │                         │            │        │   (omitted if outlet abs.)│
 # │ coolant_leak            │ 0/1 bool   │ gadget │ leak detected (1=Leak)    │
 # │ coolant_level           │ 0/1 bool   │ gadget │ coolant level (1=OK)      │
 # │ air_temp                │ °C         │ gadget │ internal air temp (DHT11) │
@@ -105,14 +109,18 @@ class DLCCollector:
         g.add_metric([srv, "cooling", "leak_detected", "bool", ""], get_int("coolant_leak"))
         g.add_metric([srv, "cooling", "level_full",    "bool", ""], get_int("coolant_level"))
 
-        # Cooling temperatures (channels from config)
+        # Cooling temperatures: only expose channels whose Redis key is currently present.
+        # data_crawler deletes the key when the NTC reads as disconnected, so older units
+        # with no outlet wiring naturally drop out of the metric set.
         for name in CHANNELS:
-            g.add_metric([srv, "cooling", f"{name}_temp", "°C", ""], get_float(f"coolant_temp_{name}"))
+            key = f"coolant_temp_{name}"
+            if client.exists(key):
+                g.add_metric([srv, "cooling", f"{name}_temp", "°C", ""], get_float(key))
 
-        # expose delta_t only when inlet+outlet pair exists (dg5w has inlet1 only for now, skip)
-        if 'inlet1' in CHANNELS and 'outlet1' in CHANNELS:
+        # delta_t is written by the crawler only when the inlet+outlet pair is present
+        if client.exists("coolant_delta_t1"):
             g.add_metric([srv, "cooling", "delta_t1", "°C", ""], get_float("coolant_delta_t1"))
-        if 'inlet2' in CHANNELS and 'outlet2' in CHANNELS:
+        if client.exists("coolant_delta_t2"):
             g.add_metric([srv, "cooling", "delta_t2", "°C", ""], get_float("coolant_delta_t2"))
 
         # Chassis stability (dg5w only)

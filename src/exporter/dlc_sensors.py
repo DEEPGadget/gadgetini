@@ -119,8 +119,10 @@ def get_coolant_temp(ad_index, adc_samples=None):
         vs = [float(s[ad_index]) * VREF / 0x7fffff for s in adc_samples]
         vout = float(np.median(vs))
 
+        # Voltage pinned to either rail → NTC not connected on this channel.
+        # Return None so the caller can omit the key entirely (vs reporting a fake 0°C).
         if vout <= 0.001 or vout >= (VIN_DIV - 0.001):
-            return 0
+            return None
 
         r_ntc = (vout * R_FIXED) / (VIN_DIV - vout)
         ln_r = math.log(r_ntc)
@@ -128,7 +130,7 @@ def get_coolant_temp(ad_index, adc_samples=None):
         return round(temp_k - 273.15, 1)
 
     except Exception:
-        return 0
+        return None
 
 
 def get_coolant_leak_detection(adc_samples=None):
