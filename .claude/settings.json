@@ -4,7 +4,9 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(gh api *)",
       "Read(//dev/**)",
-      "Bash(dmesg)"
+      "Bash(dmesg)",
+      "WebSearch",
+      "Bash(pip install *)"
     ]
   }
 }

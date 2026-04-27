@@ -1,0 +1,141 @@
+# control_board/config.yaml
+# control_board 서비스가 부팅 시 로드하는 런타임 source of truth.
+# Flash 영구 저장 항목 (PWM freq HR12/13/14, polarity HR16, ADC gain HR19~26)
+# 은 PCB 측에서 관리되며 본 파일에서 다루지 않는다.
+
+# === Modbus 통신 ===
+
+modbus:
+  port: /dev/serial0     # Pi 내장 UART symlink (운영). USB-RS485 어댑터 사용 시 /dev/ttyUSB0
+  baud: 115200           # DIP6 ON
+  slave: 1               # DIP1~5 (모두 OFF → ID 1)
+  parity: N
+  stopbits: 1
+  bytesize: 8
+  timeout_seconds: 1.0
+
+loop:
+  cycle_seconds: 1.0     # 메인 루프 cadence
+
+# === 매 부팅 시 PCB에 Write할 초기값 (Flash 미저장 항목) ===
+
+# PWM duty 초기값 (HR 0~11, 0~1000 = 0~100.0%).
+# 팬 duty는 controller 첫 cycle에서 outlet 온도 lookup으로 즉시 덮어쓰임.
+initial_pwm_duty:
+  # TIM1 (HR 0~3) — 펌프. 고정 60% 운용.
+  pump:
+    ch1: 600
+    ch2: 600
+    ch3: 600
+    ch4: 600
+  # TIM2 (HR 4~7) — 팬. fan_curve idle floor.
+  # TIM8 (HR 8~11) — 팬.
+  fan:
+    ch5: 200
+    ch6: 200
+    ch7: 200
+    ch8: 200
+    ch9: 200
+    ch10: 200
+    ch11: 200
+    ch12: 200
+
+# DOUT 초기 비트마스크 (HR 15, bit0~5 = DOUT1~6)
+initial_dout_bitmask: 0x00
+
+# === Fan curve (Stage 1 lookup) ===
+# outlet 온도 °C → fan duty 0~1000.
+# until_outlet: null = ceiling (해당 온도 이상 전부)
+fan_curve:
+  hysteresis_c: 1.0
+  stages:
+    - { until_outlet: 30,   duty: 200 }    # < 30 °C : 20%
+    - { until_outlet: 40,   duty: 400 }    # 30~40   : 40%
+    - { until_outlet: 50,   duty: 650 }    # 40~50   : 65%
+    - { until_outlet: 60,   duty: 850 }    # 50~60   : 85%
+    - { until_outlet: 65, duty: 1000 }   # ≥ 60    : 100%
+
+# === Threshold (출처: L2A_CDU_system docs/threshold.md, flat key로 변환) ===
+# 위반 시 alarm_<항목> Redis 키 SET, 복귀 시 DEL.
+# control_board는 제어 명령 생성하지 않음 (감지·알람만).
+
+thresholds:
+
+  # 입수 온도 — 22~40 °C normal, 양 끝 5 °C 워닝, 그 외 critical
+  coolant_temp_inlet:
+    keys: [coolant_temp_inlet1, coolant_temp_inlet2]
+    warning_below: 22   # 18~21 °C
+    warning_above: 40   # 41~45 °C
+    critical_below: 18
+    critical_above: 45
+
+  # 출수 온도 — ≤ 60 °C normal, 60~65 워닝, > 65 critical
+  coolant_temp_outlet:
+    keys: [coolant_temp_outlet1, coolant_temp_outlet2]
+    warning_above: 60
+    critical_above: 65
+
+  # ΔT — ASHRAE TC 9.9 Liquid Cooling 권장 10~14 °C 윈도우
+  # 이탈은 warning만 (critical 미정의)
+  coolant_delta_t:
+    keys: [coolant_delta_t1, coolant_delta_t2]
+    warning_below: 10
+    warning_above: 14
+
+  # 장치 내부 온도 — air_temp (DHT11/HDC302x)
+  ambient_temp:
+    keys: [air_temp]
+    warning_above: 40
+    critical_above: 45
+
+  # 장치 내부 습도 — air_humit
+  ambient_humidity:
+    keys: [air_humit]
+    warning_above: 60
+    critical_below: 8
+    critical_above: 80
+
+  # 수위 (2=HIGH normal, 1=MIDDLE warning, 0=LOW critical)
+  coolant_level:
+    keys: [coolant_level]
+    warning_at: 1
+    critical_at: 0
+
+  # 누수 (1 = LEAKED → critical)
+  coolant_leak:
+    keys: [coolant_leak]
+    critical_at: 1
+
+  # 통신 (control_board가 자체 카운트하는 연속 실패 횟수)
+  # → alarm_comm_timeout / alarm_comm_disconnected
+  comm:
+    timeout_after_failures: 3
+    disconnected_after_failures: 10
+
+# === 입력 채널 와이어링 (TBD — 도면 확정 후 갱신) ===
+# 각 센서가 PCB의 어느 입력 채널에 연결되는지 명시.
+# 미연결 항목은 null. NTC 자동 감지(-999)로도 일부 fallback 가능.
+
+wiring:
+  # NTC 입력 (IR 28~31, CH13~16)
+  ntc:
+    inlet1: null   # 예: 13
+    outlet1: null  # 예: 14
+    inlet2: null
+    outlet2: null
+
+  # DIN 입력 (IR 25 bit0~5 = DIN1~6)
+  din:
+    leak_bit: null
+    level_high_bit: null
+    level_low_bit: null
+
+  # Pulse Freq 입력 (IR 13~24, CH1~12)
+  pulse:
+    pump_tach_ch: null     # 펌프 Tach가 연결된 Pulse 채널 (단일)
+    fan_tach_ch: []        # 팬 Tach Pulse 채널 list (복수 가능)
+
+  # PWM 출력 (HR 0~11, CH1~12)
+  pwm:
+    pump_ch: []            # 실제로 펌프가 결선된 채널 (예: [1] or [1,2])
+    fan_ch:  []            # 실제로 팬이 결선된 채널
