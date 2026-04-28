@@ -19,7 +19,9 @@
       "Bash(systemctl is-active *)",
       "Bash(systemctl is-enabled *)",
       "Bash(redis-cli keys *)",
-      "Bash(redis-cli mget *)"
+      "Bash(redis-cli mget *)",
+      "Bash(redis-cli get *)",
+      "Bash(sudo lsof *)"
     ]
   }
 }

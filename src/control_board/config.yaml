@@ -120,14 +120,15 @@ thresholds:
 # 미연결 항목은 null. NTC 자동 감지(-999)로도 일부 fallback 가능.
 
 wiring:
-  # NTC 입력 (IR 28~31, CH13~16) — dg5r: 4개 모두 사용
+  # NTC 입력 (IR 28~31, CH13~16) — dg5R 4개 모두 사용
+  # 사용자 결선 순서: NTC1=Inlet1, NTC2=Outlet1, NTC3=Outlet2, NTC4=Inlet2
   ntc:
-    inlet1: 13
-    outlet1: 14
-    inlet2: 15
-    outlet2: 16
+    inlet1:  13   # NTC1
+    outlet1: 14   # NTC2
+    outlet2: 15   # NTC3
+    inlet2:  16   # NTC4
 
-  # DIN 입력 (IR 25 bit0~5 = DIN1~6) — D01=누수, D02=수위 (단일)
+  # DIN 입력 (IR 25 bit0~5 = DIN1~6) — 누수=D1(DIN1), 수위=D2(DIN2)
   din:
     leak_bit: 0    # DIN1
     level_bit: 1   # DIN2
