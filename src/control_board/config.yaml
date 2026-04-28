@@ -58,62 +58,12 @@ fan_curve:
     - { until_outlet: 60,   duty: 850 }    # 50~60   : 85%
     - { until_outlet: 65, duty: 1000 }   # ≥ 60    : 100%
 
-# === Threshold (출처: L2A_CDU_system docs/threshold.md, flat key로 변환) ===
-# 위반 시 alarm_<항목> Redis 키 SET, 복귀 시 DEL.
-# control_board는 제어 명령 생성하지 않음 (감지·알람만).
-
-thresholds:
-
-  # 입수 온도 — 22~40 °C normal, 양 끝 5 °C 워닝, 그 외 critical
-  coolant_temp_inlet:
-    keys: [coolant_temp_inlet1, coolant_temp_inlet2]
-    warning_below: 22   # 18~21 °C
-    warning_above: 40   # 41~45 °C
-    critical_below: 18
-    critical_above: 45
-
-  # 출수 온도 — ≤ 60 °C normal, 60~65 워닝, > 65 critical
-  coolant_temp_outlet:
-    keys: [coolant_temp_outlet1, coolant_temp_outlet2]
-    warning_above: 60
-    critical_above: 65
-
-  # ΔT — ASHRAE TC 9.9 Liquid Cooling 권장 10~14 °C 윈도우
-  # 이탈은 warning만 (critical 미정의)
-  coolant_delta_t:
-    keys: [coolant_delta_t1, coolant_delta_t2]
-    warning_below: 10
-    warning_above: 14
-
-  # 장치 내부 온도 — air_temp (DHT11/HDC302x)
-  ambient_temp:
-    keys: [air_temp]
-    warning_above: 40
-    critical_above: 45
-
-  # 장치 내부 습도 — air_humit
-  ambient_humidity:
-    keys: [air_humit]
-    warning_above: 60
-    critical_below: 8
-    critical_above: 80
-
-  # 수위 — 단일 센서 (D02). 1=정상(HIGH), 0=부족(LOW=critical)
-  coolant_level:
-    keys: [coolant_level]
-    warning_at: null
-    critical_at: 0
-
-  # 누수 (1 = LEAKED → critical)
-  coolant_leak:
-    keys: [coolant_leak]
-    critical_at: 1
-
-  # 통신 (control_board가 자체 카운트하는 연속 실패 횟수)
-  # → alarm_comm_timeout / alarm_comm_disconnected
-  comm:
-    timeout_after_failures: 3
-    disconnected_after_failures: 10
+# === 통신 상태 카운터 ===
+# 센서값 임계 알람은 Prometheus alert rule + Grafana 측에서 raw metric으로 평가.
+# 통신 상태는 control_board 내부 상태라 자체 카운트가 필요 — comm_status 단일 키만 갱신.
+comm:
+  timeout_after_failures: 3
+  disconnected_after_failures: 10
 
 # === 입력 채널 와이어링 (TBD — 도면 확정 후 갱신) ===
 # 각 센서가 PCB의 어느 입력 채널에 연결되는지 명시.

@@ -1,7 +1,12 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# Redis Keys written by data_crawler.py / data_crawler_host.py
-# Writer column: gadgetini = data_crawler.py, host = data_crawler_host.py
+# Redis Keys written by data_crawler.py / data_crawler_host.py / control_board
+# Writer column: gadgetini = data_crawler.py, host = data_crawler_host.py,
+#                control_board = src/control_board/polling.py + main_loop.py
+#
+# control_board가 active일 때 (PCB 연결 시): 기존 coolant_*, air_*, chassis_stabil 키는
+# control_board가 SET (data_crawler 대신). 추가로 pump_rpm, fan_rpm_*, pwm_duty_*,
+# comm_* 신규 키도 SET.
 #
 # ┌─────────────────────────────────────────────────────────────────────────────┐
 # │ MACHINE: dg5r                                                               │
@@ -126,6 +131,28 @@ class DLCCollector:
         # Chassis stability (dg5w only)
         if MACHINE == 'dg5w':
             g.add_metric([srv, "chassis", "stability", "bool", ""], get_int("chassis_stabil"))
+
+        # Pump / Fan tach RPM (control_board polling이 SET)
+        if client.exists("pump_rpm"):
+            g.add_metric([srv, "cooling", "pump_rpm", "rpm", ""], get_int("pump_rpm"))
+        for fan_key in sorted(client.keys("fan_rpm_*")):
+            idx = fan_key.split("_")[-1]
+            g.add_metric([srv, "cooling", "fan_rpm", "rpm", idx], get_int(fan_key))
+
+        # PWM duty readback (control_board polling이 HR 0~11에서 읽어와 SET, 0~1000 = 0~100.0%)
+        for duty_key in sorted(client.keys("pwm_duty_pump_*")):
+            idx = duty_key.split("_")[-1]
+            g.add_metric([srv, "cooling", "pump_pwm_duty", "0.1%", idx], get_int(duty_key))
+        for duty_key in sorted(client.keys("pwm_duty_fan_*")):
+            idx = duty_key.split("_")[-1]
+            g.add_metric([srv, "cooling", "fan_pwm_duty", "0.1%", idx], get_int(duty_key))
+
+        # control_board ↔ PCB Modbus 통신 상태 (1=ok, 0=timeout/disconnected)
+        if client.exists("comm_status"):
+            comm_ok = 1 if (client.get("comm_status") == "ok") else 0
+            g.add_metric([srv, "control_board", "comm_online", "1=ok", ""], comm_ok)
+            g.add_metric([srv, "control_board", "comm_consecutive_failures", "count", ""],
+                         get_int("comm_consecutive_failures"))
 
         # Environment
         g.add_metric([srv, "environment", "air_temp",     "°C",  ""], get_float("air_temp"))

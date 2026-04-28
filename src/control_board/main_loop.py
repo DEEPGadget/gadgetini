@@ -1,13 +1,13 @@
-"""메인 루프 — Polling → 환경 센서 → Controller → Alarm.
+"""메인 루프 — Polling → 환경 센서 → Controller.
 
 단일 쓰레드, Modbus 단일 시리얼 버스 순차 실행.
+임계 알람은 Prometheus alert rule + Grafana 측에서 raw metric으로 평가.
 """
 import logging
 import time
 
 from . import polling
 from . import env_sensors
-from . import alarm_checker
 from . import redis_keys as K
 
 log = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 def run(pcb, rd, cfg, controller):
     """Run forever until KeyboardInterrupt or systemd SIGTERM."""
     cycle = float(cfg['loop']['cycle_seconds'])
-    comm_cfg = cfg['thresholds']['comm']
+    comm_cfg = cfg['comm']
     timeout_n = int(comm_cfg['timeout_after_failures'])
     disconnect_n = int(comm_cfg['disconnected_after_failures'])
 
@@ -65,12 +65,6 @@ def run(pcb, rd, cfg, controller):
             except Exception:
                 log.exception("controller.update failed")
 
-        # ── 4. Alarm threshold check ──
-        try:
-            alarm_checker.check_all(rd, cfg['thresholds'])
-        except Exception:
-            log.exception("alarm_checker.check_all failed")
-
         elapsed = time.monotonic() - t0
         time.sleep(max(0.0, cycle - elapsed))
 
@@ -78,11 +72,7 @@ def run(pcb, rd, cfg, controller):
 def _update_comm_state(rd, fails, timeout_n, disconnect_n):
     if fails == 0:
         rd.set(K.COMM_STATUS, 'ok')
-        rd.delete(K.alarm('comm_timeout'))
-        rd.delete(K.alarm('comm_disconnected'))
     elif fails >= disconnect_n:
         rd.set(K.COMM_STATUS, 'disconnected')
-        rd.set(K.alarm('comm_disconnected'), 1)
     elif fails >= timeout_n:
         rd.set(K.COMM_STATUS, 'timeout')
-        rd.set(K.alarm('comm_timeout'), 1)

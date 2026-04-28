@@ -78,6 +78,18 @@ def poll_once(pcb, rd, wiring):
         rpm = hz * 30                                      # 2 p/r → RPM = Hz × 30
         pipe.set(K.fan_rpm(i), rpm)
 
+    # ── PWM duty readback (HR 0~11) ──
+    duties = pcb.read_holding_registers(R.HR_PWM_DUTY_BASE, 12)
+    if duties is None:
+        return False
+    pwm_map = wiring.get('pwm', {}) or {}
+    for i, ch in enumerate(pwm_map.get('pump_ch') or [], start=1):
+        if 1 <= ch <= 12:
+            pipe.set(K.pwm_duty_pump(i), duties[ch - 1])
+    for i, ch in enumerate(pwm_map.get('fan_ch') or [], start=1):
+        if 1 <= ch <= 12:
+            pipe.set(K.pwm_duty_fan(i), duties[ch - 1])
+
     pipe.execute()
     return True
 

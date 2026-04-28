@@ -27,11 +27,16 @@ PUMP_RPM = 'pump_rpm'
 def fan_rpm(idx):
     return f'fan_rpm_{idx}'
 
-# 알람 (control_board가 SET/DEL)
-def alarm(name):
-    return 'alarm_' + name
+# PWM duty readback (HR 0~11, 0~1000 = 0~100.0%)
+# 논리 인덱스 1~N으로 SET — 채널 매핑은 wiring.pwm.{pump_ch,fan_ch} 기준.
+def pwm_duty_pump(idx):
+    return f'pwm_duty_pump_{idx}'
+
+def pwm_duty_fan(idx):
+    return f'pwm_duty_fan_{idx}'
 
 # 통신 상태 (control_board 자체 카운트)
+# 임계 알람은 Prometheus/Grafana 측에서 raw metric으로 평가하므로 별도 키 없음.
 COMM_STATUS               = 'comm_status'
 COMM_CONSECUTIVE_FAILURES = 'comm_consecutive_failures'
 COMM_LAST_ERROR           = 'comm_last_error'
