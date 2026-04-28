@@ -28,7 +28,7 @@ def run(pcb, rd, cfg, controller):
         # ── 1. PCB polling ──
         ok = False
         try:
-            ok = polling.poll_once(pcb, rd, cfg.get('wiring', {}))
+            ok = polling.poll_once(pcb, rd, cfg)
         except Exception:
             log.exception("polling.poll_once raised")
 

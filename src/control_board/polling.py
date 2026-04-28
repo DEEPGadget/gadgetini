@@ -13,8 +13,13 @@ from .modbus_client import s16
 log = logging.getLogger(__name__)
 
 
-def poll_once(pcb, rd, wiring):
-    """One polling cycle. Returns True if all PCB reads succeeded."""
+def poll_once(pcb, rd, cfg):
+    """One polling cycle. Returns True if all PCB reads succeeded.
+
+    cfg는 control_board config 전체 (wiring, pump 섹션 모두 사용).
+    """
+    wiring = cfg.get('wiring', {}) or {}
+    pump_cfg = cfg.get('pump', {}) or {}
     pipe = rd.pipeline(transaction=False)
 
     # ── NTC (IR 28~31, signed int16, 0.1°C, -999=no sensor) ──
@@ -60,17 +65,11 @@ def poll_once(pcb, rd, wiring):
         # active-high 가정: bit=1 → 정상(HIGH), bit=0 → 부족
         pipe.set(K.COOLANT_LEVEL, 1 if (bits >> level_bit) & 1 else 0)
 
-    # ── Pulse Freq (IR 13~24) ──
+    # ── Pulse Freq (IR 13~24) — 팬 Tach만 사용 (펌프는 duty 기반 유량 추정) ──
     pulses = pcb.read_input_registers(R.IR_PULSE_FREQ_BASE, 12)
     if pulses is None:
         return False
     pulse_map = wiring.get('pulse', {}) or {}
-
-    pump_chs = pulse_map.get('pump_tach_chs') or []
-    if pump_chs:
-        rpms = [pulses[ch - 1] * 60 for ch in pump_chs]   # 1 p/r 가정 (실측 보정 필요)
-        avg = int(sum(rpms) / len(rpms))
-        pipe.set(K.PUMP_RPM, avg)
 
     fan_chs = pulse_map.get('fan_tach_chs') or []
     for i, ch in enumerate(fan_chs, start=1):
@@ -83,12 +82,23 @@ def poll_once(pcb, rd, wiring):
     if duties is None:
         return False
     pwm_map = wiring.get('pwm', {}) or {}
-    for i, ch in enumerate(pwm_map.get('pump_ch') or [], start=1):
+    pump_pwm_chs = pwm_map.get('pump_ch') or []
+    for i, ch in enumerate(pump_pwm_chs, start=1):
         if 1 <= ch <= 12:
             pipe.set(K.pwm_duty_pump(i), duties[ch - 1])
     for i, ch in enumerate(pwm_map.get('fan_ch') or [], start=1):
         if 1 <= ch <= 12:
             pipe.set(K.pwm_duty_fan(i), duties[ch - 1])
+
+    # ── 펌프 유량 추정 (duty 기반) ──
+    if pump_pwm_chs and pump_cfg:
+        valid_duties = [duties[ch - 1] for ch in pump_pwm_chs if 1 <= ch <= 12]
+        if valid_duties:
+            avg_duty = sum(valid_duties) / len(valid_duties)
+            max_lpm = float(pump_cfg.get('max_flow_lpm', 16))
+            mult = float(pump_cfg.get('flow_multiplier', 1.0))
+            flow_lpm = max_lpm * (avg_duty / 1000.0) * mult
+            pipe.set(K.COOLANT_FLOW_LPM, round(flow_lpm, 2))
 
     pipe.execute()
     return True

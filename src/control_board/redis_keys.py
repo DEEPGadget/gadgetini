@@ -21,9 +21,11 @@ NTC_LOGICAL_TO_KEY = {
     'outlet2': COOLANT_TEMP_OUTLET2,
 }
 
-# Tach RPM (신규)
-PUMP_RPM = 'pump_rpm'
+# 펌프 유량 추정 — 유량 센서 미장착이라 PWM duty + 토폴로지 multiplier 기반.
+# 자세한 모델은 config.yaml의 pump 섹션 참고.
+COOLANT_FLOW_LPM = 'coolant_flow_lpm'
 
+# 팬 Tach RPM
 def fan_rpm(idx):
     return f'fan_rpm_{idx}'
 

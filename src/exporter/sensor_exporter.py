@@ -25,7 +25,7 @@
 # │ coolant_level           │ 0/1 bool   │ gadget │ coolant level (1=OK)      │
 # │ air_temp                │ °C         │ gadget │ internal air temp (DHT11) │
 # │ air_humit               │ %RH        │ gadget │ internal air humidity     │
-# │ pump_rpm                │ rpm        │ gadget │ pump tach avg RPM         │
+# │ coolant_flow_lpm        │ L/min      │ gadget │ pump duty 기반 유량 추정  │
 # │ fan_rpm_{1~N}           │ rpm        │ gadget │ per-fan tach RPM          │
 # │ pwm_duty_pump_{1~N}     │ 0.1%       │ gadget │ pump PWM duty (HR 0~3)    │
 # │ pwm_duty_fan_{1~N}      │ 0.1%       │ gadget │ fan PWM duty (HR 4~11)    │
@@ -63,7 +63,7 @@
 # │ air_temp                │ °C         │ gadget │ internal air temp (DHT11) │
 # │ air_humit               │ %RH        │ gadget │ internal air humidity     │
 # │ chassis_stabil          │ 0/1 bool   │ gadget │ chassis stable (MPU6050)  │
-# │ pump_rpm                │ rpm        │ gadget │ pump tach avg RPM         │
+# │ coolant_flow_lpm        │ L/min      │ gadget │ pump duty 기반 유량 추정  │
 # │ fan_rpm_{1~N}           │ rpm        │ gadget │ per-fan tach RPM          │
 # │ pwm_duty_pump_{1~N}     │ 0.1%       │ gadget │ pump PWM duty (HR 0~3)    │
 # │ pwm_duty_fan_{1~N}      │ 0.1%       │ gadget │ fan PWM duty (HR 4~11)    │
@@ -144,9 +144,10 @@ class DLCCollector:
         if MACHINE == 'dg5w':
             g.add_metric([srv, "chassis", "stability", "bool", ""], get_int("chassis_stabil"))
 
-        # Pump / Fan tach RPM (control_board polling이 SET)
-        if client.exists("pump_rpm"):
-            g.add_metric([srv, "cooling", "pump_rpm", "rpm", ""], get_int("pump_rpm"))
+        # Coolant flow (control_board가 pump duty 기반으로 추정 SET)
+        if client.exists("coolant_flow_lpm"):
+            g.add_metric([srv, "cooling", "coolant_flow", "L/min", ""], get_float("coolant_flow_lpm"))
+        # Fan tach RPM (control_board polling이 IR 21~22에서 읽어 SET)
         for fan_key in sorted(client.keys("fan_rpm_*")):
             idx = fan_key.split("_")[-1]
             g.add_metric([srv, "cooling", "fan_rpm", "rpm", idx], get_int(fan_key))

@@ -65,6 +65,19 @@ comm:
   timeout_after_failures: 3
   disconnected_after_failures: 10
 
+# === 펌프 유량 추정 ===
+# 유량 센서 미장착 → PWM duty 기반 1차 근사. 실측 보정 후 multiplier 조정 권장.
+# 모델: flow_lpm = max_flow_lpm × (avg_pump_duty / 1000) × flow_multiplier
+pump:
+  # 단일 펌프 (Koolance PMP-500) 최대 유량 @ H=0 (12V 기준)
+  max_flow_lpm: 16
+
+  # 토폴로지 multiplier — 현재: 4 펌프 (2 series × 2 parallel loops)
+  # 직렬 2 펌프 ≈ 1.47× (D5 측정 사례 — Martin's Liquid Lab dual-D5 series 1.09→1.6 GPM).
+  # 병렬 루프는 cold-plate 매니폴드 의존이라 곱셈 보수적으로 생략 — 표시값은 per-loop.
+  # 시스템 derate(back-pressure)는 이 multiplier에 흡수되어 있다고 가정.
+  flow_multiplier: 1.47
+
 # === 입력 채널 와이어링 (TBD — 도면 확정 후 갱신) ===
 # 각 센서가 PCB의 어느 입력 채널에 연결되는지 명시.
 # 미연결 항목은 null. NTC 자동 감지(-999)로도 일부 fallback 가능.
@@ -85,8 +98,8 @@ wiring:
 
   # Pulse Freq 입력 (IR 13~24, CH1~12)
   # 가정: PWM 출력 CH N의 Tach가 같은 번호 Pulse 입력 CH N으로 라우팅
+  # 펌프 Tach는 미사용 (유량은 duty 기반 추정 — pump 섹션 참고).
   pulse:
-    pump_tach_chs: [1, 2, 3, 4]   # 펌프 4대 Tach
     fan_tach_chs:  [9, 10]        # 팬 2채널 Tach
 
   # PWM 출력 (HR 0~11, CH1~12)
