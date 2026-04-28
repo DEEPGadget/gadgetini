@@ -51,8 +51,10 @@ def run(pcb, rd, cfg, controller):
             h = env_sensors.get_air_humit()
             if h is not None:
                 rd.set(K.AIR_HUMIT, round(h, 1))
-            # MPU6050 — graceful 항상 1
-            rd.set(K.CHASSIS_STABIL, env_sensors.get_chassis_stabil())
+            # MPU6050 — dg5w 한정, dg5r은 None 반환하므로 SET 생략
+            stabil = env_sensors.get_chassis_stabil()
+            if stabil is not None:
+                rd.set(K.CHASSIS_STABIL, stabil)
         except Exception:
             log.exception("env_sensors read failed")
 
