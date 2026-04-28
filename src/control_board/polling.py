@@ -3,6 +3,10 @@
 NTC, DIN, Pulse Freq를 한 cycle에 읽고 Redis로 publish.
 NTC -999 sentinel(미연결)은 키 자체를 DEL하여 exporter 측에서 자동 제외.
 inlet/outlet 페어가 둘 다 valid일 때만 ΔT 계산.
+
+펌프/팬 PWM duty 키와 fan_rpm 키는 wiring에 매핑된 채널 중 **Tach 신호가 한 번이라도
+관측된** 채널만 SET (sticky). 펌프/팬이 물리적으로 미연결이면 PCB가 신호를 보내도
+모터가 안 돌아 tach=0 → 키 자체 SET 안 됨 → exporter `client.exists()` 게이트로 자동 제외.
 """
 import logging
 
@@ -11,6 +15,15 @@ from . import redis_keys as K
 from .modbus_client import s16
 
 log = logging.getLogger(__name__)
+
+
+# ──────────────────────────────────────────────
+# 연결 감지 sticky state — service lifetime 동안 누적
+# (한 번이라도 tach > 0 이면 "연결됨"으로 표시. 일시적 정지/seizure로 0으로 떨어져도
+# 유지되며, 서비스 재시작 시 초기화된다.)
+# ──────────────────────────────────────────────
+_pump_connected = set()    # 논리 인덱스 (1-based)
+_fan_connected = set()
 
 
 def poll_once(pcb, rd, cfg):
@@ -65,40 +78,63 @@ def poll_once(pcb, rd, cfg):
         # active-high 가정: bit=1 → 정상(HIGH), bit=0 → 부족
         pipe.set(K.COOLANT_LEVEL, 1 if (bits >> level_bit) & 1 else 0)
 
-    # ── Pulse Freq (IR 13~24) — 팬 Tach만 사용 (펌프는 duty 기반 유량 추정) ──
+    # ── Pulse Freq (IR 13~24) ──
+    # 팬은 Tach RPM 표시, 펌프는 유량 추정. 양쪽 모두 sticky 연결 감지에 사용.
     pulses = pcb.read_input_registers(R.IR_PULSE_FREQ_BASE, 12)
     if pulses is None:
         return False
-    pulse_map = wiring.get('pulse', {}) or {}
 
-    fan_chs = pulse_map.get('fan_tach_chs') or []
-    for i, ch in enumerate(fan_chs, start=1):
-        hz = pulses[ch - 1]
-        rpm = hz * 30                                      # 2 p/r → RPM = Hz × 30
-        pipe.set(K.fan_rpm(i), rpm)
+    pwm_map = wiring.get('pwm', {}) or {}
+    pump_pwm_chs = pwm_map.get('pump_ch') or []
+    fan_pwm_chs = pwm_map.get('fan_ch') or []
+
+    # 연결 감지 sticky: tach > 0 이 한 번이라도 관측된 채널만 등록.
+    # 가정: PWM 출력 CH N의 Tach가 같은 번호 Pulse 입력 CH N으로 라우팅.
+    for i, ch in enumerate(pump_pwm_chs, start=1):
+        if 1 <= ch <= 12 and pulses[ch - 1] > 0:
+            _pump_connected.add(i)
+    for i, ch in enumerate(fan_pwm_chs, start=1):
+        if 1 <= ch <= 12 and pulses[ch - 1] > 0:
+            _fan_connected.add(i)
+
+    # 팬 RPM — 연결 확인된 채널만 SET (2 p/r → RPM = Hz × 30)
+    for i, ch in enumerate(fan_pwm_chs, start=1):
+        if i in _fan_connected and 1 <= ch <= 12:
+            pipe.set(K.fan_rpm(i), pulses[ch - 1] * 30)
+        else:
+            pipe.delete(K.fan_rpm(i))
 
     # ── PWM duty readback (HR 0~11) ──
     duties = pcb.read_holding_registers(R.HR_PWM_DUTY_BASE, 12)
     if duties is None:
         return False
-    pwm_map = wiring.get('pwm', {}) or {}
-    pump_pwm_chs = pwm_map.get('pump_ch') or []
-    for i, ch in enumerate(pump_pwm_chs, start=1):
-        if 1 <= ch <= 12:
-            pipe.set(K.pwm_duty_pump(i), duties[ch - 1])
-    for i, ch in enumerate(pwm_map.get('fan_ch') or [], start=1):
-        if 1 <= ch <= 12:
-            pipe.set(K.pwm_duty_fan(i), duties[ch - 1])
 
-    # ── 펌프 유량 추정 (duty 기반) ──
-    if pump_pwm_chs and pump_cfg:
-        valid_duties = [duties[ch - 1] for ch in pump_pwm_chs if 1 <= ch <= 12]
-        if valid_duties:
-            avg_duty = sum(valid_duties) / len(valid_duties)
-            max_lpm = float(pump_cfg.get('max_flow_lpm', 16))
-            mult = float(pump_cfg.get('flow_multiplier', 1.0))
-            flow_lpm = max_lpm * (avg_duty / 1000.0) * mult
-            pipe.set(K.COOLANT_FLOW_LPM, round(flow_lpm, 2))
+    # PWM duty — 연결 확인된 채널만 SET, 나머지는 DEL (UI에서 자동 제외)
+    for i, ch in enumerate(pump_pwm_chs, start=1):
+        if i in _pump_connected and 1 <= ch <= 12:
+            pipe.set(K.pwm_duty_pump(i), duties[ch - 1])
+        else:
+            pipe.delete(K.pwm_duty_pump(i))
+    for i, ch in enumerate(fan_pwm_chs, start=1):
+        if i in _fan_connected and 1 <= ch <= 12:
+            pipe.set(K.pwm_duty_fan(i), duties[ch - 1])
+        else:
+            pipe.delete(K.pwm_duty_fan(i))
+
+    # ── 펌프 유량 추정 (연결 확인된 펌프 duty의 평균 사용) ──
+    connected_pump_duties = [
+        duties[ch - 1]
+        for i, ch in enumerate(pump_pwm_chs, start=1)
+        if i in _pump_connected and 1 <= ch <= 12
+    ]
+    if connected_pump_duties and pump_cfg:
+        avg_duty = sum(connected_pump_duties) / len(connected_pump_duties)
+        max_lpm = float(pump_cfg.get('max_flow_lpm', 16))
+        mult = float(pump_cfg.get('flow_multiplier', 1.0))
+        flow_lpm = max_lpm * (avg_duty / 1000.0) * mult
+        pipe.set(K.COOLANT_FLOW_LPM, round(flow_lpm, 2))
+    else:
+        pipe.delete(K.COOLANT_FLOW_LPM)
 
     pipe.execute()
     return True

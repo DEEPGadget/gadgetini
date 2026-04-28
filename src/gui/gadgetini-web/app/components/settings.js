@@ -105,7 +105,15 @@ export default function Settings() {
   });
 
   // ── Control Board state ──
-  const [cbStatus, setCbStatus] = useState({ active: false, mode: "auto" });
+  // status: { active, service_active, pcb_connected, comm_status, mode }
+  // active = service_active && pcb_connected (UI 활성/비활성 단일 게이트)
+  const [cbStatus, setCbStatus] = useState({
+    active: false,
+    service_active: false,
+    pcb_connected: false,
+    comm_status: "unknown",
+    mode: "auto",
+  });
   const [cbPwm, setCbPwm] = useState({
     pump: [null, null, null, null],
     fan: [null, null, null, null, null, null, null, null],
@@ -579,17 +587,38 @@ export default function Settings() {
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label="PCB Status" colorClass="bg-emerald-700" />
             <div className="bg-white p-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+              {/* Service running 여부 */}
               <div className="flex items-center gap-2">
                 <span
                   className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                    cbStatus.active ? "bg-green-400" : "bg-red-400"
+                    cbStatus.service_active ? "bg-green-400" : "bg-red-400"
                   }`}
                 />
                 <span className="text-sm font-semibold text-gray-800">
-                  {cbStatus.active ? "Active" : "Inactive"}
+                  {cbStatus.service_active ? "Service Active" : "Service Inactive"}
                 </span>
-                <span className="text-xs text-gray-400">
-                  control_board.service
+                <span className="text-xs text-gray-400">control_board.service</span>
+              </div>
+              {/* PCB Modbus 통신 상태 */}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                    cbStatus.pcb_connected
+                      ? "bg-green-400"
+                      : cbStatus.service_active
+                      ? "bg-amber-400"
+                      : "bg-gray-300"
+                  }`}
+                />
+                <span className="text-sm font-semibold text-gray-800">
+                  {cbStatus.pcb_connected
+                    ? "PCB Connected"
+                    : cbStatus.service_active
+                    ? `PCB ${cbStatus.comm_status === "timeout" ? "Timeout" : "Disconnected"}`
+                    : "PCB Status Unknown"}
+                </span>
+                <span className="text-xs text-gray-400 font-mono">
+                  comm: {cbStatus.comm_status}
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -608,7 +637,9 @@ export default function Settings() {
               </div>
               {!cbStatus.active && (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1">
-                  ⚠ Service inactive — controls disabled
+                  {!cbStatus.service_active
+                    ? "⚠ control_board.service inactive — controls disabled"
+                    : "⚠ PCB unreachable — controls disabled"}
                 </p>
               )}
             </div>
