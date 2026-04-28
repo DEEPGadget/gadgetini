@@ -21,7 +21,14 @@
       "Bash(redis-cli keys *)",
       "Bash(redis-cli mget *)",
       "Bash(redis-cli get *)",
-      "Bash(sudo lsof *)"
+      "Bash(sudo lsof *)",
+      "Bash(node --check app/api/control/status/route.js)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"console.log\\('ioredis', require\\('/home/gadgetini/gadgetini/src/gui/gadgetini-web/node_modules/ioredis/package.json'\\).version\\)\")",
+      "Bash(node -e \"console.log\\('js-yaml', require\\('/home/gadgetini/gadgetini/src/gui/gadgetini-web/node_modules/js-yaml/package.json'\\).version\\)\")",
+      "Bash(npx --no-install eslint --quiet app/components/settings.js lib/redis.js app/api/control/status/route.js app/api/control/pwm/route.js app/api/control/fan-curve/route.js)",
+      "Bash(systemctl list-unit-files *)",
+      "Bash(npm run *)"
     ]
   }
 }

@@ -104,6 +104,16 @@ export default function Settings() {
     applyDisplayConfig: false,
   });
 
+  // ── Control Board state ──
+  const [cbStatus, setCbStatus] = useState({ active: false, mode: "auto" });
+  const [cbPwm, setCbPwm] = useState({
+    pump: [null, null, null, null],
+    fan: [null, null, null, null, null, null, null, null],
+  });
+  const [fanCurve, setFanCurve] = useState({ hysteresis_c: 1.0, stages: [] });
+  const [fanCurveLoading, setFanCurveLoading] = useState(true);
+  const [fanCurveSaving, setFanCurveSaving] = useState(false);
+
   useEffect(() => {
     getDisplayConfig().then(setDisplayMode);
     fetch("/api/ip/self")
@@ -179,6 +189,64 @@ export default function Settings() {
       console.error(error);
     } finally {
       setLoadingState({ ...loadingState, applyDisplayConfig: false });
+    }
+  };
+
+  // ── Control Board polls ──
+  // Status: 5s cadence — service active 여부 확인 (systemctl is-active)
+  useEffect(() => {
+    const fetchStatus = () =>
+      fetch("/api/control/status")
+        .then((r) => r.json())
+        .then(setCbStatus)
+        .catch(() => {});
+    fetchStatus();
+    const id = setInterval(fetchStatus, 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  // PWM duty readback: 2s cadence — pump CH1~4 + fan CH5~12
+  useEffect(() => {
+    const fetchPwm = () =>
+      fetch("/api/control/pwm")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d && Array.isArray(d.pump) && Array.isArray(d.fan)) setCbPwm(d);
+        })
+        .catch(() => {});
+    fetchPwm();
+    const id = setInterval(fetchPwm, 2000);
+    return () => clearInterval(id);
+  }, []);
+
+  // fan_curve: 최초 1회만 fetch (편집 중 외부 변경 덮어쓰지 않도록)
+  useEffect(() => {
+    setFanCurveLoading(true);
+    fetch("/api/control/fan-curve")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d && Array.isArray(d.stages)) setFanCurve(d);
+      })
+      .catch(() => {})
+      .finally(() => setFanCurveLoading(false));
+  }, []);
+
+  const handleFanCurveSave = async () => {
+    setFanCurveSaving(true);
+    try {
+      const r = await fetch("/api/control/fan-curve", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(fanCurve),
+      });
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        alert(`Failed to save fan curve: ${e.error || r.status}`);
+      }
+    } catch (err) {
+      alert(`Failed to save fan curve: ${err?.message || err}`);
+    } finally {
+      setFanCurveSaving(false);
     }
   };
 
@@ -498,6 +566,239 @@ export default function Settings() {
                 </>
               )}
             </button>
+          </div>
+
+          {/* ══════════════════════════════════════
+              Control Board
+          ══════════════════════════════════════ */}
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1 pt-3">
+            Control Board
+          </p>
+
+          {/* ── Status + Mode ── */}
+          <div className="rounded-2xl overflow-hidden shadow-sm">
+            <SectionHeader label="PCB Status" colorClass="bg-emerald-700" />
+            <div className="bg-white p-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                    cbStatus.active ? "bg-green-400" : "bg-red-400"
+                  }`}
+                />
+                <span className="text-sm font-semibold text-gray-800">
+                  {cbStatus.active ? "Active" : "Inactive"}
+                </span>
+                <span className="text-xs text-gray-400">
+                  control_board.service
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-400 uppercase tracking-wider">Mode</span>
+                <label className="flex items-center gap-1.5 text-sm">
+                  <input type="radio" name="cb-mode" checked readOnly />
+                  Auto
+                </label>
+                <label
+                  className="flex items-center gap-1.5 text-sm text-gray-300 cursor-not-allowed"
+                  title="TBD — Manual mode not yet implemented"
+                >
+                  <input type="radio" name="cb-mode" disabled />
+                  Manual <span className="text-[10px]">(TBD)</span>
+                </label>
+              </div>
+              {!cbStatus.active && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1">
+                  ⚠ Service inactive — controls disabled
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* ── PWM Duty (read-only) ── */}
+          <div className="rounded-2xl overflow-hidden shadow-sm">
+            <SectionHeader label="PWM Duty (read-only)" colorClass="bg-emerald-600" />
+            <div className="bg-emerald-50/60 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl p-3">
+                <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
+                  Pumps · CH 1~4
+                </p>
+                <div className="space-y-1">
+                  {cbPwm.pump.map((duty, i) => (
+                    <div key={`pump-${i}`} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 font-mono">CH{i + 1}</span>
+                      <span className="font-mono">
+                        {duty === null ? (
+                          <span className="text-gray-300">—</span>
+                        ) : (
+                          <>
+                            {duty}{" "}
+                            <span className="text-xs text-gray-400">
+                              ({(duty / 10).toFixed(1)}%)
+                            </span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-white rounded-xl p-3">
+                <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
+                  Fans · CH 5~12
+                </p>
+                <div className="space-y-1">
+                  {cbPwm.fan.map((duty, i) => (
+                    <div key={`fan-${i}`} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 font-mono">CH{i + 5}</span>
+                      <span className="font-mono">
+                        {duty === null ? (
+                          <span className="text-gray-300">—</span>
+                        ) : (
+                          <>
+                            {duty}{" "}
+                            <span className="text-xs text-gray-400">
+                              ({(duty / 10).toFixed(1)}%)
+                            </span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Fan Curve editor ── */}
+          <div className="rounded-2xl overflow-hidden shadow-sm">
+            <SectionHeader label="Fan Curve (Auto)" colorClass="bg-emerald-500" />
+            <div className="bg-white p-4">
+              {fanCurveLoading ? (
+                <p className="text-sm text-gray-400">Loading...</p>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">
+                      Hysteresis (°C)
+                    </span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      max={10}
+                      disabled={!cbStatus.active}
+                      value={fanCurve.hysteresis_c}
+                      onChange={(e) =>
+                        setFanCurve((p) => ({
+                          ...p,
+                          hysteresis_c: Number(e.target.value) || 0,
+                        }))
+                      }
+                      className="w-20 border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                    />
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs text-gray-500 border-b uppercase tracking-wider">
+                        <th className="text-left py-2 font-bold">Until Outlet (°C)</th>
+                        <th className="text-left py-2 font-bold">Duty (0~1000)</th>
+                        <th className="text-left py-2 font-bold">%</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {fanCurve.stages.map((s, i) => (
+                        <tr key={i} className="border-b last:border-b-0">
+                          <td className="py-2">
+                            <input
+                              type="number"
+                              disabled={!cbStatus.active}
+                              value={s.until_outlet ?? ""}
+                              placeholder="(ceiling)"
+                              onChange={(e) => {
+                                const v = e.target.value === "" ? null : Number(e.target.value);
+                                setFanCurve((p) => ({
+                                  ...p,
+                                  stages: p.stages.map((x, j) =>
+                                    j === i ? { ...x, until_outlet: v } : x
+                                  ),
+                                }));
+                              }}
+                              className="w-24 border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                            />
+                          </td>
+                          <td className="py-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={1000}
+                              disabled={!cbStatus.active}
+                              value={s.duty}
+                              onChange={(e) => {
+                                const v = Number(e.target.value);
+                                setFanCurve((p) => ({
+                                  ...p,
+                                  stages: p.stages.map((x, j) =>
+                                    j === i ? { ...x, duty: v } : x
+                                  ),
+                                }));
+                              }}
+                              className="w-24 border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                            />
+                          </td>
+                          <td className="py-2 text-xs text-gray-500 font-mono">
+                            {(s.duty / 10).toFixed(1)}%
+                          </td>
+                          <td className="py-2 text-right">
+                            <button
+                              disabled={!cbStatus.active || fanCurve.stages.length <= 1}
+                              onClick={() =>
+                                setFanCurve((p) => ({
+                                  ...p,
+                                  stages: p.stages.filter((_, j) => j !== i),
+                                }))
+                              }
+                              className="text-xs text-red-500 hover:text-red-700 disabled:text-gray-300 disabled:cursor-not-allowed"
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="flex justify-between items-center pt-3">
+                    <button
+                      disabled={!cbStatus.active}
+                      onClick={() =>
+                        setFanCurve((p) => ({
+                          ...p,
+                          stages: [...p.stages, { until_outlet: null, duty: 1000 }],
+                        }))
+                      }
+                      className="text-xs px-3 py-1.5 border border-emerald-300 rounded-lg text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      + Add Stage
+                    </button>
+                    <button
+                      disabled={!cbStatus.active || fanCurveSaving}
+                      onClick={handleFanCurveSave}
+                      title={!cbStatus.active ? "control_board.service is inactive" : ""}
+                      className="inline-flex items-center justify-center h-9 px-5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {fanCurveSaving ? (
+                        <LoadingSpinner color={"white"} />
+                      ) : (
+                        <>
+                          <CheckIcon className="w-4 h-4 mr-2" />
+                          Save
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 

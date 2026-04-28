@@ -51,6 +51,18 @@
       "host_data": "0"
     },
     {
+      "key": "coolant_flow",
+      "title": "Coolant Flow",
+      "unit": "L/min",
+      "min": 0,
+      "max": 30,
+      "read_rate": 1,
+      "redis_key": "coolant_flow_lpm",
+      "host_data": "0",
+      "icon": "0xf0510",
+      "label": "FLOW"
+    },
+    {
       "key": "chassis_temp",
       "title": "Chassis Temperature",
       "unit": "°C",
@@ -171,6 +183,19 @@
       "host_data": "1",
       "icon": "0xf0ee0",
       "label": "CPU{i}_P"
+    },
+    {
+      "key": "fan_rpm_{i}",
+      "count": "fan_count",
+      "title": "Fan{i} RPM",
+      "unit": "RPM",
+      "min": 0,
+      "max": 8000,
+      "read_rate": 1,
+      "redis_key": "fan_rpm_{i}",
+      "host_data": "0",
+      "icon": "0xf0510",
+      "label": "F{i}"
     }
   ],
   "viewers": [
@@ -308,6 +333,24 @@
         "sensor_keys": "cpu_temp_{i}",
         "colors": "$CPU_COLORS",
         "labels": "CPU{i}"
+      }
+    },
+    {
+      "key": "coolant_flow",
+      "type": "SensorViewer",
+      "params": {
+        "title": "Coolant Flow",
+        "sensor_key": "coolant_flow"
+      }
+    },
+    {
+      "key": "fan_rpm",
+      "type": "MultiSensorViewer",
+      "params": {
+        "title": "Fan RPM",
+        "sensor_keys": ["fan_rpm_1", "fan_rpm_2"],
+        "colors": [[0, 200, 255], [255, 140, 0]],
+        "labels": ["F1", "F2"]
       }
     }
   ]

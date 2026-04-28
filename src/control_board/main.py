@@ -82,7 +82,7 @@ def main():
 
     log.info("entering main loop @ %.2f s cadence", cfg['loop']['cycle_seconds'])
     try:
-        run(pcb, rd, cfg, controller)
+        run(pcb, rd, cfg, controller, CONFIG_PATH)
     except KeyboardInterrupt:
         log.info("interrupted")
     finally:
