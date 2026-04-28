@@ -13,22 +13,6 @@ ADC = ADS1256.ADS1256()
 ADC.ADS1256_init()
 
 
-def _probe_dht11():
-    try:
-        import adafruit_dht
-        dev = adafruit_dht.DHT11(board.D4)
-        for _ in range(5):
-            try:
-                if dev.temperature is not None and dev.humidity is not None:
-                    return dev
-            except Exception:
-                pass
-            time.sleep(1)
-    except Exception:
-        pass
-    return None
-
-
 def _probe_hdc302x():
     try:
         import busio
@@ -41,11 +25,23 @@ def _probe_hdc302x():
         return None
 
 
-tempHumidDevice = _probe_dht11()
-tempHumidType = 'dht11' if tempHumidDevice is not None else None
+def _probe_dht11():
+    # GPIO 셋업만 검증. DHT11은 read가 본래 flaky해서 probe 단계에서
+    # read 성공을 요구하면 startup 운에 따라 영구적으로 None에 갇혀 0이 박힘.
+    # 런타임 read는 get_air_temp/humit에서 자체 retry함.
+    try:
+        import adafruit_dht
+        return adafruit_dht.DHT11(board.D4)
+    except Exception:
+        return None
+
+
+# HDC302x를 먼저 시도 (I2C는 deterministic). 없으면 DHT11로 fallback.
+tempHumidDevice = _probe_hdc302x()
+tempHumidType = 'hdc302x' if tempHumidDevice is not None else None
 if tempHumidDevice is None:
-    tempHumidDevice = _probe_hdc302x()
-    tempHumidType = 'hdc302x' if tempHumidDevice is not None else None
+    tempHumidDevice = _probe_dht11()
+    tempHumidType = 'dht11' if tempHumidDevice is not None else None
 print(f"Temp/humid sensor: {tempHumidType or 'none'}")
 
 
@@ -107,7 +103,7 @@ def get_air_humit():
 
 def get_coolant_temp(ad_index, adc_samples=None):
     VREF = 5.0
-    VIN_DIV = 3.3
+    VIN_DIV = 5.0
     R_FIXED = 10000.0
     SH_A = 0.0010957
     SH_B = 0.0002395
