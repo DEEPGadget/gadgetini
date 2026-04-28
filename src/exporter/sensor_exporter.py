@@ -1,12 +1,14 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# Redis Keys written by data_crawler.py / data_crawler_host.py / control_board
-# Writer column: gadgetini = data_crawler.py, host = data_crawler_host.py,
-#                control_board = src/control_board/polling.py + main_loop.py
+# Redis Keys written by Gadgetini Pi side / monitored host side.
+# Writer column:
+#   gadget = Pi-side writer — control_board (PCB 장착 hw) 또는 data_crawler.py (legacy).
+#            앞으로 모든 제품군은 control_board로 통합 예정.
+#   host   = data_crawler_host.py (모니터링 대상 호스트).
 #
-# control_board가 active일 때 (PCB 연결 시): 기존 coolant_*, air_*, chassis_stabil 키는
-# control_board가 SET (data_crawler 대신). 추가로 pump_rpm, fan_rpm_*, pwm_duty_*,
-# comm_* 신규 키도 SET.
+# 미연결 채널·미장착 센서는 키 자체가 없음 (writer가 SET 생략) → exporter의
+# `client.exists()` / `client.keys()` 게이트로 자동 제외. 표는 "최대 가능 키 목록".
+# 진단용 보조 키: comm_consecutive_failures(count) — control_board가 SET.
 #
 # ┌─────────────────────────────────────────────────────────────────────────────┐
 # │ MACHINE: dg5r                                                               │
@@ -23,6 +25,11 @@
 # │ coolant_level           │ 0/1 bool   │ gadget │ coolant level (1=OK)      │
 # │ air_temp                │ °C         │ gadget │ internal air temp (DHT11) │
 # │ air_humit               │ %RH        │ gadget │ internal air humidity     │
+# │ pump_rpm                │ rpm        │ gadget │ pump tach avg RPM         │
+# │ fan_rpm_{1~N}           │ rpm        │ gadget │ per-fan tach RPM          │
+# │ pwm_duty_pump_{1~N}     │ 0.1%       │ gadget │ pump PWM duty (HR 0~3)    │
+# │ pwm_duty_fan_{1~N}      │ 0.1%       │ gadget │ fan PWM duty (HR 4~11)    │
+# │ comm_status             │ enum       │ gadget │ ok/timeout/disconnected   │
 # │ gpu_name_{0~7}          │ string     │ host   │ GPU model name            │
 # │ gpu_temp_{0~7}          │ °C         │ host   │ GPU temperature           │
 # │ gpu_curr_pwr_{0~7}      │ W          │ host   │ GPU current power         │
@@ -56,6 +63,11 @@
 # │ air_temp                │ °C         │ gadget │ internal air temp (DHT11) │
 # │ air_humit               │ %RH        │ gadget │ internal air humidity     │
 # │ chassis_stabil          │ 0/1 bool   │ gadget │ chassis stable (MPU6050)  │
+# │ pump_rpm                │ rpm        │ gadget │ pump tach avg RPM         │
+# │ fan_rpm_{1~N}           │ rpm        │ gadget │ per-fan tach RPM          │
+# │ pwm_duty_pump_{1~N}     │ 0.1%       │ gadget │ pump PWM duty (HR 0~3)    │
+# │ pwm_duty_fan_{1~N}      │ 0.1%       │ gadget │ fan PWM duty (HR 4~11)    │
+# │ comm_status             │ enum       │ gadget │ ok/timeout/disconnected   │
 # │ gpu_name_{0~7}          │ string     │ host   │ GPU model name            │
 # │ gpu_temp_{0~7}          │ °C         │ host   │ GPU temperature           │
 # │ gpu_curr_pwr_{0~7}      │ W          │ host   │ GPU current power         │
