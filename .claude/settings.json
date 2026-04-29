@@ -84,7 +84,11 @@
       "Bash(journalctl -u control_board.service -n 20 --no-pager)",
       "Bash(echo \"=== exit=$? ===\")",
       "Bash(sudo stty *)",
-      "Bash(journalctl -u pcb_bootstrap.service -n 15 --no-pager)"
+      "Bash(journalctl -u pcb_bootstrap.service -n 15 --no-pager)",
+      "Bash(journalctl -u sensor_exporter.service -n 5 --no-pager)",
+      "Bash(journalctl -u usb-gadget-up.service -n 10 --no-pager)",
+      "Bash(journalctl -u sensor_exporter.service --since \"1 hour ago\" --no-pager)",
+      "Bash(sudo ss *)"
     ]
   }
 }
