@@ -36,10 +36,12 @@ export async function GET() {
       display: getConfigValue("display") === "on",
       coolant: getConfigValue("coolant") === "on",
       coolant_detail: getConfigValue("coolant_detail") === "on",
+      coolant_flow: getConfigValue("coolant_flow") === "on",
       chassis: getConfigValue("chassis") === "on",
       cpu: getConfigValue("cpu") === "on",
       gpu: getConfigValue("gpu") === "on",
       memory: getConfigValue("memory") === "on",
+      fan_rpm: getConfigValue("fan_rpm") === "on",
       coolant_daily: getConfigValue("coolant_daily") === "on",
       gpu_daily: getConfigValue("gpu_daily") === "on",
       cpu_daily: getConfigValue("cpu_daily") === "on",
@@ -48,6 +50,7 @@ export async function GET() {
       rotationTime: parseInt(getConfigValue("rotation_sec") || "5", 10),
       gpuCount: parseInt(getConfigValue("gpu_count") || "8", 10),
       cpuCount: parseInt(getConfigValue("cpu_count") || "2", 10),
+      fanCount: parseInt(getConfigValue("fan_count") || "2", 10),
     };
 
     return NextResponse.json(configData);
@@ -75,10 +78,12 @@ export async function POST(request) {
         .replace(/^display\s*=\s*.*/m, `display=${onOff(displayMode.display)}`)
         .replace(/^coolant\s*=\s*.*/m, `coolant=${onOff(displayMode.coolant)}`)
         .replace(/^coolant_detail\s*=\s*.*/m, `coolant_detail=${onOff(displayMode.coolant_detail)}`)
+        .replace(/^coolant_flow\s*=\s*.*/m, `coolant_flow=${onOff(displayMode.coolant_flow)}`)
         .replace(/^chassis\s*=\s*.*/m, `chassis=${onOff(displayMode.chassis)}`)
         .replace(/^cpu\s*=\s*.*/m, `cpu=${onOff(displayMode.cpu)}`)
         .replace(/^gpu\s*=\s*.*/m, `gpu=${onOff(displayMode.gpu)}`)
         .replace(/^memory\s*=\s*.*/m, `memory=${onOff(displayMode.memory)}`)
+        .replace(/^fan_rpm\s*=\s*.*/m, `fan_rpm=${onOff(displayMode.fan_rpm)}`)
         .replace(/^coolant_daily\s*=\s*.*/m, `coolant_daily=${onOff(displayMode.coolant_daily)}`)
         .replace(/^gpu_daily\s*=\s*.*/m, `gpu_daily=${onOff(displayMode.gpu_daily)}`)
         .replace(/^cpu_daily\s*=\s*.*/m, `cpu_daily=${onOff(displayMode.cpu_daily)}`)
@@ -86,7 +91,8 @@ export async function POST(request) {
         .replace(/^leak\s*=\s*.*/m, `leak=${onOff(displayMode.leak)}`)
         .replace(/^rotation_sec\s*=\s*.*/m, `rotation_sec=${displayMode.rotationTime}`)
         .replace(/^gpu_count\s*=\s*.*/m, `gpu_count=${displayMode.gpuCount}`)
-        .replace(/^cpu_count\s*=\s*.*/m, `cpu_count=${displayMode.cpuCount}`);
+        .replace(/^cpu_count\s*=\s*.*/m, `cpu_count=${displayMode.cpuCount}`)
+        .replace(/^fan_count\s*=\s*.*/m, `fan_count=${displayMode.fanCount}`);
 
       await fs.promises.writeFile(configPath, config, "utf-8");
     };

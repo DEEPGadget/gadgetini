@@ -73,10 +73,12 @@ export default function Settings() {
     display: true,
     coolant: false,
     coolant_detail: true,
+    coolant_flow: true,
     chassis: true,
     cpu: true,
     gpu: true,
     memory: true,
+    fan_rpm: true,
     coolant_daily: true,
     gpu_daily: true,
     cpu_daily: true,
@@ -85,6 +87,7 @@ export default function Settings() {
     rotationTime: 7,
     gpuCount: 8,
     cpuCount: 2,
+    fanCount: 2,
   });
   const [IPMode, setIPMode] = useState("dhcp");
   const IPRefs = useRef({
@@ -460,15 +463,18 @@ export default function Settings() {
           {/* ── Hardware Count ── */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label="Hardware Count" colorClass="bg-gray-600" />
-            <div className="bg-white p-4 grid grid-cols-2 gap-4">
+            <div className="bg-white p-4 grid grid-cols-3 gap-4">
               {[
                 { label: "GPU Count", key: "gpuCount", min: 0, max: 8 },
                 { label: "CPU Count", key: "cpuCount", min: 1, max: 4 },
+                { label: "Fan Count", key: "fanCount", min: 0, max: 8 },
               ].map(({ label, key, min, max }) => (
                 <div key={key} className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                   <div>
                     <p className="text-sm font-semibold text-gray-800">{label}</p>
-                    <p className="text-xs text-gray-400">config.ini {key === "gpuCount" ? "gpu_count" : "cpu_count"}</p>
+                    <p className="text-xs text-gray-400">
+                      config.ini {key === "gpuCount" ? "gpu_count" : key === "cpuCount" ? "cpu_count" : "fan_count"}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 shadow-sm border border-gray-100">
                     <input
@@ -522,6 +528,8 @@ export default function Settings() {
                   { label: "Chassis", key: "chassis" },
                   { label: "Coolant", key: "coolant" },
                   { label: "Coolant Detail", key: "coolant_detail" },
+                  { label: "Coolant Flow", key: "coolant_flow" },
+                  { label: "Fan RPM", key: "fan_rpm" },
                   { label: "Leak", key: "leak" },
                 ].map(({ label, key }) => (
                   <GridCard

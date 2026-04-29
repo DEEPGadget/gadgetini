@@ -59,7 +59,9 @@
       "Bash(echo \"comm_status: $\\(redis-cli get comm_status\\)\")",
       "Bash(echo \"comm_consecutive_failures: $\\(redis-cli get comm_consecutive_failures\\)\")",
       "Bash(echo \"pwm_duty_*: $\\(redis-cli keys 'pwm_duty_*')",
-      "Bash(echo \"pwm_duty 키: $\\(redis-cli keys 'pwm_duty_*')"
+      "Bash(echo \"pwm_duty 키: $\\(redis-cli keys 'pwm_duty_*')",
+      "Bash(echo \"/api/control/status: $\\(curl -sS -m 5 http://localhost:3001/api/control/status\\)\")",
+      "Bash(echo \"/api/control/pwm: $\\(curl -sS -m 5 http://localhost:3001/api/control/pwm\\)\")"
     ]
   }
 }

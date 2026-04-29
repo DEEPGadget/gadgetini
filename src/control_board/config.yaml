@@ -1,38 +1,21 @@
-# control_board/config.yaml
-# control_board 서비스가 부팅 시 로드하는 런타임 source of truth.
-# Flash 영구 저장 항목 (PWM freq HR12/13/14, polarity HR16, ADC gain HR19~26)
-# 은 PCB 측에서 관리되며 본 파일에서 다루지 않는다.
-
-# === Modbus 통신 ===
-
 modbus:
-  # 순서대로 try — /dev/serial0 (Pi 내장 UART, 운영) 안 되면 /dev/ttyUSB0 (USB-RS485 어댑터)
   port:
     - /dev/serial0
     - /dev/ttyUSB0
-  baud: 115200           # DIP6 ON
-  slave: 1               # DIP1~5 (모두 OFF → ID 1)
-  parity: N
+  baud: 115200
+  slave: 1
+  parity: 'N'
   stopbits: 1
   bytesize: 8
-  timeout_seconds: 1.0
-
+  timeout_seconds: 1
 loop:
-  cycle_seconds: 1.0     # 메인 루프 cadence
-
-# === 매 부팅 시 PCB에 Write할 초기값 (Flash 미저장 항목) ===
-
-# PWM duty 초기값 (HR 0~11, 0~1000 = 0~100.0%).
-# 팬 duty는 controller 첫 cycle에서 outlet 온도 lookup으로 즉시 덮어쓰임.
+  cycle_seconds: 1
 initial_pwm_duty:
-  # TIM1 (HR 0~3) — 펌프. 고정 60% 운용.
   pump:
     ch1: 600
     ch2: 600
     ch3: 600
     ch4: 600
-  # TIM2 (HR 4~7) — 팬. fan_curve idle floor.
-  # TIM8 (HR 8~11) — 팬.
   fan:
     ch5: 200
     ch6: 200
@@ -42,67 +25,45 @@ initial_pwm_duty:
     ch10: 200
     ch11: 200
     ch12: 200
-
-# DOUT 초기 비트마스크 (HR 15, bit0~5 = DOUT1~6)
-initial_dout_bitmask: 0x00
-
-# === Fan curve (Stage 1 lookup) ===
-# outlet 온도 °C → fan duty 0~1000.
-# until_outlet: null = ceiling (해당 온도 이상 전부)
+initial_dout_bitmask: 0
 fan_curve:
-  hysteresis_c: 1.0
+  hysteresis_c: 1
   stages:
-    - { until_outlet: 30,   duty: 200 }    # < 30 °C : 20%
-    - { until_outlet: 40,   duty: 400 }    # 30~40   : 40%
-    - { until_outlet: 50,   duty: 650 }    # 40~50   : 65%
-    - { until_outlet: 60,   duty: 850 }    # 50~60   : 85%
-    - { until_outlet: 65, duty: 1000 }   # ≥ 60    : 100%
-
-# === 통신 상태 카운터 ===
-# 센서값 임계 알람은 Prometheus alert rule + Grafana 측에서 raw metric으로 평가.
-# 통신 상태는 control_board 내부 상태라 자체 카운트가 필요 — comm_status 단일 키만 갱신.
+    - until_outlet: 30
+      duty: 200
+    - until_outlet: 40
+      duty: 400
+    - until_outlet: 50
+      duty: 650
+    - until_outlet: 60
+      duty: 850
+    - until_outlet: 65
+      duty: 1000
 comm:
   timeout_after_failures: 3
   disconnected_after_failures: 10
-
-# === 펌프 유량 추정 ===
-# 유량 센서 미장착 → PWM duty 기반 1차 근사. 실측 보정 후 multiplier 조정 권장.
-# 모델: flow_lpm = max_flow_lpm × (avg_pump_duty / 1000) × flow_multiplier
 pump:
-  # 단일 펌프 (Koolance PMP-500) 최대 유량 @ H=0 (12V 기준)
   max_flow_lpm: 16
-
-  # 토폴로지 multiplier — 현재: 4 펌프 (2 series × 2 parallel loops)
-  # 직렬 2 펌프 ≈ 1.47× (D5 측정 사례 — Martin's Liquid Lab dual-D5 series 1.09→1.6 GPM).
-  # 병렬 루프는 cold-plate 매니폴드 의존이라 곱셈 보수적으로 생략 — 표시값은 per-loop.
-  # 시스템 derate(back-pressure)는 이 multiplier에 흡수되어 있다고 가정.
   flow_multiplier: 1.47
-
-# === 입력 채널 와이어링 (TBD — 도면 확정 후 갱신) ===
-# 각 센서가 PCB의 어느 입력 채널에 연결되는지 명시.
-# 미연결 항목은 null. NTC 자동 감지(-999)로도 일부 fallback 가능.
-
 wiring:
-  # NTC 입력 (IR 28~31, CH13~16) — dg5R 4개 모두 사용
-  # 사용자 결선 순서: NTC1=Inlet1, NTC2=Outlet1, NTC3=Outlet2, NTC4=Inlet2
   ntc:
-    inlet1:  13   # NTC1
-    outlet1: 14   # NTC2
-    outlet2: 15   # NTC3
-    inlet2:  16   # NTC4
-
-  # DIN 입력 (IR 25 bit0~5 = DIN1~6) — 누수=D1(DIN1), 수위=D2(DIN2)
+    inlet1: 13
+    outlet1: 14
+    outlet2: 15
+    inlet2: 16
   din:
-    leak_bit: 0    # DIN1
-    level_bit: 1   # DIN2
-
-  # Pulse Freq 입력 (IR 13~24, CH1~12)
-  # 가정: PWM 출력 CH N의 Tach가 같은 번호 Pulse 입력 CH N으로 라우팅
-  # 펌프 Tach는 미사용 (유량은 duty 기반 추정 — pump 섹션 참고).
+    leak_bit: 0
+    level_bit: 1
   pulse:
-    fan_tach_chs:  [9, 10]        # 팬 2채널 Tach
-
-  # PWM 출력 (HR 0~11, CH1~12)
+    fan_tach_chs:
+      - 9
+      - 10
   pwm:
-    pump_ch: [1, 2, 3, 4]   # 펌프 4대 (TIM1, 동일 duty)
-    fan_ch:  [9, 10]        # 팬 2채널 (TIM8)
+    pump_ch:
+      - 1
+      - 2
+      - 3
+      - 4
+    fan_ch:
+      - 9
+      - 10
