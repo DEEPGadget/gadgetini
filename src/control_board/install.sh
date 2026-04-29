@@ -22,23 +22,26 @@ echo "Repo: $REPO_ROOT"
 echo
 
 # ─────────────────────────────────────────────
-# 1. Python 의존성 (system-wide; pcb_bootstrap이 root로 실행되므로 root Python에 설치)
+# 1. Python 의존성 — requirements.txt가 source of truth.
+#   pcb_bootstrap은 root, control_board는 gadgetini로 실행 → 양쪽 site-packages에 모두 설치.
 # ─────────────────────────────────────────────
-PIP_PKGS=(
-    pymodbus                       # Modbus RTU 클라이언트
-    pyserial                       # serial transport (pymodbus 의존)
-    redis                          # Redis 클라이언트
-    pyyaml                         # config.yaml 파싱
-    adafruit-circuitpython-dht     # DHT11 (env_sensors.py)
-    mpu6050-raspberrypi            # MPU6050 (env_sensors.py)
-)
+REQ_FILE="$SCRIPT_DIR/requirements.txt"
 
-echo "[1/4] Installing Python dependencies..."
+echo "[1/4] Installing Python dependencies from $REQ_FILE ..."
 # Bookworm 이후 Pi OS는 PEP 668 protected → 시스템 전역 설치는 --break-system-packages 필요.
 # 구 OS에서는 해당 옵션이 없을 수 있으니 plain install 먼저 시도 후 fallback.
-if ! python3 -m pip install --quiet "${PIP_PKGS[@]}" 2>/dev/null; then
-    python3 -m pip install --break-system-packages --quiet "${PIP_PKGS[@]}"
-fi
+pip_install() {
+    local py_user="$1"; shift
+    if [[ -n "$py_user" ]]; then
+        sudo -u "$py_user" python3 -m pip install --quiet -r "$REQ_FILE" 2>/dev/null \
+            || sudo -u "$py_user" python3 -m pip install --break-system-packages --quiet -r "$REQ_FILE"
+    else
+        python3 -m pip install --quiet -r "$REQ_FILE" 2>/dev/null \
+            || python3 -m pip install --break-system-packages --quiet -r "$REQ_FILE"
+    fi
+}
+pip_install ""           # root (pcb_bootstrap.service)
+pip_install "gadgetini"  # gadgetini user (control_board.service)
 
 # ─────────────────────────────────────────────
 # 2. systemd unit 파일 복사

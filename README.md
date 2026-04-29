@@ -4,6 +4,42 @@ gadgetini is a server monitoring system specialized for Direct Liquid Cooling (D
 
 ![manycore_logo_black (3)](https://github.com/user-attachments/assets/2e65773a-b1cc-46ee-8831-7d3d95a5b798)
 
+## Quick Start
+
+PCB 제어보드가 장착된 새 hw에서 한 번에 설치하는 가장 짧은 경로.
+
+```bash
+git clone https://github.com/DEEPGadget/gadgetini.git /home/gadgetini/gadgetini
+cd /home/gadgetini/gadgetini
+sudo bash src/control_board/install.sh
+```
+
+[install.sh](src/control_board/install.sh)가 다음을 자동 수행한다:
+
+1. Python 의존성 설치 (`pymodbus`, `pyserial`, `redis`, `pyyaml`, `adafruit-circuitpython-dht`, `mpu6050-raspberrypi`) — Bookworm PEP 668 환경에서는 `--break-system-packages` fallback 자동 적용
+2. systemd unit 등록 (`pcb_bootstrap.service`, `control_board.service`)
+3. `pcb_bootstrap.service` enable + 즉시 1회 실행 → PCB probe (port × baud 매트릭스) → 감지 시 `control_board.service` 자동 시작
+4. 상태 출력
+
+설치 후 동작 확인:
+
+```bash
+sudo journalctl -u pcb_bootstrap.service -n 20    # 감지 로그
+sudo journalctl -u control_board.service -n 20    # 메인 루프
+redis-cli mget coolant_temp_inlet1 coolant_leak comm_status
+curl -s http://localhost:9003/metrics | grep dlc_system_sensor | head
+```
+
+PCB가 부팅 후에 연결되거나 baud를 바꿨다면 재감지:
+
+```bash
+sudo systemctl restart pcb_bootstrap.service
+```
+
+> 보드 미장착 구버전(legacy hw)에서는 bootstrap이 probe 실패 후 exit 0으로 끝나고 기존 `data_crawler.service`가 그대로 동작한다 — 동일 image로 신/구 hw 모두 호환.
+
+> 디스플레이/Web UI/sensor_exporter 등 나머지 서비스는 별도 단계에서 설치 — 아래 [Installation](#installation) 참고.
+
 ## Architecture
 
 ```
