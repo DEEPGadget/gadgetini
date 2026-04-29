@@ -79,7 +79,12 @@
       "Bash(journalctl -u display_pannel.service --since='10 min ago' --no-pager)",
       "Bash(systemctl list-units *)",
       "Bash(journalctl -u control_board.service --no-pager -n 30)",
-      "Bash(dmesg --ctime)"
+      "Bash(dmesg --ctime)",
+      "Bash(journalctl -u pcb_bootstrap.service -n 30 --no-pager)",
+      "Bash(journalctl -u control_board.service -n 20 --no-pager)",
+      "Bash(echo \"=== exit=$? ===\")",
+      "Bash(sudo stty *)",
+      "Bash(journalctl -u pcb_bootstrap.service -n 15 --no-pager)"
     ]
   }
 }

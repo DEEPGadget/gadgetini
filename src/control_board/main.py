@@ -67,15 +67,17 @@ def apply_initial_state(pcb, cfg):
 
 
 def _resolve_pcb(mb):
-    """port may be a single string or a list (try in order). Returns connected PCB or None."""
+    """port/baud may be single value or list (try in order). Returns connected PCB or None."""
     ports = mb['port'] if isinstance(mb['port'], list) else [mb['port']]
+    bauds = mb['baud'] if isinstance(mb['baud'], list) else [mb['baud']]
     for port in ports:
-        pcb = PCB(port=port, baud=mb['baud'], slave=mb['slave'],
-                  timeout=float(mb.get('timeout_seconds', 1.0)))
-        if pcb.connect() and pcb.probe():
-            return pcb, port
-        pcb.close()
-    return None, None
+        for baud in bauds:
+            pcb = PCB(port=port, baud=int(baud), slave=mb['slave'],
+                      timeout=float(mb.get('timeout_seconds', 1.0)))
+            if pcb.connect() and pcb.probe():
+                return pcb, port, int(baud)
+            pcb.close()
+    return None, None, None
 
 
 def main():
@@ -84,12 +86,12 @@ def main():
     log.info("env temp/humid: %s", env_sensors.temp_humid_kind() or 'none')
 
     mb = cfg['modbus']
-    pcb, port = _resolve_pcb(mb)
+    pcb, port, baud = _resolve_pcb(mb)
     if pcb is None:
-        log.error("PCB not found on %s @ %d slave %d",
+        log.error("PCB not found on %s @ %s slave %d",
                   mb['port'], mb['baud'], mb['slave'])
         return 1
-    log.info("PCB connected on %s @ %d, slave %d", port, mb['baud'], mb['slave'])
+    log.info("PCB connected on %s @ %d, slave %d", port, baud, mb['slave'])
 
     rd = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 

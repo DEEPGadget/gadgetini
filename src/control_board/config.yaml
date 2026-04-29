@@ -2,7 +2,9 @@ modbus:
   port:
     - /dev/serial0
     - /dev/ttyUSB0
-  baud: 115200
+  baud:
+    - 115200
+    - 9600
   slave: 1
   parity: 'N'
   stopbits: 1
