@@ -553,8 +553,8 @@
       "params": {
         "title": "Fan RPM",
         "sensor_keys": [
-          "fan_rpm_1",
-          "fan_rpm_2"
+          "fan_rpm_0",
+          "fan_rpm_1"
         ],
         "colors": [
           [

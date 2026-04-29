@@ -26,9 +26,9 @@
 # │ air_temp                │ °C         │ gadget │ internal air temp (DHT11) │
 # │ air_humit               │ %RH        │ gadget │ internal air humidity     │
 # │ coolant_flow_lpm        │ L/min      │ gadget │ pump duty 기반 유량 추정  │
-# │ fan_rpm_{1~N}           │ rpm        │ gadget │ per-fan tach RPM          │
-# │ pwm_duty_pump_{1~N}     │ 0.1%       │ gadget │ pump PWM duty (HR 0~3)    │
-# │ pwm_duty_fan_{1~N}      │ 0.1%       │ gadget │ fan PWM duty (HR 4~11)    │
+# │ fan_rpm_{0~N-1}         │ rpm        │ gadget │ per-fan tach RPM          │
+# │ pwm_duty_pump_{0~N-1}   │ 0.1%       │ gadget │ pump PWM duty (HR 0~3)    │
+# │ pwm_duty_fan_{0~N-1}    │ 0.1%       │ gadget │ fan PWM duty (HR 4~11)    │
 # │ comm_status             │ enum       │ gadget │ ok/timeout/disconnected   │
 # │ gpu_name_{0~7}          │ string     │ host   │ GPU model name            │
 # │ gpu_temp_{0~7}          │ °C         │ host   │ GPU temperature           │
@@ -64,9 +64,9 @@
 # │ air_humit               │ %RH        │ gadget │ internal air humidity     │
 # │ chassis_stabil          │ 0/1 bool   │ gadget │ chassis stable (MPU6050)  │
 # │ coolant_flow_lpm        │ L/min      │ gadget │ pump duty 기반 유량 추정  │
-# │ fan_rpm_{1~N}           │ rpm        │ gadget │ per-fan tach RPM          │
-# │ pwm_duty_pump_{1~N}     │ 0.1%       │ gadget │ pump PWM duty (HR 0~3)    │
-# │ pwm_duty_fan_{1~N}      │ 0.1%       │ gadget │ fan PWM duty (HR 4~11)    │
+# │ fan_rpm_{0~N-1}         │ rpm        │ gadget │ per-fan tach RPM          │
+# │ pwm_duty_pump_{0~N-1}   │ 0.1%       │ gadget │ pump PWM duty (HR 0~3)    │
+# │ pwm_duty_fan_{0~N-1}    │ 0.1%       │ gadget │ fan PWM duty (HR 4~11)    │
 # │ comm_status             │ enum       │ gadget │ ok/timeout/disconnected   │
 # │ gpu_name_{0~7}          │ string     │ host   │ GPU model name            │
 # │ gpu_temp_{0~7}          │ °C         │ host   │ GPU temperature           │

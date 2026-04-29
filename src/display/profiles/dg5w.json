@@ -348,7 +348,7 @@
       "type": "MultiSensorViewer",
       "params": {
         "title": "Fan RPM",
-        "sensor_keys": ["fan_rpm_1", "fan_rpm_2"],
+        "sensor_keys": ["fan_rpm_0", "fan_rpm_1"],
         "colors": [[0, 200, 255], [255, 140, 0]],
         "labels": ["F1", "F2"]
       }

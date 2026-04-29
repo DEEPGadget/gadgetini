@@ -90,15 +90,16 @@ def poll_once(pcb, rd, cfg):
 
     # 연결 감지 sticky: tach > 0 이 한 번이라도 관측된 채널만 등록.
     # 가정: PWM 출력 CH N의 Tach가 같은 번호 Pulse 입력 CH N으로 라우팅.
-    for i, ch in enumerate(pump_pwm_chs, start=1):
+    # 인덱스는 0-based (display profile / GPU/CPU 컨벤션과 일치).
+    for i, ch in enumerate(pump_pwm_chs):
         if 1 <= ch <= 12 and pulses[ch - 1] > 0:
             _pump_connected.add(i)
-    for i, ch in enumerate(fan_pwm_chs, start=1):
+    for i, ch in enumerate(fan_pwm_chs):
         if 1 <= ch <= 12 and pulses[ch - 1] > 0:
             _fan_connected.add(i)
 
     # 팬 RPM — 연결 확인된 채널만 SET (2 p/r → RPM = Hz × 30)
-    for i, ch in enumerate(fan_pwm_chs, start=1):
+    for i, ch in enumerate(fan_pwm_chs):
         if i in _fan_connected and 1 <= ch <= 12:
             pipe.set(K.fan_rpm(i), pulses[ch - 1] * 30)
         else:
@@ -110,12 +111,12 @@ def poll_once(pcb, rd, cfg):
         return False
 
     # PWM duty — 연결 확인된 채널만 SET, 나머지는 DEL (UI에서 자동 제외)
-    for i, ch in enumerate(pump_pwm_chs, start=1):
+    for i, ch in enumerate(pump_pwm_chs):
         if i in _pump_connected and 1 <= ch <= 12:
             pipe.set(K.pwm_duty_pump(i), duties[ch - 1])
         else:
             pipe.delete(K.pwm_duty_pump(i))
-    for i, ch in enumerate(fan_pwm_chs, start=1):
+    for i, ch in enumerate(fan_pwm_chs):
         if i in _fan_connected and 1 <= ch <= 12:
             pipe.set(K.pwm_duty_fan(i), duties[ch - 1])
         else:
@@ -124,7 +125,7 @@ def poll_once(pcb, rd, cfg):
     # ── 펌프 유량 추정 (연결 확인된 펌프 duty의 평균 사용) ──
     connected_pump_duties = [
         duties[ch - 1]
-        for i, ch in enumerate(pump_pwm_chs, start=1)
+        for i, ch in enumerate(pump_pwm_chs)
         if i in _pump_connected and 1 <= ch <= 12
     ]
     if connected_pump_duties and pump_cfg:

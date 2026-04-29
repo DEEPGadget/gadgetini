@@ -28,8 +28,9 @@ export async function GET() {
         comm_status: commStatus || "unknown",
       });
     }
-    const pumpKeys = Array.from({ length: PUMP_COUNT }, (_, i) => `pwm_duty_pump_${i + 1}`);
-    const fanKeys = Array.from({ length: FAN_COUNT }, (_, i) => `pwm_duty_fan_${i + 1}`);
+    // 0-based 인덱스 (control_board polling이 SET하는 키 형식과 일치)
+    const pumpKeys = Array.from({ length: PUMP_COUNT }, (_, i) => `pwm_duty_pump_${i}`);
+    const fanKeys = Array.from({ length: FAN_COUNT }, (_, i) => `pwm_duty_fan_${i}`);
     const values = await r.mget(...pumpKeys, ...fanKeys);
     const pump = values.slice(0, PUMP_COUNT).map(toIntOrNull);
     const fan = values.slice(PUMP_COUNT).map(toIntOrNull);
