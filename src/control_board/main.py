@@ -30,6 +30,24 @@ def load_config():
         return yaml.safe_load(f)
 
 
+def apply_pwm_freq(pcb, cfg):
+    """PWM 주파수 (HR 12/13/14) — config.yaml의 pwm_freq 적용."""
+    freq = cfg.get('pwm_freq') or {}
+    mapping = [
+        (R.HR_PWM_FREQ_TIM1, 'tim1'),
+        (R.HR_PWM_FREQ_TIM2, 'tim2'),
+        (R.HR_PWM_FREQ_TIM8, 'tim8'),
+    ]
+    applied = {}
+    for hr, key in mapping:
+        v = freq.get(key)
+        if v is None:
+            continue
+        pcb.write_register(hr, int(v))
+        applied[key] = int(v)
+    log.info("PWM freq applied: %s", applied or 'none (config missing pwm_freq)')
+
+
 def apply_initial_state(pcb, cfg):
     """Flash 미저장 항목 (PWM duty, DOUT) 적용."""
     duty_cfg = cfg.get('initial_pwm_duty', {})
@@ -75,6 +93,7 @@ def main():
 
     rd = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
+    apply_pwm_freq(pcb, cfg)
     apply_initial_state(pcb, cfg)
 
     fan_chs = (cfg.get('wiring', {}).get('pwm') or {}).get('fan_ch') or []

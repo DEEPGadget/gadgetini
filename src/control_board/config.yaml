@@ -10,6 +10,10 @@ modbus:
   timeout_seconds: 1
 loop:
   cycle_seconds: 1
+pwm_freq:
+  tim1: 1000      # HR 12 — CH1~4  (pump, 1 kHz)
+  tim2: 25000     # HR 13 — CH5~8  (fan,  25 kHz)
+  tim8: 25000     # HR 14 — CH9~12 (fan,  25 kHz)
 initial_pwm_duty:
   pump:
     ch1: 600

@@ -71,7 +71,15 @@
       "Bash(sudo timeout *)",
       "Bash(sudo -u gadgetini python3)",
       "Bash(sed -n '48,70p' src/control_board/config.yaml)",
-      "Bash(sed -n '/누수: AIN/,/_leak_confirmed.*COOLANT_LEAK/p' src/control_board/polling.py)"
+      "Bash(sed -n '/누수: AIN/,/_leak_confirmed.*COOLANT_LEAK/p' src/control_board/polling.py)",
+      "Read(//sys/class/spi_master/**)",
+      "Read(//sys/devices/platform/soc/fe215080.spi/spi_master/spi1/**)",
+      "Bash(sudo cat *)",
+      "Bash(aplay -l)",
+      "Bash(journalctl -u display_pannel.service --since='10 min ago' --no-pager)",
+      "Bash(systemctl list-units *)",
+      "Bash(journalctl -u control_board.service --no-pager -n 30)",
+      "Bash(dmesg --ctime)"
     ]
   }
 }
