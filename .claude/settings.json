@@ -62,7 +62,16 @@
       "Bash(echo \"pwm_duty 키: $\\(redis-cli keys 'pwm_duty_*')",
       "Bash(echo \"/api/control/status: $\\(curl -sS -m 5 http://localhost:3001/api/control/status\\)\")",
       "Bash(echo \"/api/control/pwm: $\\(curl -sS -m 5 http://localhost:3001/api/control/pwm\\)\")",
-      "Bash(journalctl -u display_pannel.service --since='2 min ago' --no-pager)"
+      "Bash(journalctl -u display_pannel.service --since='2 min ago' --no-pager)",
+      "Bash(echo \"  pump_0=$\\(redis-cli get pwm_duty_pump_0\\)  pump_1=$\\(redis-cli get pwm_duty_pump_1\\)\")",
+      "Bash(echo \"  pump_2=$\\(redis-cli get pwm_duty_pump_2\\)  pump_3=$\\(redis-cli get pwm_duty_pump_3\\)\")",
+      "Bash(echo \"  fan_0=$\\(redis-cli get pwm_duty_fan_0\\)  fan_1=$\\(redis-cli get pwm_duty_fan_1\\)\")",
+      "Bash(journalctl -u display_pannel.service --since='5 min ago' --no-pager)",
+      "Bash(ps -o pid,stat,etime,wchan,cmd -p 101000)",
+      "Bash(sudo timeout *)",
+      "Bash(sudo -u gadgetini python3)",
+      "Bash(sed -n '48,70p' src/control_board/config.yaml)",
+      "Bash(sed -n '/누수: AIN/,/_leak_confirmed.*COOLANT_LEAK/p' src/control_board/polling.py)"
     ]
   }
 }

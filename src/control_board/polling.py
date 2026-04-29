@@ -1,14 +1,20 @@
 """PCB Modbus Read → 디코딩 → Redis SET.
 
-NTC, DIN, Pulse Freq를 한 cycle에 읽고 Redis로 publish.
+NTC, DIN, AIN, Pulse Freq를 한 cycle에 읽고 Redis로 publish.
 NTC -999 sentinel(미연결)은 키 자체를 DEL하여 exporter 측에서 자동 제외.
 inlet/outlet 페어가 둘 다 valid일 때만 ΔT 계산.
 
 펌프/팬 PWM duty 키와 fan_rpm 키는 wiring에 매핑된 채널 중 **Tach 신호가 한 번이라도
 관측된** 채널만 SET (sticky). 펌프/팬이 물리적으로 미연결이면 PCB가 신호를 보내도
 모터가 안 돌아 tach=0 → 키 자체 SET 안 됨 → exporter `client.exists()` 게이트로 자동 제외.
+
+누수 감지: PCB **AIN CH8** voltage register(IR 39, 0.01V 단위, 0~10.5V 풀스케일)를
+threshold 비교 → wet ≈ 0V, dry ≈ 10.5V (실측). 단발 read 노이즈 심해 N-of-M
+majority filter로 chattering 억제 (5 sample 윈도우, 3+ 일치 시 confirmed).
+수위는 DIN2 디지털 신호(IR 25 bit) 사용, 동일 debounce.
 """
 import logging
+from collections import deque
 
 from . import registers as R
 from . import redis_keys as K
@@ -22,8 +28,41 @@ log = logging.getLogger(__name__)
 # (한 번이라도 tach > 0 이면 "연결됨"으로 표시. 일시적 정지/seizure로 0으로 떨어져도
 # 유지되며, 서비스 재시작 시 초기화된다.)
 # ──────────────────────────────────────────────
-_pump_connected = set()    # 논리 인덱스 (1-based)
+_pump_connected = set()    # 논리 인덱스 (0-based)
 _fan_connected = set()
+
+
+# ──────────────────────────────────────────────
+# DIN debounce — 누수/수위 신호 N-of-M majority filter
+# WINDOW=5, THRESHOLD=3 → 1초 cycle 기준 ~3초 안에 안정 confirmed state 도출
+# ──────────────────────────────────────────────
+_DIN_WINDOW = 5
+_DIN_THRESHOLD = 3   # 5 중 3+이면 majority
+_leak_history = deque(maxlen=_DIN_WINDOW)
+_level_history = deque(maxlen=_DIN_WINDOW)
+# Confirmed state 캐시. None 이면 아직 첫 confirm 전 (초기 N cycle 동안 raw 그대로 통과)
+_leak_confirmed = None
+_level_confirmed = None
+
+
+def _debounce(history, current_raw, prev_confirmed):
+    """N-of-M majority filter. WINDOW 채우기 전엔 raw 통과, 채워지면 majority로 결정.
+
+    history: deque(maxlen=N), 최근 N raw 값 누적
+    current_raw: 이번 cycle의 0/1
+    prev_confirmed: 직전 confirmed state (없으면 None)
+    """
+    history.append(current_raw)
+    if len(history) < _DIN_WINDOW:
+        # 워밍업 — raw 그대로 (전원 켠 직후 빠른 반응 위해)
+        return current_raw
+    leak_count = sum(history)
+    if leak_count >= _DIN_THRESHOLD:
+        return 1
+    if leak_count <= _DIN_WINDOW - _DIN_THRESHOLD:
+        return 0
+    # hysteresis 영역 (이론상 N=5,T=3 에선 발생 안 함; 안전망)
+    return prev_confirmed if prev_confirmed is not None else current_raw
 
 
 def poll_once(pcb, rd, cfg):
@@ -63,20 +102,35 @@ def poll_once(pcb, rd, cfg):
     _delta_t(pipe, ntc_values, 'inlet1', 'outlet1', K.COOLANT_DELTA_T1)
     _delta_t(pipe, ntc_values, 'inlet2', 'outlet2', K.COOLANT_DELTA_T2)
 
-    # ── DIN (IR 25 bitmask) ──
+    global _leak_confirmed, _level_confirmed
+
+    # ── 수위: DIN (IR 25 bitmask) — N-of-M debounce ──
     din_regs = pcb.read_input_registers(R.IR_DIN_BITMASK, 1)
     if din_regs is None:
         return False
     bits = din_regs[0]
     din_map = wiring.get('din', {}) or {}
-    leak_bit = din_map.get('leak_bit')
     level_bit = din_map.get('level_bit')
-    if leak_bit is not None:
-        # active-high 가정: bit=1 → 누수
-        pipe.set(K.COOLANT_LEAK, 1 if (bits >> leak_bit) & 1 else 0)
     if level_bit is not None:
         # active-high 가정: bit=1 → 정상(HIGH), bit=0 → 부족
-        pipe.set(K.COOLANT_LEVEL, 1 if (bits >> level_bit) & 1 else 0)
+        raw = 1 if (bits >> level_bit) & 1 else 0
+        _level_confirmed = _debounce(_level_history, raw, _level_confirmed)
+        pipe.set(K.COOLANT_LEVEL, _level_confirmed)
+
+    # ── 누수: AIN voltage (IR 32~39, 0.01V 단위) — threshold + debounce ──
+    # PCB가 1:2 divider로 외부 0~10V 측정 → wet ≈ 0V, dry ≈ 10.5V (실측 2026-04-29).
+    # threshold 미만이면 leak=1.
+    ain_map = wiring.get('ain', {}) or {}
+    leak_ch = ain_map.get('leak_ch')
+    if leak_ch is not None and 1 <= leak_ch <= 8:
+        voltages = pcb.read_input_registers(R.IR_VOLTAGE_BASE, 8)
+        if voltages is None:
+            return False
+        v_reg = voltages[leak_ch - 1]                              # 0.01V 단위
+        threshold_reg = int(float(ain_map.get('leak_threshold_v', 5.0)) * 100)
+        raw = 1 if v_reg < threshold_reg else 0
+        _leak_confirmed = _debounce(_leak_history, raw, _leak_confirmed)
+        pipe.set(K.COOLANT_LEAK, _leak_confirmed)
 
     # ── Pulse Freq (IR 13~24) ──
     # 팬은 Tach RPM 표시, 펌프는 유량 추정. 양쪽 모두 sticky 연결 감지에 사용.

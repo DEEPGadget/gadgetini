@@ -175,7 +175,7 @@ flow_lpm = max_flow_lpm × (avg_pump_duty / 1000) × flow_multiplier
 
 | 신호 | PCB 입출력 | Modbus 주소 | Redis 키 |
 |---|---|---|---|
-| 누수 (D11) | DIN1 (bit 0) | IR 25 | `coolant_leak` |
+| 누수 (D11→AIN8) | AIN CH8 | IR 39 (0.01V, threshold 5V) | `coolant_leak` |
 | 수위 (D12) | DIN2 (bit 1) | IR 25 | `coolant_level` |
 | Inlet1 (NTC1) | CH13 | IR 28 | `coolant_temp_inlet1` |
 | Outlet1 (NTC2) | CH14 | IR 29 | `coolant_temp_outlet1` |

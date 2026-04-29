@@ -52,8 +52,10 @@ wiring:
     outlet2: 15
     inlet2: 16
   din:
-    leak_bit: 0
-    level_bit: 1
+    level_bit: 1     # DIN2 (D12) — 수위 (1=정상, 0=LOW)
+  ain:
+    leak_ch: 8                 # CH8 AIN — 누수 센서 (D11에서 변경됨, 2026-04-29)
+    leak_threshold_v: 5.0      # voltage < 5V → 누수 (wet≈0V, dry≈10.5V)
   pulse:
     fan_tach_chs:
       - 9
