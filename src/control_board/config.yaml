@@ -64,8 +64,8 @@ wiring:
     leak_threshold_v: 5.0      # voltage < 5V → 누수 (wet≈0V, dry≈10.5V)
   pulse:
     fan_tach_chs:
+      - 8
       - 9
-      - 10
   pwm:
     pump_ch:
       - 1
@@ -73,5 +73,5 @@ wiring:
       - 3
       - 4
     fan_ch:
+      - 8
       - 9
-      - 10

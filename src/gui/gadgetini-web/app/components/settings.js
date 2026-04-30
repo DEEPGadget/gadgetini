@@ -120,6 +120,8 @@ export default function Settings() {
   const [cbPwm, setCbPwm] = useState({
     pump: [null, null, null, null],
     fan: [null, null, null, null, null, null, null, null],
+    fanRpm: [null, null, null, null, null, null, null, null],
+    coolantFlowLpm: null,
   });
   const [fanCurve, setFanCurve] = useState({ hysteresis_c: 1.0, stages: [] });
   const [fanCurveLoading, setFanCurveLoading] = useState(true);
@@ -217,14 +219,21 @@ export default function Settings() {
   }, []);
 
   // PWM duty readback: 2s cadence — pump CH1~4 + fan CH5~12 (8슬롯 고정).
-  // API가 wiring.pwm 매핑을 보고 물리 채널 위치로 재배치해 반환하므로 그대로 표시.
+  // API가 wiring.pwm 매핑을 보고 물리 채널 위치로 재배치해 반환.
+  // fan RPM과 펌프 유량 추정도 같은 cadence로 함께 갱신.
   useEffect(() => {
     const fetchPwm = () =>
       fetch("/api/control/pwm")
         .then((r) => r.json())
         .then((d) => {
           if (d && Array.isArray(d.pump) && Array.isArray(d.fan)) {
-            setCbPwm({ pump: d.pump, fan: d.fan });
+            setCbPwm({
+              pump: d.pump,
+              fan: d.fan,
+              fanRpm: Array.isArray(d.fanRpm) ? d.fanRpm : Array(d.fan.length).fill(null),
+              coolantFlowLpm:
+                typeof d.coolantFlowLpm === "number" ? d.coolantFlowLpm : null,
+            });
           }
         })
         .catch(() => {});
@@ -683,6 +692,22 @@ export default function Settings() {
                     </div>
                   ))}
                 </div>
+                {/* 펌프 유량 추정 — duty + 토폴로지 multiplier 기반 (config.yaml § pump). */}
+                <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-sm">
+                  <span className="text-gray-500 text-xs uppercase tracking-wider">
+                    Est. flow
+                  </span>
+                  <span className="font-mono">
+                    {cbPwm.coolantFlowLpm === null ? (
+                      <span className="text-gray-300">—</span>
+                    ) : (
+                      <>
+                        {cbPwm.coolantFlowLpm.toFixed(1)}{" "}
+                        <span className="text-xs text-gray-400">L/min</span>
+                      </>
+                    )}
+                  </span>
+                </div>
               </div>
               <div className="bg-white rounded-xl p-3">
                 <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
@@ -690,9 +715,9 @@ export default function Settings() {
                 </p>
                 <div className="space-y-1">
                   {cbPwm.fan.map((duty, i) => (
-                    <div key={`fan-${i}`} className="flex items-center justify-between text-sm">
+                    <div key={`fan-${i}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-sm">
                       <span className="text-gray-600 font-mono">CH{i + 5}</span>
-                      <span className="font-mono">
+                      <span className="font-mono text-right">
                         {duty === null ? (
                           <span className="text-gray-300">—</span>
                         ) : (
@@ -701,6 +726,16 @@ export default function Settings() {
                             <span className="text-xs text-gray-400">
                               ({(duty / 10).toFixed(1)}%)
                             </span>
+                          </>
+                        )}
+                      </span>
+                      <span className="font-mono text-right text-gray-600 min-w-[5.5rem]">
+                        {cbPwm.fanRpm[i] === null || cbPwm.fanRpm[i] === undefined ? (
+                          <span className="text-gray-300">—</span>
+                        ) : (
+                          <>
+                            {cbPwm.fanRpm[i]}{" "}
+                            <span className="text-xs text-gray-400">rpm</span>
                           </>
                         )}
                       </span>
