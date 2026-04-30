@@ -25,9 +25,9 @@ except ImportError:
     sys.exit(0)
 
 
-def probe(port, baud):
+def probe(port, baud, timeout=PROBE_TIMEOUT):
     cli = ModbusSerialClient(port=port, baudrate=baud, parity='N',
-                             stopbits=1, bytesize=8, timeout=PROBE_TIMEOUT)
+                             stopbits=1, bytesize=8, timeout=timeout)
     try:
         if not cli.connect():
             return False
@@ -40,10 +40,10 @@ def probe(port, baud):
         except Exception: pass
 
 
-def detect():
+def detect(timeout=PROBE_TIMEOUT):
     for port in PORTS:
         for baud in BAUDS:
-            if probe(port, baud):
+            if probe(port, baud, timeout=timeout):
                 return port, baud
     return None, None
 

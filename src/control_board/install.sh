@@ -49,13 +49,15 @@ pip_install "gadgetini"  # gadgetini user (control_board.service)
 echo "[2/4] Copying systemd unit files..."
 install -m 644 "$DAEMON_DIR/pcb_bootstrap.service"  "$SYSTEMD_DIR/pcb_bootstrap.service"
 install -m 644 "$DAEMON_DIR/control_board.service" "$SYSTEMD_DIR/control_board.service"
+install -m 644 "$DAEMON_DIR/pcb_watcher.service"   "$SYSTEMD_DIR/pcb_watcher.service"
 
 # ─────────────────────────────────────────────
 # 3. daemon-reload + enable
 # ─────────────────────────────────────────────
-echo "[3/4] Reloading systemd, enabling pcb_bootstrap.service..."
+echo "[3/4] Reloading systemd, enabling pcb_bootstrap.service + pcb_watcher.service..."
 systemctl daemon-reload
 systemctl enable pcb_bootstrap.service
+systemctl enable --now pcb_watcher.service
 
 # ─────────────────────────────────────────────
 # 4. 검증 실행 (1회)
@@ -70,7 +72,11 @@ echo
 echo "pcb_bootstrap.service status:"
 systemctl --no-pager status pcb_bootstrap.service | head -8 || true
 echo
+echo "pcb_watcher.service status:"
+systemctl --no-pager status pcb_watcher.service | head -8 || true
+echo
 echo "Useful commands:"
-echo "  sudo journalctl -u pcb_bootstrap.service -n 20    # detection log"
+echo "  sudo journalctl -u pcb_bootstrap.service -n 20    # boot-time detection log"
+echo "  sudo journalctl -u pcb_watcher.service -f         # runtime hot-plug watcher"
 echo "  sudo journalctl -u control_board.service -n 20    # control_board (stub)"
 echo "  sudo systemctl restart pcb_bootstrap.service      # re-detect"
