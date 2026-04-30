@@ -216,13 +216,16 @@ export default function Settings() {
     return () => clearInterval(id);
   }, []);
 
-  // PWM duty readback: 2s cadence — pump CH1~4 + fan CH5~12
+  // PWM duty readback: 2s cadence — pump CH1~4 + fan CH5~12 (8슬롯 고정).
+  // API가 wiring.pwm 매핑을 보고 물리 채널 위치로 재배치해 반환하므로 그대로 표시.
   useEffect(() => {
     const fetchPwm = () =>
       fetch("/api/control/pwm")
         .then((r) => r.json())
         .then((d) => {
-          if (d && Array.isArray(d.pump) && Array.isArray(d.fan)) setCbPwm(d);
+          if (d && Array.isArray(d.pump) && Array.isArray(d.fan)) {
+            setCbPwm({ pump: d.pump, fan: d.fan });
+          }
         })
         .catch(() => {});
     fetchPwm();
