@@ -47,7 +47,15 @@ def run(pcb, rd, cfg, controller, config_path):
 
         if ok:
             if consecutive_fail > 0:
-                log.info("PCB poll recovered after %d consecutive failures", consecutive_fail)
+                log.info("PCB poll recovered after %d consecutive failures — re-applying initial state",
+                         consecutive_fail)
+                # PCB 전원이 끊겼다 들어왔을 가능성 — Flash 미저장 항목(PWM duty, DOUT)이
+                # 펌웨어 기본값으로 리셋됐을 수 있으므로 config 기준으로 다시 적용한다.
+                try:
+                    from .main import apply_initial_state
+                    apply_initial_state(pcb, cfg)
+                except Exception:
+                    log.exception("re-apply initial state after recovery failed")
             consecutive_fail = 0
         else:
             consecutive_fail += 1
