@@ -95,6 +95,13 @@ def main():
 
     rd = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
+    # PCB probe 성공 직후 comm 상태 명시 초기화 — 이전 run이 남긴 stale
+    # 'disconnected'/'timeout' 으로 UI가 잘못된 빨강을 표시하지 않도록.
+    # 폴링이 실제로 실패하면 main_loop._update_comm_state가 정상 전이.
+    from . import redis_keys as K
+    rd.set(K.COMM_STATUS, 'ok')
+    rd.set(K.COMM_CONSECUTIVE_FAILURES, 0)
+
     apply_pwm_freq(pcb, cfg)
     apply_initial_state(pcb, cfg)
 

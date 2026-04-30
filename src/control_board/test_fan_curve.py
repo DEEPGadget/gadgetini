@@ -84,29 +84,34 @@ def main():
     pass_count = 0
     fail_count = 0
 
-    print(f"\n{'시나리오':<22}{'temp':>6}{'  exp_idx':>10}{'exp_duty':>10}{'  CH9':>8}{'CH10':>7}  {'결과'}")
+    ch_hdr = "  ".join(f"CH{ch:>2}" for ch in fan_chs)
+    print(f"\n{'시나리오':<22}{'temp':>6}{'  exp_idx':>10}{'exp_duty':>10}  {ch_hdr}  {'결과'}")
     print('─' * 80)
     for label, temp in scenarios:
         rd.set(K.COOLANT_TEMP_OUTLET1, temp)
         controller.update(pcb, rd)
         time.sleep(0.3)   # PCB write 반영 대기
-        rb = pcb.read_holding_registers(R.HR_PWM_DUTY_BASE + 8, 2)
-        ch9, ch10 = rb if rb else (None, None)
+        # wiring 의 fan_chs 각 채널 duty 개별 readback
+        readbacks = []
+        for ch in fan_chs:
+            rb = pcb.read_holding_registers(R.hr_pwm_duty(ch), 1)
+            readbacks.append(rb[0] if rb else None)
 
         exp_idx, exp_duty = expected_duty(stages, hyst, last_idx, temp)
         last_idx = exp_idx
-        ok = (ch9 == exp_duty and ch10 == exp_duty)
+        ok = all(rb == exp_duty for rb in readbacks)
         mark = '✓' if ok else '✗'
         if ok: pass_count += 1
         else:  fail_count += 1
-        print(f"{label:<22}{temp:>6.1f}{exp_idx:>10}{exp_duty:>10}{ch9:>8}{ch10:>7}  {mark}")
+        rb_str = "  ".join(f"{rb if rb is not None else '?':>4}" for rb in readbacks)
+        print(f"{label:<22}{temp:>6.1f}{exp_idx:>10}{exp_duty:>10}  {rb_str}  {mark}")
 
     print('─' * 80)
     print(f"\n결과: {pass_count} pass, {fail_count} fail")
 
     # cleanup — duty 0으로 복귀
-    pcb.write_register(R.HR_PWM_DUTY_BASE + 8, 0)
-    pcb.write_register(R.HR_PWM_DUTY_BASE + 9, 0)
+    for ch in fan_chs:
+        pcb.write_register(R.hr_pwm_duty(ch), 0)
     rd.delete(K.COOLANT_TEMP_OUTLET1)
     pcb.close()
     return 0 if fail_count == 0 else 1

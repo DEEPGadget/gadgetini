@@ -10,6 +10,25 @@ from . import redis_keys as K
 log = logging.getLogger(__name__)
 
 
+def _contiguous_runs(channels):
+    """[8,9,10,12] → [(8, [8,9,10]), (12, [12])] 같이 연속 채널을 묶어 반환."""
+    if not channels:
+        return []
+    sorted_chs = sorted(set(channels))
+    runs = []
+    start = sorted_chs[0]
+    cur = [start]
+    for ch in sorted_chs[1:]:
+        if ch == cur[-1] + 1:
+            cur.append(ch)
+        else:
+            runs.append((start, cur))
+            start = ch
+            cur = [ch]
+    runs.append((start, cur))
+    return runs
+
+
 class FanCurveController:
     """Stage 1 lookup. self._last_idx로 단계 간 chattering 방지."""
 
@@ -17,6 +36,9 @@ class FanCurveController:
         self.stages = list(fan_curve_cfg['stages'])
         self.hyst = float(fan_curve_cfg.get('hysteresis_c', 1.0))
         self.fan_chs = list(fan_pwm_chs or [])
+        # 연속 채널은 FC16 한 트랜잭션으로 묶어 atomic write — back-to-back FC06로
+        # 두 채널 갱신 시 발생할 수 있는 펌웨어/타이밍 이슈 회피.
+        self._runs = _contiguous_runs(self.fan_chs)
         self._last_idx = None
 
     def _select_stage_idx(self, temp_c):
@@ -52,6 +74,14 @@ class FanCurveController:
             return
         idx = self._select_stage_idx(temp_c)
         duty = int(self.stages[idx]['duty'])
-        for ch in self.fan_chs:
-            pcb.write_register(R.hr_pwm_duty(ch), duty)
-        log.debug("outlet=%.1f °C → stage[%d] duty=%d → CH %s", temp_c, idx, duty, self.fan_chs)
+        for first_ch, run in self._runs:
+            base_hr = R.hr_pwm_duty(first_ch)
+            if len(run) == 1:
+                ok = pcb.write_register(base_hr, duty)
+            else:
+                ok = pcb.write_registers(base_hr, [duty] * len(run))
+            if not ok:
+                log.warning("fan duty write failed: CH %s (HR %d, %d ch) duty=%d",
+                            run, base_hr, len(run), duty)
+        log.debug("outlet=%.1f °C → stage[%d] duty=%d → CH %s",
+                  temp_c, idx, duty, self.fan_chs)
