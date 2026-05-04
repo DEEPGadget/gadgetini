@@ -36,6 +36,8 @@ function setV(id,text,cls){
 
 function evalInlet(v){if(v===undefined)return'normal';if(v>45||v<18)return'critical';if(v>40||v<22)return'warning';return'normal';}
 function evalOutlet(v){if(v===undefined)return'normal';if(v>65||v<18)return'critical';if(v>60||v<22)return'warning';return'normal';}
+function evalDelta(v){if(v===undefined)return'normal';if(v>20)return'critical';if(v>15)return'warning';return'normal';}
+function evalFlow(v){if(v===undefined)return'normal';if(v<3)return'critical';if(v<5)return'warning';return'normal';}
 function evalChasT(v){if(v===undefined)return'normal';if(v>50)return'critical';if(v>40)return'warning';return'normal';}
 function evalChasH(v){if(v===undefined)return'normal';if(v>80)return'critical';if(v>60)return'warning';return'normal';}
 function evalGpuT(v){if(v===undefined)return'normal';if(v>90)return'critical';if(v>75)return'warning';return'normal';}
@@ -46,14 +48,19 @@ function evalMemAvail(total,avail){if(!total||!avail)return'normal';const p=avai
 const sts=[];
 const i1=m['cooling_inlet1_temp'],i2=m['cooling_inlet2_temp'];
 const o1=m['cooling_outlet1_temp'],o2=m['cooling_outlet2_temp'];
+const d1=m['cooling_delta_t1'],d2=m['cooling_delta_t2'];
+const fl=m['cooling_coolant_flow'];
 const lv=m['cooling_level_full'],lk=m['cooling_leak_detected'];
 const ct=m['environment_air_temp'],ch=m['environment_air_humidity'];
 
 let s;
 s=evalInlet(i1);sts.push(s);setV('v-inlet1',fmt(i1,'\u00b0C'),s);
-s=evalInlet(i2);sts.push(s);setV('v-inlet2',fmt(i2,'\u00b0C'),s);
 s=evalOutlet(o1);sts.push(s);setV('v-outlet1',fmt(o1,'\u00b0C'),s);
+s=evalDelta(d1);sts.push(s);setV('v-dt1',fmt(d1,'\u00b0C'),s);
+s=evalInlet(i2);sts.push(s);setV('v-inlet2',fmt(i2,'\u00b0C'),s);
 s=evalOutlet(o2);sts.push(s);setV('v-outlet2',fmt(o2,'\u00b0C'),s);
+s=evalDelta(d2);sts.push(s);setV('v-dt2',fmt(d2,'\u00b0C'),s);
+s=evalFlow(fl);sts.push(s);setV('v-flow',fmt(fl,' L/min'),s);
 s=lv<0.5?'warning':'normal';sts.push(s);setV('v-level',lv>=0.5?'HIGH':'MIDDLE',s);
 s=lk>=0.5?'critical':'normal';sts.push(s);setV('v-leak',lk>=0.5?'LEAKED':'NORMAL',s);
 s=evalChasT(ct);sts.push(s);setV('v-ctemp',fmt(ct,'\u00b0C'),s);
@@ -90,6 +97,14 @@ if(hostEl){
   if(hv===undefined||hv===null){hostEl.className='host-badge off';hostEl.innerHTML='<span class="dot">●</span> HOST -';}
   else if(hv>=0.5){hostEl.className='host-badge on';hostEl.innerHTML='<span class="dot">●</span> HOST ON';}
   else{hostEl.className='host-badge off';hostEl.innerHTML='<span class="dot">●</span> HOST OFF';}
+}
+
+const ctrlEl=el('v-ctrl');
+if(ctrlEl){
+  const cv=m['control_board_comm_online'];
+  if(cv===undefined||cv===null){ctrlEl.className='host-badge off';ctrlEl.innerHTML='<span class="dot">●</span> CTRL -';}
+  else if(cv>=0.5){ctrlEl.className='host-badge on';ctrlEl.innerHTML='<span class="dot">●</span> CTRL ON';}
+  else{ctrlEl.className='host-badge off';ctrlEl.innerHTML='<span class="dot">●</span> CTRL OFF';sts.push('critical');}
 }
 
 const ibT=m['ib_temperature'];

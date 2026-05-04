@@ -90,7 +90,7 @@ import time
 from prometheus_client import start_http_server, CollectorRegistry
 from prometheus_client.core import GaugeMetricFamily
 import redis
-from machine_config import MACHINE, COOLANT_CHANNELS, GPU_COUNT, CPU_COUNT
+from machine_config import MACHINE, MACHINE_LABEL, COOLANT_CHANNELS, GPU_COUNT, CPU_COUNT
 
 client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
@@ -120,7 +120,7 @@ class DLCCollector:
             "DeepGadget DLC server sensors & telemetry",
             labels=["server", "component", "metric", "unit", "extra"]
         )
-        srv = MACHINE
+        srv = MACHINE_LABEL
 
         # Cooling - leak & level
         g.add_metric([srv, "cooling", "leak_detected", "bool", ""], get_int("coolant_leak"))

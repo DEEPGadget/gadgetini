@@ -88,7 +88,19 @@
       "Bash(journalctl -u sensor_exporter.service -n 5 --no-pager)",
       "Bash(journalctl -u usb-gadget-up.service -n 10 --no-pager)",
       "Bash(journalctl -u sensor_exporter.service --since \"1 hour ago\" --no-pager)",
-      "Bash(sudo ss *)"
+      "Bash(sudo ss *)",
+      "Bash(systemctl --no-pager status control_board.service)",
+      "Bash(systemctl --no-pager status pcb_watcher.service)",
+      "Bash(systemctl --no-pager status pcb_bootstrap.service)",
+      "Bash(journalctl -u control_board.service -n 100 --no-pager)",
+      "Bash(redis-cli KEYS 'fan_rpm_*')",
+      "Bash(redis-cli KEYS 'pwm_duty_*')",
+      "Bash(redis-cli KEYS 'coolant_flow_lpm')",
+      "Bash(redis-cli KEYS 'comm_status')",
+      "Bash(redis-cli KEYS 'coolant_delta_*')",
+      "Read(//etc/grafana/provisioning/**)",
+      "Read(//var/lib/grafana/**)",
+      "Read(//etc/grafana/provisioning/dashboards/**)"
     ]
   }
 }

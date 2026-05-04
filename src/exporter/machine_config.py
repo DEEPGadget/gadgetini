@@ -14,3 +14,8 @@ COOLANT_CHANNELS = {
     'dg5r': {'inlet1': 2, 'outlet1': 3, 'outlet2': 4, 'inlet2': 5},
     'dg5w': {'inlet1': 4, 'outlet1': 5},
 }
+
+# Display form used as the Prometheus `server` label and dashboard folder name.
+# Internal MACHINE stays lowercase so dict lookups / `if MACHINE == 'dg5w'` keep working.
+_MACHINE_LABELS = {'dg5r': 'dg5R', 'dg5w': 'dg5W'}
+MACHINE_LABEL = _MACHINE_LABELS.get(MACHINE, MACHINE)
