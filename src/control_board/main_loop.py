@@ -64,12 +64,12 @@ def run(pcb, rd, cfg, controller, config_path):
         rd.set(K.COMM_CONSECUTIVE_FAILURES, consecutive_fail)
         _update_comm_state(rd, consecutive_fail, timeout_n, disconnect_n)
 
-        # ── 2. 환경 센서 (Modbus 미경유) ──
+        # ── 2. 환경 센서 (aiexpo 행사용 dummy — 실제 센서 미사용) ──
         try:
-            t = env_sensors.get_air_temp()
+            t = env_sensors.get_air_temp_dummy(rd)
             if t is not None:
                 rd.set(K.AIR_TEMP, round(t, 1))
-            h = env_sensors.get_air_humit()
+            h = env_sensors.get_air_humit_dummy(rd)
             if h is not None:
                 rd.set(K.AIR_HUMIT, round(h, 1))
             # MPU6050 — dg5w 한정, dg5r은 None 반환하므로 SET 생략

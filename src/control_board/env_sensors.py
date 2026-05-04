@@ -143,3 +143,64 @@ def get_chassis_stabil():
         return 1
     except Exception:
         return 1
+
+
+# ──────────────────────────────────────────────
+# === aiexpo dummy block — DO NOT MERGE TO main ===
+# 행사 데모용. GPU 평균 온도 → chassis air_temp/humit 추정.
+# 가정: 상온 향온향습(22°C/50%RH baseline) + 액체냉각으로 부하 시 미세 상승.
+# ──────────────────────────────────────────────
+import random
+import sys as _sys
+_sys.path.insert(0, '/home/gadgetini/gadgetini/src/exporter')
+from machine_config import GPU_COUNT
+
+_DUMMY = {'t': 22.0, 'h': 33.0}
+_GPU_IDLE, _GPU_LOAD = 35.0, 70.0
+_AIR_BASE, _AIR_PEAK = 22.0, 25.0
+_RH_BASE, _HUM_SLOPE = 33.0, -0.7   # baseline 33%RH (실측 행사장 습도)
+_ALPHA = 0.05
+_NOISE_T, _NOISE_H = 0.08, 0.20
+_T_CLAMP = (21.5, 25.5)
+_H_CLAMP = (28.0, 36.0)
+_last_step_monotonic = 0.0
+
+
+def _read_gpu_avg(rd):
+    vals = []
+    for i in range(GPU_COUNT):
+        try:
+            v = float(rd.get(f'gpu_temp_{i}'))
+            if 5.0 < v < 110.0:
+                vals.append(v)
+        except (TypeError, ValueError):
+            pass
+    return sum(vals) / len(vals) if vals else None
+
+
+def _step_dummy(rd):
+    """Cycle당 1회만 EMA step. air_temp/humit 두 함수가 같은 cycle에서 호출돼도 한 번만 갱신."""
+    global _last_step_monotonic
+    now = time.monotonic()
+    if now - _last_step_monotonic < 0.3:
+        return
+    _last_step_monotonic = now
+    gpu_avg = _read_gpu_avg(rd)
+    if gpu_avg is None:
+        target_t = _AIR_BASE
+    else:
+        slope = (_AIR_PEAK - _AIR_BASE) / (_GPU_LOAD - _GPU_IDLE)
+        target_t = max(21.5, min(25.5, _AIR_BASE + slope * (gpu_avg - _GPU_IDLE)))
+    target_h = max(29.0, min(34.0, _RH_BASE + _HUM_SLOPE * (target_t - _AIR_BASE)))
+    _DUMMY['t'] = (1 - _ALPHA) * _DUMMY['t'] + _ALPHA * target_t + random.gauss(0, _NOISE_T)
+    _DUMMY['h'] = (1 - _ALPHA) * _DUMMY['h'] + _ALPHA * target_h + random.gauss(0, _NOISE_H)
+
+
+def get_air_temp_dummy(rd):
+    _step_dummy(rd)
+    return round(max(_T_CLAMP[0], min(_T_CLAMP[1], _DUMMY['t'])), 1)
+
+
+def get_air_humit_dummy(rd):
+    _step_dummy(rd)
+    return round(max(_H_CLAMP[0], min(_H_CLAMP[1], _DUMMY['h'])), 1)
