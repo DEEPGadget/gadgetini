@@ -100,7 +100,19 @@
       "Bash(redis-cli KEYS 'coolant_delta_*')",
       "Read(//etc/grafana/provisioning/**)",
       "Read(//var/lib/grafana/**)",
-      "Read(//etc/grafana/provisioning/dashboards/**)"
+      "Read(//etc/grafana/provisioning/dashboards/**)",
+      "Bash(redis-cli MGET coolant_leak coolant_level air_temp air_humit)",
+      "Bash(redis-cli KEYS '*leak*')",
+      "Bash(redis-cli KEYS '*level*')",
+      "Bash(redis-cli KEYS 'air_*')",
+      "Bash(redis-cli KEYS '*humit*')",
+      "Bash(journalctl -u control_board.service --since \"5 minutes ago\" --no-pager)",
+      "Bash(redis-cli OBJECT IDLETIME air_temp)",
+      "Bash(redis-cli OBJECT IDLETIME air_humit)",
+      "Bash(wait)",
+      "Bash(pip show *)",
+      "Bash(redis-cli GET coolant_leak)",
+      "Bash(journalctl -u control_board.service --since \"30 seconds ago\" --no-pager)"
     ]
   }
 }

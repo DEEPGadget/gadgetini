@@ -118,7 +118,7 @@ def poll_once(pcb, rd, cfg):
         pipe.set(K.COOLANT_LEVEL, _level_confirmed)
 
     # ── 누수: AIN voltage (IR 32~39, 0.01V 단위) — threshold + debounce ──
-    # PCB가 1:2 divider로 외부 0~10V 측정 → wet ≈ 0V, dry ≈ 10.5V (실측 2026-04-29).
+    # PCB가 1:2 divider로 외부 0~10V 측정 → wet ≈ 0V, dry ≈ 4.3V (실측 2026-05-04).
     # threshold 미만이면 leak=1.
     ain_map = wiring.get('ain', {}) or {}
     leak_ch = ain_map.get('leak_ch')
