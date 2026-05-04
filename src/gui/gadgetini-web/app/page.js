@@ -94,7 +94,7 @@ function HomeInner() {
               onClick={() => setSelectedMenu("settings")}
             >
               <CogIcon className="inline-block w-5 h-5 mr-2" />
-              Settings
+              {t("settings")}
             </li>
           </ul>
         </aside>

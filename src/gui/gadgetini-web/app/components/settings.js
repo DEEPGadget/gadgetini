@@ -157,7 +157,7 @@ export default function Settings() {
   };
 
   const handleIPChange = async () => {
-    if (!window.confirm("Are you sure you want to change the IP?")) {
+    if (!window.confirm(t("ip_change_confirm"))) {
       return;
     }
     setLoadingState({ ...loadingState, updateIP: true });
@@ -182,7 +182,7 @@ export default function Settings() {
         );
       } else {
         const message = await response.json();
-        alert(`Failed to update IP \n ${message.error}`);
+        alert(`${t("ip_update_failed")} \n ${message.error}`);
       }
     } catch (error) {
       console.log(error);
@@ -203,7 +203,7 @@ export default function Settings() {
         console.log("Config updated successfully");
       } else {
         const message = await response.json();
-        alert(`Failed to update config \n ${message.error}`);
+        alert(`${t("config_update_failed")} \n ${message.error}`);
       }
     } catch (error) {
       console.error(error);
@@ -297,24 +297,24 @@ export default function Settings() {
         ══════════════════════════════════════ */}
         <div className="w-full lg:w-72 flex-shrink-0">
           <div className="rounded-2xl overflow-hidden shadow-sm">
-            <SectionHeader label="System" colorClass="bg-slate-800" />
+            <SectionHeader label={t("section_system")} colorClass="bg-slate-800" />
             <div className="bg-white p-4 space-y-4">
 
               {/* Current IP */}
               <div>
-                <p className="text-xs text-gray-400 mb-1">Current IP</p>
+                <p className="text-xs text-gray-400 mb-1">{t("current_ip")}</p>
                 <p className="text-base font-bold text-gray-900">{currentIP}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ethActive ? "bg-green-400" : "bg-red-400"}`} />
                   <span className="text-xs text-gray-400">
-                    {ethActive ? "eth0 active" : "eth0 not detected"}
+                    {ethActive ? t("eth0_active") : t("eth0_inactive")}
                   </span>
                 </div>
               </div>
 
               {/* Server Select */}
               <div>
-                <p className="text-xs text-gray-400 mb-2">Server</p>
+                <p className="text-xs text-gray-400 mb-2">{t("server")}</p>
                 <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                   {SERVERS.map(({ label, value }) => (
                     <button
@@ -342,7 +342,7 @@ export default function Settings() {
                   hover:from-orange-600 hover:to-yellow-500
                   text-white text-sm font-semibold shadow transition-all"
               >
-                Open Dashboard
+                {t("open_dashboard")}
                 <ArrowTopRightOnSquareIcon className="w-4 h-4" />
               </a>
 
@@ -350,7 +350,7 @@ export default function Settings() {
 
               {/* Network Mode */}
               <div>
-                <p className="text-xs text-gray-400 mb-2">Network Mode</p>
+                <p className="text-xs text-gray-400 mb-2">{t("network_mode")}</p>
                 <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                   {["dhcp", "static"].map((mode) => (
                     <button
@@ -372,11 +372,11 @@ export default function Settings() {
               {IPMode === "static" && (
                 <div className="space-y-2">
                   {[
-                    { placeholder: "IP Address", refKey: "ip" },
-                    { placeholder: "Prefix Length (e.g. 24)", refKey: "netmask" },
-                    { placeholder: "Gateway", refKey: "gateway" },
-                    { placeholder: "DNS 1 (optional)", refKey: "dns1" },
-                    { placeholder: "DNS 2 (optional)", refKey: "dns2" },
+                    { placeholder: t("ip_address"), refKey: "ip" },
+                    { placeholder: t("prefix_length"), refKey: "netmask" },
+                    { placeholder: t("gateway"), refKey: "gateway" },
+                    { placeholder: t("dns1"), refKey: "dns1" },
+                    { placeholder: t("dns2"), refKey: "dns2" },
                   ].map(({ placeholder, refKey }) => (
                     <input
                       key={refKey}
@@ -392,7 +392,7 @@ export default function Settings() {
               {/* eth warning */}
               {!ethActive && (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  ⚠ eth0 not connected — IP update unavailable
+                  {t("eth0_warning")}
                 </p>
               )}
 
@@ -402,7 +402,7 @@ export default function Settings() {
                 disabled={loadingState.updateIP}
                 className="flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-xl hover:bg-blue-600 transition-all disabled:opacity-50"
               >
-                {loadingState.updateIP ? "Updating..." : "Update IP"}
+                {loadingState.updateIP ? t("updating") : t("update_ip")}
                 <CheckIcon className="w-4 h-4 ml-2" />
               </button>
             </div>
@@ -414,18 +414,18 @@ export default function Settings() {
         ══════════════════════════════════════ */}
         <div className="flex-1 min-w-0 space-y-3">
           <p className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">
-            LCD Control
+            {t("section_lcd_control")}
           </p>
 
           {/* ── General ── */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
-            <SectionHeader label="General" colorClass="bg-slate-700" />
+            <SectionHeader label={t("section_general")} colorClass="bg-slate-700" />
             <div className="bg-white p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Display master */}
               <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">Display</p>
-                  <p className="text-xs text-gray-400">LCD master on/off</p>
+                  <p className="text-sm font-semibold text-gray-800">{t("display")}</p>
+                  <p className="text-xs text-gray-400">{t("display_master")}</p>
                 </div>
                 <Toggle
                   value={displayMode.display}
@@ -437,11 +437,11 @@ export default function Settings() {
 
               {/* Orientation */}
               <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
-                <p className="text-sm font-semibold text-gray-800">Orientation</p>
+                <p className="text-sm font-semibold text-gray-800">{t("orientation")}</p>
                 <div className="flex gap-1 bg-white rounded-lg p-1 shadow-sm border border-gray-100">
                   {[
-                    { label: "Vertical", value: "vertical", Icon: ArrowUpIcon },
-                    { label: "Horizontal", value: "horizontal", Icon: ArrowRightIcon },
+                    { label: t("vertical"), value: "vertical", Icon: ArrowUpIcon },
+                    { label: t("horizontal"), value: "horizontal", Icon: ArrowRightIcon },
                   ].map(({ label, value, Icon }) => (
                     <button
                       key={value}
@@ -464,8 +464,8 @@ export default function Settings() {
               {/* Rotation */}
               <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">Rotation</p>
-                  <p className="text-xs text-gray-400">Panel switch interval</p>
+                  <p className="text-sm font-semibold text-gray-800">{t("rotation")}</p>
+                  <p className="text-xs text-gray-400">{t("rotation_desc")}</p>
                 </div>
                 <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 shadow-sm border border-gray-100">
                   <input
@@ -481,7 +481,7 @@ export default function Settings() {
                     }}
                     className="w-10 text-center text-sm font-bold focus:outline-none bg-transparent text-gray-800"
                   />
-                  <span className="text-xs text-gray-400">sec</span>
+                  <span className="text-xs text-gray-400">{t("sec_unit")}</span>
                 </div>
               </div>
             </div>
@@ -489,12 +489,12 @@ export default function Settings() {
 
           {/* ── Hardware Count ── */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
-            <SectionHeader label="Hardware Count" colorClass="bg-gray-600" />
+            <SectionHeader label={t("section_hardware_count")} colorClass="bg-gray-600" />
             <div className="bg-white p-4 grid grid-cols-3 gap-4">
               {[
-                { label: "GPU Count", key: "gpuCount", min: 0, max: 8 },
-                { label: "CPU Count", key: "cpuCount", min: 1, max: 4 },
-                { label: "Fan Count", key: "fanCount", min: 0, max: 8 },
+                { label: t("gpu_count"), key: "gpuCount", min: 0, max: 8 },
+                { label: t("cpu_count"), key: "cpuCount", min: 1, max: 4 },
+                { label: t("fan_count"), key: "fanCount", min: 0, max: 8 },
               ].map(({ label, key, min, max }) => (
                 <div key={key} className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                   <div>
@@ -528,12 +528,12 @@ export default function Settings() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Compute */}
             <div className="rounded-2xl overflow-hidden shadow-sm">
-              <SectionHeader label="Compute" colorClass="bg-blue-600" />
+              <SectionHeader label={t("section_compute")} colorClass="bg-blue-600" />
               <div className="bg-blue-50/60 p-3 grid grid-cols-3 gap-2">
                 {[
-                  { label: "CPU", key: "cpu" },
-                  { label: "GPU", key: "gpu" },
-                  { label: "Memory", key: "memory" },
+                  { label: t("cpu"), key: "cpu" },
+                  { label: t("gpu"), key: "gpu" },
+                  { label: t("memory"), key: "memory" },
                 ].map(({ label, key }) => (
                   <GridCard
                     key={key}
@@ -549,15 +549,15 @@ export default function Settings() {
 
             {/* Cooling & Chassis */}
             <div className="rounded-2xl overflow-hidden shadow-sm">
-              <SectionHeader label="Cooling & Chassis" colorClass="bg-teal-600" />
+              <SectionHeader label={t("section_cooling_chassis")} colorClass="bg-teal-600" />
               <div className="bg-teal-50/60 p-3 grid grid-cols-2 gap-2">
                 {[
-                  { label: "Chassis", key: "chassis" },
-                  { label: "Coolant", key: "coolant" },
-                  { label: "Coolant Detail", key: "coolant_detail" },
-                  { label: "Coolant Flow", key: "coolant_flow" },
-                  { label: "Fan RPM", key: "fan_rpm" },
-                  { label: "Leak", key: "leak" },
+                  { label: t("chassis"), key: "chassis" },
+                  { label: t("coolant"), key: "coolant" },
+                  { label: t("coolant_detail"), key: "coolant_detail" },
+                  { label: t("coolant_flow"), key: "coolant_flow" },
+                  { label: t("fan_rpm"), key: "fan_rpm" },
+                  { label: t("leak"), key: "leak" },
                 ].map(({ label, key }) => (
                   <GridCard
                     key={key}
@@ -574,12 +574,12 @@ export default function Settings() {
 
           {/* ── Daily Graphs ── */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
-            <SectionHeader label="Daily Graphs" colorClass="bg-violet-600" />
+            <SectionHeader label={t("section_daily_graphs")} colorClass="bg-violet-600" />
             <div className="bg-violet-50/60 p-3 grid grid-cols-3 gap-2">
               {[
-                { label: "CPU Daily", key: "cpu_daily" },
-                { label: "GPU Daily", key: "gpu_daily" },
-                { label: "Coolant Daily", key: "coolant_daily" },
+                { label: t("cpu_daily"), key: "cpu_daily" },
+                { label: t("gpu_daily"), key: "gpu_daily" },
+                { label: t("coolant_daily"), key: "coolant_daily" },
               ].map(({ label, key }) => (
                 <GridCard
                   key={key}
@@ -605,7 +605,7 @@ export default function Settings() {
               ) : (
                 <>
                   <CheckIcon className="w-4 h-4 mr-2" />
-                  Apply
+                  {t("apply")}
                 </>
               )}
             </button>
@@ -615,12 +615,12 @@ export default function Settings() {
               Control Board
           ══════════════════════════════════════ */}
           <p className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1 pt-3">
-            Control Board
+            {t("section_control_board")}
           </p>
 
           {/* ── Status + Mode ── */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
-            <SectionHeader label="PCB Status" colorClass="bg-emerald-700" />
+            <SectionHeader label={t("section_pcb_status")} colorClass="bg-emerald-700" />
             <div className="bg-white p-4 flex flex-wrap items-center gap-x-6 gap-y-3">
               {/* Service running 여부 */}
               <div className="flex items-center gap-2">
@@ -630,7 +630,7 @@ export default function Settings() {
                   }`}
                 />
                 <span className="text-sm font-semibold text-gray-800">
-                  {cbStatus.service_active ? "Service Active" : "Service Inactive"}
+                  {cbStatus.service_active ? t("service_active") : t("service_inactive")}
                 </span>
                 <span className="text-xs text-gray-400">control_board.service</span>
               </div>
@@ -647,34 +647,36 @@ export default function Settings() {
                 />
                 <span className="text-sm font-semibold text-gray-800">
                   {cbStatus.pcb_connected
-                    ? "PCB Connected"
+                    ? t("pcb_connected")
                     : cbStatus.service_active
-                    ? `PCB ${cbStatus.comm_status === "timeout" ? "Timeout" : "Disconnected"}`
-                    : "PCB Status Unknown"}
+                    ? cbStatus.comm_status === "timeout"
+                      ? t("pcb_timeout")
+                      : t("pcb_disconnected")
+                    : t("pcb_status_unknown")}
                 </span>
                 <span className="text-xs text-gray-400 font-mono">
                   comm: {cbStatus.comm_status}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-400 uppercase tracking-wider">Mode</span>
+                <span className="text-xs text-gray-400 uppercase tracking-wider">{t("mode")}</span>
                 <label className="flex items-center gap-1.5 text-sm">
                   <input type="radio" name="cb-mode" checked readOnly />
-                  Auto
+                  {t("auto")}
                 </label>
                 <label
                   className="flex items-center gap-1.5 text-sm text-gray-300 cursor-not-allowed"
-                  title="TBD — Manual mode not yet implemented"
+                  title={t("manual_tbd")}
                 >
                   <input type="radio" name="cb-mode" disabled />
-                  Manual <span className="text-[10px]">(TBD)</span>
+                  {t("manual")} <span className="text-[10px]">{t("tbd_short")}</span>
                 </label>
               </div>
               {!cbStatus.active && (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1">
                   {!cbStatus.service_active
-                    ? "⚠ control_board.service inactive — controls disabled"
-                    : "⚠ PCB unreachable — controls disabled"}
+                    ? t("service_inactive_warning")
+                    : t("pcb_unreachable_warning")}
                 </p>
               )}
             </div>
@@ -682,11 +684,11 @@ export default function Settings() {
 
           {/* ── PWM Duty (read-only) ── */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
-            <SectionHeader label="PWM Duty (read-only)" colorClass="bg-emerald-600" />
+            <SectionHeader label={t("section_pwm_duty")} colorClass="bg-emerald-600" />
             <div className="bg-emerald-50/60 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-white rounded-xl p-3">
                 <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
-                  Pumps · CH 1~4
+                  {t("pumps_label")}
                 </p>
                 <div className="space-y-1">
                   {cbPwm.pump.map((duty, i) => (
@@ -710,7 +712,7 @@ export default function Settings() {
                 {/* 펌프 유량 추정 — duty + 토폴로지 multiplier 기반 (config.yaml § pump). */}
                 <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-sm">
                   <span className="text-gray-500 text-xs uppercase tracking-wider">
-                    Est. flow
+                    {t("estimated_flow")}
                   </span>
                   <span className="font-mono">
                     {cbPwm.coolantFlowLpm === null ? (
@@ -726,7 +728,7 @@ export default function Settings() {
               </div>
               <div className="bg-white rounded-xl p-3">
                 <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
-                  Fans · CH 5~12
+                  {t("fans_label")}
                 </p>
                 <div className="space-y-1">
                   {cbPwm.fan.map((duty, i) => (
@@ -878,7 +880,7 @@ export default function Settings() {
                     <button
                       disabled={!cbStatus.active || fanCurveSaving}
                       onClick={handleFanCurveSave}
-                      title={!cbStatus.active ? t("service_inactive") : ""}
+                      title={!cbStatus.active ? t("service_inactive_tooltip") : ""}
                       className="inline-flex items-center justify-center h-9 px-5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {fanCurveSaving ? (
