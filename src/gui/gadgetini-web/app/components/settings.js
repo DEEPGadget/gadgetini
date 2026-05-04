@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/24/solid";
 import LoadingSpinner from "../utils/LoadingSpinner";
 import { getDisplayConfig } from "../utils/display/getDisplayConfig";
+import { useLocale } from "../i18n";
 
 function Toggle({ value, onChange }) {
   return (
@@ -65,6 +66,7 @@ const SERVERS = [
 ];
 
 export default function Settings() {
+  const { t } = useLocale();
   const [currentIP, setCurrentIP] = useState("localhost");
   const [ethActive, setEthActive] = useState(false);
   const [serverName, setServerName] = useState("dg5r");
@@ -277,10 +279,10 @@ export default function Settings() {
       });
       if (!r.ok) {
         const e = await r.json().catch(() => ({}));
-        alert(`Failed to save fan curve: ${e.error || r.status}`);
+        alert(`${t("save_failed")}: ${e.error || r.status}`);
       }
     } catch (err) {
-      alert(`Failed to save fan curve: ${err?.message || err}`);
+      alert(`${t("save_failed")}: ${err?.message || err}`);
     } finally {
       setFanCurveSaving(false);
     }
@@ -761,28 +763,26 @@ export default function Settings() {
 
           {/* ── Fan Curve editor ── */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
-            <SectionHeader label="Fan Curve (Auto)" colorClass="bg-emerald-500" />
+            <SectionHeader label={t("fan_curve_title")} colorClass="bg-emerald-500" />
             <div className="bg-white p-4">
               {fanCurveLoading ? (
-                <p className="text-sm text-gray-400">Loading...</p>
+                <p className="text-sm text-gray-400">{t("loading")}</p>
               ) : (
                 <>
-                  <p className="text-xs text-gray-500 mb-4">
-                    Below idle temp: idle PWM. Above warning temp: max PWM. Linear interpolation between.
-                  </p>
+                  <p className="text-xs text-gray-500 mb-4">{t("fan_curve_desc")}</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     {/* Idle pair */}
                     <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
                         <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                          Idle
+                          {t("idle_group")}
                         </h5>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <label className="flex flex-col gap-1">
                           <span className="text-[10px] text-gray-500 font-semibold uppercase">
-                            Idle Temp (°C)
+                            {t("idle_temp")}
                           </span>
                           <input
                             type="number"
@@ -802,7 +802,7 @@ export default function Settings() {
                         </label>
                         <label className="flex flex-col gap-1">
                           <span className="text-[10px] text-gray-500 font-semibold uppercase">
-                            Idle PWM (%)
+                            {t("idle_pwm")}
                           </span>
                           <input
                             type="number"
@@ -827,13 +827,13 @@ export default function Settings() {
                       <div className="flex items-center gap-2 mb-2">
                         <span className="inline-block w-2 h-2 rounded-full bg-rose-400" />
                         <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                          Warning
+                          {t("warning_group")}
                         </h5>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <label className="flex flex-col gap-1">
                           <span className="text-[10px] text-gray-500 font-semibold uppercase">
-                            Warning Temp (°C)
+                            {t("warning_temp")}
                           </span>
                           <input
                             type="number"
@@ -853,7 +853,7 @@ export default function Settings() {
                         </label>
                         <label className="flex flex-col gap-1">
                           <span className="text-[10px] text-gray-500 font-semibold uppercase">
-                            Max PWM (%)
+                            {t("max_pwm")}
                           </span>
                           <input
                             type="number"
@@ -878,7 +878,7 @@ export default function Settings() {
                     <button
                       disabled={!cbStatus.active || fanCurveSaving}
                       onClick={handleFanCurveSave}
-                      title={!cbStatus.active ? "control_board.service is inactive" : ""}
+                      title={!cbStatus.active ? t("service_inactive") : ""}
                       className="inline-flex items-center justify-center h-9 px-5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {fanCurveSaving ? (
@@ -886,7 +886,7 @@ export default function Settings() {
                       ) : (
                         <>
                           <CheckIcon className="w-4 h-4 mr-2" />
-                          Save
+                          {t("save")}
                         </>
                       )}
                     </button>
