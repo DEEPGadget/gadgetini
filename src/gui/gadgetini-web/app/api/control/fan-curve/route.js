@@ -1,8 +1,8 @@
 // GET  /api/control/fan-curve  → returns current fan_curve from config.yaml
 // PUT  /api/control/fan-curve  → writes new fan_curve into config.yaml (atomic rename)
 //
-// control_board는 mtime 변경을 polling으로 감지하여 다음 cycle (~1s) 안에 PCB에 반영한다.
-// 주석/포맷은 js-yaml dump 시 손실됨 (UX 우선, 후속 PR에서 lossless yaml 검토).
+// Schema: linear interpolation between (min_temp, min_duty) and (max_temp, max_duty).
+// duty 단위는 0.1% (0~1000). control_board 는 mtime polling 으로 다음 cycle (~1s) 안에 반영.
 import { NextResponse } from "next/server";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -12,10 +12,16 @@ const CONFIG_PATH =
   process.env.CONTROL_BOARD_CONFIG ||
   "/home/gadgetini/gadgetini/src/control_board/config.yaml";
 
+const DEFAULTS = { min_temp: 25, max_temp: 60, min_duty: 100, max_duty: 1000 };
+
 async function loadConfig() {
   const raw = await fs.readFile(CONFIG_PATH, "utf8");
   const doc = yaml.load(raw) || {};
   return { raw, doc };
+}
+
+function num(v, fallback) {
+  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
 }
 
 export async function GET() {
@@ -23,8 +29,10 @@ export async function GET() {
     const { doc } = await loadConfig();
     const fc = doc.fan_curve || {};
     return NextResponse.json({
-      hysteresis_c: typeof fc.hysteresis_c === "number" ? fc.hysteresis_c : 1.0,
-      stages: Array.isArray(fc.stages) ? fc.stages : [],
+      min_temp: num(fc.min_temp, DEFAULTS.min_temp),
+      max_temp: num(fc.max_temp, DEFAULTS.max_temp),
+      min_duty: num(fc.min_duty, DEFAULTS.min_duty),
+      max_duty: num(fc.max_duty, DEFAULTS.max_duty),
     });
   } catch (err) {
     return NextResponse.json(
@@ -36,24 +44,16 @@ export async function GET() {
 
 function validate(body) {
   if (!body || typeof body !== "object") return "body must be an object";
-  const { hysteresis_c, stages } = body;
-  if (typeof hysteresis_c !== "number" || hysteresis_c < 0 || hysteresis_c > 10) {
-    return "hysteresis_c must be a number in [0, 10]";
+  const { min_temp, max_temp, min_duty, max_duty } = body;
+  for (const [k, v] of Object.entries({ min_temp, max_temp, min_duty, max_duty })) {
+    if (typeof v !== "number" || !Number.isFinite(v)) return `${k} must be a finite number`;
   }
-  if (!Array.isArray(stages) || stages.length < 1 || stages.length > 16) {
-    return "stages must be an array of length 1~16";
-  }
-  for (const [i, s] of stages.entries()) {
-    if (!s || typeof s !== "object") return `stages[${i}] must be an object`;
-    const u = s.until_outlet;
-    const d = s.duty;
-    if (u !== null && typeof u !== "number") {
-      return `stages[${i}].until_outlet must be number or null`;
-    }
-    if (typeof d !== "number" || d < 0 || d > 1000) {
-      return `stages[${i}].duty must be a number in [0, 1000]`;
-    }
-  }
+  if (min_temp < 0 || min_temp > 100) return "min_temp must be in [0, 100]";
+  if (max_temp < 0 || max_temp > 100) return "max_temp must be in [0, 100]";
+  if (min_temp >= max_temp) return "min_temp must be < max_temp";
+  if (min_duty < 0 || min_duty > 1000) return "min_duty must be in [0, 1000]";
+  if (max_duty < 0 || max_duty > 1000) return "max_duty must be in [0, 1000]";
+  if (min_duty >= max_duty) return "min_duty must be < max_duty";
   return null;
 }
 
@@ -71,11 +71,10 @@ export async function PUT(req) {
   try {
     const { doc } = await loadConfig();
     doc.fan_curve = {
-      hysteresis_c: body.hysteresis_c,
-      stages: body.stages.map((s) => ({
-        until_outlet: s.until_outlet,
-        duty: s.duty,
-      })),
+      min_temp: body.min_temp,
+      max_temp: body.max_temp,
+      min_duty: body.min_duty,
+      max_duty: body.max_duty,
     };
 
     const out = yaml.dump(doc, { lineWidth: 120, noRefs: true });

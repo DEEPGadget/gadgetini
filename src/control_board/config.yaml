@@ -13,9 +13,9 @@ modbus:
 loop:
   cycle_seconds: 1
 pwm_freq:
-  tim1: 1000      # HR 12 — CH1~4  (pump, 1 kHz)
-  tim2: 25000     # HR 13 — CH5~8  (fan,  25 kHz)
-  tim8: 25000     # HR 14 — CH9~12 (fan,  25 kHz)
+  tim1: 1000
+  tim2: 25000
+  tim8: 25000
 initial_pwm_duty:
   pump:
     ch1: 600
@@ -33,18 +33,10 @@ initial_pwm_duty:
     ch12: 200
 initial_dout_bitmask: 0
 fan_curve:
-  hysteresis_c: 1
-  stages:
-    - until_outlet: 30
-      duty: 200
-    - until_outlet: 40
-      duty: 400
-    - until_outlet: 50
-      duty: 650
-    - until_outlet: 60
-      duty: 850
-    - until_outlet: 65
-      duty: 1000
+  min_temp: 25
+  max_temp: 60
+  min_duty: 100
+  max_duty: 1000
 comm:
   timeout_after_failures: 3
   disconnected_after_failures: 10
@@ -58,10 +50,10 @@ wiring:
     outlet2: 15
     inlet2: 16
   din:
-    level_bit: 1     # DIN2 (D12) — 수위 (1=정상, 0=LOW)
+    level_bit: 1
   ain:
-    leak_ch: 8                 # CH8 AIN — 누수 센서 (D11에서 변경됨, 2026-04-29)
-    leak_threshold_v: 2.0      # voltage < 2V → 누수 (wet≈0V, dry≈4.3V 실측 2026-05-04)
+    leak_ch: 8
+    leak_threshold_v: 2
   pulse:
     fan_tach_chs:
       - 8

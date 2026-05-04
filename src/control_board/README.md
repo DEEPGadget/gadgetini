@@ -159,17 +159,21 @@ flow_lpm = max_flow_lpm × (avg_pump_duty / 1000) × flow_multiplier
 
 향후 유량 센서 도입 시 ΔT-cascade로 확장 가능. 도입 전 단계 옵션으로는 baseline 위로만 올리는 **boost-only** 패턴(예: ΔT > 15 °C 시 일시 +20%)이 starvation 리스크 없이 마진을 확보하는 안전한 방법.
 
-**Fan curve (lookup table)**
+**Fan curve (linear interpolation)**
 
-| outlet | fan duty |
-|---|---|
-| < 30 °C | 20% |
-| 30~40 °C | 40% |
-| 40~50 °C | 65% |
-| 50~60 °C | 85% |
-| ≥ 60 °C | 100% |
+`min_temp`, `max_temp`, `min_duty`, `max_duty` 4개 파라미터의 선형 보간 — 단계 점프 없이 부드럽게 ramp.
 
-단계 경계에서 ±1 °C hysteresis로 chattering 방지. PWM 변경 시 PCB가 자체 S-Curve 1초 보간하므로 호스트 측 추가 rate limit 불필요.
+```
+outlet ≤ min_temp           → min_duty
+min_temp < outlet < max_temp → 선형 보간
+outlet ≥ max_temp           → max_duty
+```
+
+기본값 (config.yaml): `min_temp=30 °C`, `max_temp=60 °C`, `min_duty=100 (10%)`, `max_duty=1000 (100%)`. 30→60 °C 구간에서 5 °C 당 +15% 의 균일한 변화. `max_temp=60 °C` 는 outlet warning 임계와 일치(critical 65 °C 까지 5 °C thermal margin 확보). `min_duty=10%` 는 idle 시에도 항상 약풍으로 회전(silent baseline).
+
+GUI(/api/control/fan-curve) 에서 4 파라미터 모두 조정 가능. config.yaml mtime 변경 즉시 hot-reload (서비스 재시작 불필요).
+
+Modbus chatter 회피: controller 가 `|Δduty| < 5 (0.5%)` 변화는 PCB write 생략. 0.1°C 노이즈에도 매 cycle write 가 안 일어남. 단계 chattering 자체가 없어 hysteresis 불필요. PWM 변경 시 PCB 가 자체 S-Curve 1초 보간하므로 호스트 측 추가 rate limit 불필요.
 
 **Loop instance**
 

@@ -123,7 +123,12 @@ export default function Settings() {
     fanRpm: [null, null, null, null, null, null, null, null],
     coolantFlowLpm: null,
   });
-  const [fanCurve, setFanCurve] = useState({ hysteresis_c: 1.0, stages: [] });
+  const [fanCurve, setFanCurve] = useState({
+    min_temp: 25,
+    max_temp: 60,
+    min_duty: 100,
+    max_duty: 1000,
+  });
   const [fanCurveLoading, setFanCurveLoading] = useState(true);
   const [fanCurveSaving, setFanCurveSaving] = useState(false);
 
@@ -248,7 +253,15 @@ export default function Settings() {
     fetch("/api/control/fan-curve")
       .then((r) => r.json())
       .then((d) => {
-        if (d && Array.isArray(d.stages)) setFanCurve(d);
+        if (
+          d &&
+          typeof d.min_temp === "number" &&
+          typeof d.max_temp === "number" &&
+          typeof d.min_duty === "number" &&
+          typeof d.max_duty === "number"
+        ) {
+          setFanCurve(d);
+        }
       })
       .catch(() => {})
       .finally(() => setFanCurveLoading(false));
@@ -754,109 +767,114 @@ export default function Settings() {
                 <p className="text-sm text-gray-400">Loading...</p>
               ) : (
                 <>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">
-                      Hysteresis (°C)
-                    </span>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min={0}
-                      max={10}
-                      disabled={!cbStatus.active}
-                      value={fanCurve.hysteresis_c}
-                      onChange={(e) =>
-                        setFanCurve((p) => ({
-                          ...p,
-                          hysteresis_c: Number(e.target.value) || 0,
-                        }))
-                      }
-                      className="w-20 border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
-                    />
+                  <p className="text-xs text-gray-500 mb-4">
+                    Below idle temp: idle PWM. Above warning temp: max PWM. Linear interpolation between.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* Idle pair */}
+                    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
+                        <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                          Idle
+                        </h5>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="flex flex-col gap-1">
+                          <span className="text-[10px] text-gray-500 font-semibold uppercase">
+                            Idle Temp (°C)
+                          </span>
+                          <input
+                            type="number"
+                            step="1"
+                            min={0}
+                            max={100}
+                            disabled={!cbStatus.active}
+                            value={fanCurve.min_temp}
+                            onChange={(e) =>
+                              setFanCurve((p) => ({
+                                ...p,
+                                min_temp: Number(e.target.value),
+                              }))
+                            }
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className="text-[10px] text-gray-500 font-semibold uppercase">
+                            Idle PWM (%)
+                          </span>
+                          <input
+                            type="number"
+                            step="1"
+                            min={0}
+                            max={100}
+                            disabled={!cbStatus.active}
+                            value={Math.round(fanCurve.min_duty / 10)}
+                            onChange={(e) =>
+                              setFanCurve((p) => ({
+                                ...p,
+                                min_duty: Math.max(0, Math.min(1000, Number(e.target.value) * 10)),
+                              }))
+                            }
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                    {/* Warning pair */}
+                    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="inline-block w-2 h-2 rounded-full bg-rose-400" />
+                        <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                          Warning
+                        </h5>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="flex flex-col gap-1">
+                          <span className="text-[10px] text-gray-500 font-semibold uppercase">
+                            Warning Temp (°C)
+                          </span>
+                          <input
+                            type="number"
+                            step="1"
+                            min={0}
+                            max={100}
+                            disabled={!cbStatus.active}
+                            value={fanCurve.max_temp}
+                            onChange={(e) =>
+                              setFanCurve((p) => ({
+                                ...p,
+                                max_temp: Number(e.target.value),
+                              }))
+                            }
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className="text-[10px] text-gray-500 font-semibold uppercase">
+                            Max PWM (%)
+                          </span>
+                          <input
+                            type="number"
+                            step="1"
+                            min={0}
+                            max={100}
+                            disabled={!cbStatus.active}
+                            value={Math.round(fanCurve.max_duty / 10)}
+                            onChange={(e) =>
+                              setFanCurve((p) => ({
+                                ...p,
+                                max_duty: Math.max(0, Math.min(1000, Number(e.target.value) * 10)),
+                              }))
+                            }
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                          />
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-xs text-gray-500 border-b uppercase tracking-wider">
-                        <th className="text-left py-2 font-bold">Until Outlet (°C)</th>
-                        <th className="text-left py-2 font-bold">Duty (0~1000)</th>
-                        <th className="text-left py-2 font-bold">%</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {fanCurve.stages.map((s, i) => (
-                        <tr key={i} className="border-b last:border-b-0">
-                          <td className="py-2">
-                            <input
-                              type="number"
-                              disabled={!cbStatus.active}
-                              value={s.until_outlet ?? ""}
-                              placeholder="(ceiling)"
-                              onChange={(e) => {
-                                const v = e.target.value === "" ? null : Number(e.target.value);
-                                setFanCurve((p) => ({
-                                  ...p,
-                                  stages: p.stages.map((x, j) =>
-                                    j === i ? { ...x, until_outlet: v } : x
-                                  ),
-                                }));
-                              }}
-                              className="w-24 border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
-                            />
-                          </td>
-                          <td className="py-2">
-                            <input
-                              type="number"
-                              min={0}
-                              max={1000}
-                              disabled={!cbStatus.active}
-                              value={s.duty}
-                              onChange={(e) => {
-                                const v = Number(e.target.value);
-                                setFanCurve((p) => ({
-                                  ...p,
-                                  stages: p.stages.map((x, j) =>
-                                    j === i ? { ...x, duty: v } : x
-                                  ),
-                                }));
-                              }}
-                              className="w-24 border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
-                            />
-                          </td>
-                          <td className="py-2 text-xs text-gray-500 font-mono">
-                            {(s.duty / 10).toFixed(1)}%
-                          </td>
-                          <td className="py-2 text-right">
-                            <button
-                              disabled={!cbStatus.active || fanCurve.stages.length <= 1}
-                              onClick={() =>
-                                setFanCurve((p) => ({
-                                  ...p,
-                                  stages: p.stages.filter((_, j) => j !== i),
-                                }))
-                              }
-                              className="text-xs text-red-500 hover:text-red-700 disabled:text-gray-300 disabled:cursor-not-allowed"
-                            >
-                              Remove
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="flex justify-between items-center pt-3">
-                    <button
-                      disabled={!cbStatus.active}
-                      onClick={() =>
-                        setFanCurve((p) => ({
-                          ...p,
-                          stages: [...p.stages, { until_outlet: null, duty: 1000 }],
-                        }))
-                      }
-                      className="text-xs px-3 py-1.5 border border-emerald-300 rounded-lg text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      + Add Stage
-                    </button>
+                  <div className="flex justify-end items-center pt-1">
                     <button
                       disabled={!cbStatus.active || fanCurveSaving}
                       onClick={handleFanCurveSave}
