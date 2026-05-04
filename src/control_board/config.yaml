@@ -1,0 +1,69 @@
+modbus:
+  port:
+    - /dev/serial0
+    - /dev/ttyUSB0
+  baud:
+    - 115200
+    - 9600
+  slave: 1
+  parity: 'N'
+  stopbits: 1
+  bytesize: 8
+  timeout_seconds: 1
+loop:
+  cycle_seconds: 1
+pwm_freq:
+  tim1: 1000
+  tim2: 25000
+  tim8: 25000
+initial_pwm_duty:
+  pump:
+    ch1: 600
+    ch2: 600
+    ch3: 600
+    ch4: 600
+  fan:
+    ch5: 200
+    ch6: 200
+    ch7: 200
+    ch8: 200
+    ch9: 200
+    ch10: 200
+    ch11: 200
+    ch12: 200
+initial_dout_bitmask: 0
+fan_curve:
+  min_temp: 25
+  max_temp: 60
+  min_duty: 100
+  max_duty: 1000
+comm:
+  timeout_after_failures: 3
+  disconnected_after_failures: 10
+pump:
+  max_flow_lpm: 16
+  flow_multiplier: 1.47
+wiring:
+  ntc:
+    inlet1: 13
+    outlet1: 14
+    outlet2: 15
+    inlet2: 16
+  din:
+    level_bit: 1
+  ain:
+    leak_ch: 8
+    leak_threshold_v: 2
+  pulse:
+    fan_tach_chs:
+      - 8
+      - 9
+  pwm:
+    pump_ch:
+      - 1
+      - 2
+      - 3
+      - 4
+    fan_ch:
+      - 8
+      - 9

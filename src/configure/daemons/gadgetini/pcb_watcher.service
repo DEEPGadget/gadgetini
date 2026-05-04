@@ -1,0 +1,14 @@
+[Unit]
+Description=Runtime PCB detector — switches data_crawler → control_board on hot-plug.
+After=pcb_bootstrap.service redis.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/gadgetini/gadgetini/src/control_board/pcb_watcher.py
+Restart=always
+RestartSec=10
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

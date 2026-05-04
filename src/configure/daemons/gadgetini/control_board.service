@@ -1,0 +1,17 @@
+[Unit]
+Description=DLC PCB collector (gateway service).
+After=redis.service
+Conflicts=data_crawler.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/gadgetini/gadgetini/src
+ExecStart=/usr/bin/python3 -m control_board.main
+Restart=always
+RestartSec=5
+User=gadgetini
+Group=gadgetini
+SupplementaryGroups=dialout
+
+[Install]
+# WantedBy 없음 — pcb_bootstrap.service가 직접 start.

@@ -1,4 +1,5 @@
 const m={};
+const fanRpm={};
 function medianOf(a){const s=a.slice().sort((x,y)=>x-y);const mid=Math.floor(s.length/2);return s.length%2?s[mid]:(s[mid-1]+s[mid])/2;}
 function medianLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return medianOf(s);}
 function maxLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.slice(-n).filter(v=>v!==null&&v!==undefined);if(!s.length)return undefined;return Math.max(...s);}
@@ -6,10 +7,13 @@ function minLast(vals,n){if(!vals||!vals.length)return undefined;const s=vals.sl
 data.series.forEach(s=>{
   if(!s.fields||s.fields.length<2)return;
   const f=s.fields[1];
-  const metric=(f.labels||{}).metric||'';
+  const labels=f.labels||{};
+  const metric=labels.metric||'';
+  const extra=labels.extra||'';
   const vals=f.values;
   if(vals&&vals.length>0){
-    if(metric==='leak_detected') m[metric]=maxLast(vals,10);
+    if(metric==='fan_rpm') fanRpm[extra]=medianLast(vals,10);
+    else if(metric==='leak_detected') m[metric]=maxLast(vals,10);
     else if(metric==='level_full') m[metric]=minLast(vals,10);
     else m[metric]=medianLast(vals,10);
   }
@@ -45,3 +49,12 @@ setEl('sv-leak',lk>=0.5?'LEAKED':'NORMAL',lk>=0.5?'critical':'normal');
 setEl('sv-lev','Coolant Level: '+(lv>=0.5?'HIGH':'MIDDLE'),lv<0.5?'warning':'normal');
 setEl('sv-ct',fmt(ct)+'\u00b0C',evalChasT(ct));
 setEl('sv-ch',fmt(ch)+'%',evalChasH(ch));
+
+const flow=m['coolant_flow'];
+function evalFlow(v){if(v==null)return'normal';if(v<3)return'critical';if(v<5)return'warning';return'normal';}
+setEl('sv-flow',(flow!=null?flow.toFixed(1):'-')+' L/min',evalFlow(flow));
+
+function evalFan(v){if(v==null)return'normal';if(v<300)return'warning';return'normal';}
+const fan0=fanRpm['0'],fan1=fanRpm['1'];
+setEl('sv-fan0-rpm','Fan 0: '+(fan0!=null?Math.round(fan0):'-')+' rpm',evalFan(fan0));
+setEl('sv-fan1-rpm','Fan 1: '+(fan1!=null?Math.round(fan1):'-')+' rpm',evalFan(fan1));

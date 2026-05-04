@@ -23,13 +23,22 @@ while True:
     for name, idx in channels.items():
         temp = dlc_sensors.get_coolant_temp(idx, adc)
         temps[name] = temp
-        pipe.set(f"coolant_temp_{name}", temp)
+        key = f"coolant_temp_{name}"
+        if temp is None:
+            pipe.delete(key)
+        else:
+            pipe.set(key, temp)
 
-    # compute delta_t only when inlet+outlet pair exists (dg5w has inlet1 only for now, skip)
-    if 'inlet1' in temps and 'outlet1' in temps:
-        pipe.set("coolant_delta_t1", round(temps['outlet1'] - temps['inlet1'], 2))
-    if 'inlet2' in temps and 'outlet2' in temps:
-        pipe.set("coolant_delta_t2", round(temps['outlet2'] - temps['inlet2'], 2))
+    # compute delta_t only when both inlet and outlet of the pair are present this cycle
+    def _delta_or_clear(in_name, out_name, key):
+        i, o = temps.get(in_name), temps.get(out_name)
+        if i is not None and o is not None:
+            pipe.set(key, round(o - i, 2))
+        else:
+            pipe.delete(key)
+
+    _delta_or_clear('inlet1', 'outlet1', 'coolant_delta_t1')
+    _delta_or_clear('inlet2', 'outlet2', 'coolant_delta_t2')
 
     pipe.set("coolant_leak",  dlc_sensors.get_coolant_leak_detection(adc))
     pipe.set("coolant_level", dlc_sensors.get_coolant_level_detection(adc))

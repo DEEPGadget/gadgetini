@@ -15,12 +15,14 @@
   </defs>
 
   <!-- Fan + Radiator -->
-  <rect class='cb' x='25' y='8' width='210' height='22'/>
-  <text class='cl' x='130' y='22' text-anchor='middle'>Fan + Radiator</text>
+  <rect class='cb' x='25' y='8' width='210' height='26'/>
+  <text class='cl' x='130' y='19' text-anchor='middle'>Fan + Radiator</text>
+  <text class='sv normal' id='sv-fan0-rpm' x='78' y='30' text-anchor='middle'>Fan 0: -</text>
+  <text class='sv normal' id='sv-fan1-rpm' x='182' y='30' text-anchor='middle'>Fan 1: -</text>
 
 
-  <path class='pipe-cold' d='M90,30 L90,44'/>
-  <path class='pipe-cold' d='M170,30 L170,44'/>
+  <path class='pipe-cold' d='M90,34 L90,44'/>
+  <path class='pipe-cold' d='M170,34 L170,44'/>
 
   <!-- Reservoir + Coolant Level -->
   <rect x='25' y='44' width='210' height='28' fill='url(#gCold)' stroke='rgba(74,155,245,0.55)' stroke-width='1' rx='4'/>
@@ -39,6 +41,7 @@
 
   <path class='pipe-cold' d='M90,104 L90,118'/>
   <path class='pipe-cold' d='M170,104 L170,118'/>
+  <text class='sv normal' id='sv-flow' x='130' y='114' text-anchor='middle'>- L/min</text>
 
   <!-- Coolant Inlet Manifold -->
   <rect x='25' y='118' width='210' height='32' fill='url(#gCold)' stroke='rgba(74,155,245,0.55)' stroke-width='1' rx='4'/>

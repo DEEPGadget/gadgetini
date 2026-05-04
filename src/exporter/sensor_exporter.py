@@ -1,7 +1,14 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# Redis Keys written by data_crawler.py / data_crawler_host.py
-# Writer column: gadgetini = data_crawler.py, host = data_crawler_host.py
+# Redis Keys written by Gadgetini Pi side / monitored host side.
+# Writer column:
+#   gadget = Pi-side writer — control_board (PCB 장착 hw) 또는 data_crawler.py (legacy).
+#            앞으로 모든 제품군은 control_board로 통합 예정.
+#   host   = data_crawler_host.py (모니터링 대상 호스트).
+#
+# 미연결 채널·미장착 센서는 키 자체가 없음 (writer가 SET 생략) → exporter의
+# `client.exists()` / `client.keys()` 게이트로 자동 제외. 표는 "최대 가능 키 목록".
+# 진단용 보조 키: comm_consecutive_failures(count) — control_board가 SET.
 #
 # ┌─────────────────────────────────────────────────────────────────────────────┐
 # │ MACHINE: dg5r                                                               │
@@ -18,6 +25,11 @@
 # │ coolant_level           │ 0/1 bool   │ gadget │ coolant level (1=OK)      │
 # │ air_temp                │ °C         │ gadget │ internal air temp (DHT11) │
 # │ air_humit               │ %RH        │ gadget │ internal air humidity     │
+# │ coolant_flow_lpm        │ L/min      │ gadget │ pump duty 기반 유량 추정  │
+# │ fan_rpm_{0~N-1}         │ rpm        │ gadget │ per-fan tach RPM          │
+# │ pwm_duty_pump_{0~N-1}   │ 0.1%       │ gadget │ pump PWM duty (HR 0~3)    │
+# │ pwm_duty_fan_{0~N-1}    │ 0.1%       │ gadget │ fan PWM duty (HR 4~11)    │
+# │ comm_status             │ enum       │ gadget │ ok/timeout/disconnected   │
 # │ gpu_name_{0~7}          │ string     │ host   │ GPU model name            │
 # │ gpu_temp_{0~7}          │ °C         │ host   │ GPU temperature           │
 # │ gpu_curr_pwr_{0~7}      │ W          │ host   │ GPU current power         │
@@ -41,12 +53,21 @@
 # ├─────────────────────────┬────────────┬────────┬───────────────────────────┤
 # │ Key                     │ Unit       │ Writer │ Description                │
 # ├─────────────────────────┼────────────┼────────┼───────────────────────────┤
-# │ coolant_temp_inlet1     │ °C         │ gadget │ inlet temp ch1 (ADC4)     │
+# │ coolant_temp_inlet1     │ °C         │ gadget │ inlet  temp ch1 (ADC4)    │
+# │ coolant_temp_outlet1    │ °C         │ gadget │ outlet temp ch1 (ADC5,    │
+# │                         │            │        │   omitted on older units) │
+# │ coolant_delta_t1        │ °C         │ gadget │ ΔT = outlet1 - inlet1     │
+# │                         │            │        │   (omitted if outlet abs.)│
 # │ coolant_leak            │ 0/1 bool   │ gadget │ leak detected (1=Leak)    │
 # │ coolant_level           │ 0/1 bool   │ gadget │ coolant level (1=OK)      │
 # │ air_temp                │ °C         │ gadget │ internal air temp (DHT11) │
 # │ air_humit               │ %RH        │ gadget │ internal air humidity     │
 # │ chassis_stabil          │ 0/1 bool   │ gadget │ chassis stable (MPU6050)  │
+# │ coolant_flow_lpm        │ L/min      │ gadget │ pump duty 기반 유량 추정  │
+# │ fan_rpm_{0~N-1}         │ rpm        │ gadget │ per-fan tach RPM          │
+# │ pwm_duty_pump_{0~N-1}   │ 0.1%       │ gadget │ pump PWM duty (HR 0~3)    │
+# │ pwm_duty_fan_{0~N-1}    │ 0.1%       │ gadget │ fan PWM duty (HR 4~11)    │
+# │ comm_status             │ enum       │ gadget │ ok/timeout/disconnected   │
 # │ gpu_name_{0~7}          │ string     │ host   │ GPU model name            │
 # │ gpu_temp_{0~7}          │ °C         │ host   │ GPU temperature           │
 # │ gpu_curr_pwr_{0~7}      │ W          │ host   │ GPU current power         │
@@ -69,7 +90,7 @@ import time
 from prometheus_client import start_http_server, CollectorRegistry
 from prometheus_client.core import GaugeMetricFamily
 import redis
-from machine_config import MACHINE, COOLANT_CHANNELS, GPU_COUNT, CPU_COUNT
+from machine_config import MACHINE, MACHINE_LABEL, COOLANT_CHANNELS, GPU_COUNT, CPU_COUNT
 
 client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
@@ -99,25 +120,52 @@ class DLCCollector:
             "DeepGadget DLC server sensors & telemetry",
             labels=["server", "component", "metric", "unit", "extra"]
         )
-        srv = MACHINE
+        srv = MACHINE_LABEL
 
         # Cooling - leak & level
         g.add_metric([srv, "cooling", "leak_detected", "bool", ""], get_int("coolant_leak"))
         g.add_metric([srv, "cooling", "level_full",    "bool", ""], get_int("coolant_level"))
 
-        # Cooling temperatures (channels from config)
+        # Cooling temperatures: only expose channels whose Redis key is currently present.
+        # data_crawler deletes the key when the NTC reads as disconnected, so older units
+        # with no outlet wiring naturally drop out of the metric set.
         for name in CHANNELS:
-            g.add_metric([srv, "cooling", f"{name}_temp", "°C", ""], get_float(f"coolant_temp_{name}"))
+            key = f"coolant_temp_{name}"
+            if client.exists(key):
+                g.add_metric([srv, "cooling", f"{name}_temp", "°C", ""], get_float(key))
 
-        # expose delta_t only when inlet+outlet pair exists (dg5w has inlet1 only for now, skip)
-        if 'inlet1' in CHANNELS and 'outlet1' in CHANNELS:
+        # delta_t is written by the crawler only when the inlet+outlet pair is present
+        if client.exists("coolant_delta_t1"):
             g.add_metric([srv, "cooling", "delta_t1", "°C", ""], get_float("coolant_delta_t1"))
-        if 'inlet2' in CHANNELS and 'outlet2' in CHANNELS:
+        if client.exists("coolant_delta_t2"):
             g.add_metric([srv, "cooling", "delta_t2", "°C", ""], get_float("coolant_delta_t2"))
 
         # Chassis stability (dg5w only)
         if MACHINE == 'dg5w':
             g.add_metric([srv, "chassis", "stability", "bool", ""], get_int("chassis_stabil"))
+
+        # Coolant flow (control_board가 pump duty 기반으로 추정 SET)
+        if client.exists("coolant_flow_lpm"):
+            g.add_metric([srv, "cooling", "coolant_flow", "L/min", ""], get_float("coolant_flow_lpm"))
+        # Fan tach RPM (control_board polling이 IR 21~22에서 읽어 SET)
+        for fan_key in sorted(client.keys("fan_rpm_*")):
+            idx = fan_key.split("_")[-1]
+            g.add_metric([srv, "cooling", "fan_rpm", "rpm", idx], get_int(fan_key))
+
+        # PWM duty readback (control_board polling이 HR 0~11에서 읽어와 SET, 0~1000 = 0~100.0%)
+        for duty_key in sorted(client.keys("pwm_duty_pump_*")):
+            idx = duty_key.split("_")[-1]
+            g.add_metric([srv, "cooling", "pump_pwm_duty", "0.1%", idx], get_int(duty_key))
+        for duty_key in sorted(client.keys("pwm_duty_fan_*")):
+            idx = duty_key.split("_")[-1]
+            g.add_metric([srv, "cooling", "fan_pwm_duty", "0.1%", idx], get_int(duty_key))
+
+        # control_board ↔ PCB Modbus 통신 상태 (1=ok, 0=timeout/disconnected)
+        if client.exists("comm_status"):
+            comm_ok = 1 if (client.get("comm_status") == "ok") else 0
+            g.add_metric([srv, "control_board", "comm_online", "1=ok", ""], comm_ok)
+            g.add_metric([srv, "control_board", "comm_consecutive_failures", "count", ""],
+                         get_int("comm_consecutive_failures"))
 
         # Environment
         g.add_metric([srv, "environment", "air_temp",     "°C",  ""], get_float("air_temp"))
