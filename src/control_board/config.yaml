@@ -23,14 +23,14 @@ initial_pwm_duty:
     ch3: 600
     ch4: 600
   fan:
-    ch5: 200
-    ch6: 200
+    ch5: 0
+    ch6: 0
     ch7: 200
     ch8: 200
     ch9: 200
-    ch10: 200
-    ch11: 200
-    ch12: 200
+    ch10: 1000     # RPi cooling fan, always 100%
+    ch11: 0
+    ch12: 0
 initial_dout_bitmask: 0
 fan_curve:
   min_temp: 25
@@ -65,5 +65,6 @@ wiring:
       - 3
       - 4
     fan_ch:
+      - 7
       - 8
       - 9

@@ -140,7 +140,9 @@
       "Bash(cp /tmp/i18n-stash/page.js /home/gadgetini/gadgetini/src/gui/gadgetini-web/app/page.js)",
       "Bash(cp /tmp/i18n-stash/settings.js /home/gadgetini/gadgetini/src/gui/gadgetini-web/app/components/settings.js)",
       "Bash(echo \"service: $\\(systemctl is-active gadgetini_ui.service\\)\")",
-      "Bash(echo \"started: $\\(systemctl show gadgetini_ui.service --property=ActiveEnterTimestamp --value\\)\")"
+      "Bash(echo \"started: $\\(systemctl show gadgetini_ui.service --property=ActiveEnterTimestamp --value\\)\")",
+      "Bash(redis-cli MGET comm_status comm_consecutive_failures)",
+      "Bash(redis-cli KEYS \"*\")"
     ]
   }
 }
