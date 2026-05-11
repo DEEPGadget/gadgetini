@@ -103,7 +103,7 @@ def get_air_humit():
 
 def get_coolant_temp(ad_index, adc_samples=None):
     VREF = 5.0
-    VIN_DIV = 5.0
+    VIN_DIV = 3.3
     R_FIXED = 10000.0
     SH_A = 0.0010957
     SH_B = 0.0002395
@@ -117,7 +117,7 @@ def get_coolant_temp(ad_index, adc_samples=None):
 
         # Voltage pinned to either rail → NTC not connected on this channel.
         # Return None so the caller can omit the key entirely (vs reporting a fake 0°C).
-        if vout <= 0.001 or vout >= (VIN_DIV - 0.001):
+        if vout <= 0.001 or vout >= (VIN_DIV - 0.05):
             return None
 
         r_ntc = (vout * R_FIXED) / (VIN_DIV - vout)
