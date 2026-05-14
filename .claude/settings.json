@@ -142,7 +142,12 @@
       "Bash(echo \"service: $\\(systemctl is-active gadgetini_ui.service\\)\")",
       "Bash(echo \"started: $\\(systemctl show gadgetini_ui.service --property=ActiveEnterTimestamp --value\\)\")",
       "Bash(redis-cli MGET comm_status comm_consecutive_failures)",
-      "Bash(redis-cli KEYS \"*\")"
+      "Bash(redis-cli KEYS \"*\")",
+      "Bash(redis-cli MGET coolant_temp_inlet1 coolant_temp_outlet1 coolant_temp_outlet2 coolant_temp_inlet2 air_temp)",
+      "Bash(redis-cli GET coolant_temp_inlet1)",
+      "Bash(redis-cli GET coolant_temp_outlet1)",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"modbus_client\")"
     ]
   }
 }
