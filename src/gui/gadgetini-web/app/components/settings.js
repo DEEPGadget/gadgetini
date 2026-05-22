@@ -492,7 +492,7 @@ export default function Settings() {
             <SectionHeader label={t("section_hardware_count")} colorClass="bg-gray-600" />
             <div className="bg-white p-4 grid grid-cols-3 gap-4">
               {[
-                { label: t("gpu_count"), key: "gpuCount", min: 0, max: 8 },
+                { label: t("gpu_count"), key: "gpuCount", min: 0, max: 10 },
                 { label: t("cpu_count"), key: "cpuCount", min: 1, max: 4 },
                 { label: t("fan_count"), key: "fanCount", min: 0, max: 8 },
               ].map(({ label, key, min, max }) => (

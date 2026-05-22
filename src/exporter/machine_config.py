@@ -15,7 +15,6 @@ COOLANT_CHANNELS = {
     'dg5w': {'inlet1': 4, 'outlet1': 5},
 }
 
-# Display form used as the Prometheus `server` label and dashboard folder name.
-# Internal MACHINE stays lowercase so dict lookups / `if MACHINE == 'dg5w'` keep working.
-_MACHINE_LABELS = {'dg5r': 'dg5R', 'dg5w': 'dg5W'}
-MACHINE_LABEL = _MACHINE_LABELS.get(MACHINE, MACHINE)
+# Prometheus `server` label. Lowercase to match Grafana dashboard queries
+# (dlc_system_sensor{server="dg5w"} / "dg5r").
+MACHINE_LABEL = MACHINE
