@@ -8,9 +8,20 @@ from machine_config import MACHINE, COOLANT_CHANNELS
 rd = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 
-def is_host_alive(key: str, dead_after_sec: float = 5.0) -> int:
-    ttl_ms = rd.pttl(key)
-    return 1 if ttl_ms > 0 else 0
+# data_crawler_host.py refreshes `host_ttl` (ms timestamp) every cycle with
+# EXPIRE 7. We treat the key's presence as proof that host telemetry is
+# actually arriving — this works whether the host reaches us over the USB
+# gadget link or via an external router, and it also catches host-side
+# script crashes that a pure link check would miss.
+HOST_TTL_KEY = 'host_ttl'
+
+
+def is_host_alive(*_args, **_kwargs) -> int:
+    """1 if the host's heartbeat key is still present in Redis, else 0."""
+    try:
+        return 1 if rd.exists(HOST_TTL_KEY) else 0
+    except redis.RedisError:
+        return 0
 
 
 while True:
@@ -44,7 +55,7 @@ while True:
     pipe.set("coolant_level", dlc_sensors.get_coolant_level_detection(adc))
     pipe.set("air_temp",      dlc_sensors.get_air_temp())
     pipe.set("air_humit",     dlc_sensors.get_air_humit())
-    pipe.set("host_stat",     str(is_host_alive("host_ttl", 5.0)))
+    pipe.set("host_stat",     str(is_host_alive()))
 
     stabil = dlc_sensors.get_chassis_stabil()
     if stabil is not None:

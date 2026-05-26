@@ -146,7 +146,10 @@ def _create_viewer(entry, config, palettes):
     else:
         params = _resolve_colors(params, palettes)
 
-    return cls(**params)
+    viewer = cls(**params)
+    if entry.get('hide_if_absent'):
+        viewer.hide_if_absent = True
+    return viewer
 
 
 def load_viewers(json_path, config=None):

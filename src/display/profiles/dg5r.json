@@ -552,6 +552,7 @@
     {
       "key": "coolant_flow",
       "type": "SensorViewer",
+      "hide_if_absent": true,
       "params": {
         "title": "Coolant Flow",
         "sensor_key": "coolant_flow"
@@ -560,6 +561,7 @@
     {
       "key": "fan_rpm",
       "type": "MultiSensorViewer",
+      "hide_if_absent": true,
       "params": {
         "title": "Fan RPM",
         "sensor_keys": [
