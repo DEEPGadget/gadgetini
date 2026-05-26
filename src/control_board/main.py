@@ -1,4 +1,4 @@
-"""control_board entrypoint — config 로드, Modbus 연결, 초기 상태 적용, 메인 루프."""
+"""control_board entrypoint - load config, connect Modbus, apply initial state, run main loop."""
 import logging
 import os
 import sys
@@ -31,7 +31,7 @@ def load_config():
 
 
 def apply_pwm_freq(pcb, cfg):
-    """PWM 주파수 (HR 12/13/14) — config.yaml의 pwm_freq 적용."""
+    """Apply PWM frequencies (HR 12/13/14) from the pwm_freq section of config.yaml."""
     freq = cfg.get('pwm_freq') or {}
     mapping = [
         (R.HR_PWM_FREQ_TIM1, 'tim1'),
@@ -49,7 +49,7 @@ def apply_pwm_freq(pcb, cfg):
 
 
 def apply_initial_state(pcb, cfg):
-    """Flash 미저장 항목 (PWM duty, DOUT) 적용."""
+    """Apply non-Flash items (PWM duty, DOUT)."""
     duty_cfg = cfg.get('initial_pwm_duty', {})
     pump = duty_cfg.get('pump') or {}
     fan = duty_cfg.get('fan') or {}
@@ -95,9 +95,9 @@ def main():
 
     rd = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
-    # PCB probe 성공 직후 comm 상태 명시 초기화 — 이전 run이 남긴 stale
-    # 'disconnected'/'timeout' 으로 UI가 잘못된 빨강을 표시하지 않도록.
-    # 폴링이 실제로 실패하면 main_loop._update_comm_state가 정상 전이.
+    # Explicitly initialize comm state right after a successful PCB probe - prevents
+    # the UI from showing a stale 'disconnected'/'timeout' red left over from a previous run.
+    # If polling actually fails, main_loop._update_comm_state will transition normally.
     from . import redis_keys as K
     rd.set(K.COMM_STATUS, 'ok')
     rd.set(K.COMM_CONSECUTIVE_FAILURES, 0)

@@ -1,13 +1,14 @@
 // GET /api/control/pwm
-// 펌프 CH1~4 / 팬 CH5~12 를 **물리 채널 순서**로 반환 (고정 길이 4 / 8).
-// 팬 RPM (`fan_rpm_*`)과 펌프 유량 추정 (`coolant_flow_lpm`)도 함께 반환.
+// Returns pump CH1~4 / fan CH5~12 in **physical channel order** (fixed length 4 / 8).
+// Also returns fan RPM (`fan_rpm_*`) and estimated pump flow (`coolant_flow_lpm`).
 //
-// Redis 키 `pwm_duty_{pump,fan}_{i}`, `fan_rpm_{i}` 는 wiring.pwm.{pump_ch,fan_ch}의
-// 논리 슬롯 인덱스(0-based)라 그대로 보면 "CH9의 duty가 fan[0]에 들어와 CH5로 표기"되는
-// 문제가 생긴다. 여기서 wiring을 읽어 물리 채널 위치로 재배치 — fan[ch-5] = 그 CH의 값.
+// The Redis keys `pwm_duty_{pump,fan}_{i}` and `fan_rpm_{i}` are indexed by the
+// logical slot (0-based) of wiring.pwm.{pump_ch,fan_ch}, so reading them as-is would
+// cause "CH9's duty showing up at fan[0] and being labeled CH5". Here we read wiring
+// and remap to physical channel positions — fan[ch-5] = that CH's value.
 //
-// comm_status가 'ok'가 아니면 (PCB 통신 끊긴 상태) Redis에 남은 stale 값을 보지 말고
-// 모두 null 반환 — UI에 잘못된 정보 표시 회피.
+// If comm_status is not 'ok' (PCB communication is down), do not show stale Redis
+// values — return all null to avoid displaying incorrect info in the UI.
 import { NextResponse } from "next/server";
 import { promises as fs } from "node:fs";
 import yaml from "js-yaml";
@@ -17,7 +18,7 @@ const CONFIG_PATH =
   process.env.CONTROL_BOARD_CONFIG ||
   "/home/gadgetini/gadgetini/src/control_board/config.yaml";
 
-// 물리 채널 슬롯 (PCB 하드웨어 고정: TIM1=pump CH1~4, TIM2=fan CH5~8, TIM8=fan CH9~12)
+// Physical channel slots (fixed by PCB hardware: TIM1=pump CH1~4, TIM2=fan CH5~8, TIM8=fan CH9~12)
 const PUMP_CHANNELS = [1, 2, 3, 4];
 const FAN_CHANNELS = [5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -74,8 +75,8 @@ export async function GET() {
       });
     }
 
-    // 한 번의 mget으로 duty + RPM + flow 동시 fetch
-    // (Redis는 wiring 순서의 논리 인덱스로 SET됨 — polling.py 참조)
+    // Fetch duty + RPM + flow together in a single mget
+    // (Redis is SET using the logical index of wiring order — see polling.py)
     const pumpDutyKeys = wiredPump.map((_, i) => `pwm_duty_pump_${i}`);
     const fanDutyKeys = wiredFan.map((_, i) => `pwm_duty_fan_${i}`);
     const fanRpmKeys = wiredFan.map((_, i) => `fan_rpm_${i}`);
@@ -96,7 +97,7 @@ export async function GET() {
     off += fanRpmKeys.length;
     const coolantFlowLpm = toFloatOrNull(values[off]);
 
-    // 물리 채널 위치로 재배치 — wiring에 매핑된 채널만 값, 나머지 슬롯은 null.
+    // Remap to physical channel positions — only channels mapped in wiring get values, the rest are null.
     const pump = PUMP_CHANNELS.map((ch) => {
       const i = wiredPump.indexOf(ch);
       return i >= 0 ? pumpDutyLogical[i] : null;

@@ -1,17 +1,20 @@
-"""PCB Modbus Read → 디코딩 → Redis SET.
+"""PCB Modbus read → decode → Redis SET.
 
-NTC, DIN, AIN, Pulse Freq를 한 cycle에 읽고 Redis로 publish.
-NTC -999 sentinel(미연결)은 키 자체를 DEL하여 exporter 측에서 자동 제외.
-inlet/outlet 페어가 둘 다 valid일 때만 ΔT 계산.
+Reads NTC, DIN, AIN, and Pulse Freq in one cycle and publishes to Redis.
+The NTC -999 sentinel (disconnected) causes the key itself to be DELed, so the exporter
+excludes it automatically.
+ΔT is computed only when both inlet and outlet of a pair are valid.
 
-펌프/팬 PWM duty 키와 fan_rpm 키는 wiring에 매핑된 채널 중 **Tach 신호가 한 번이라도
-관측된** 채널만 SET (sticky). 펌프/팬이 물리적으로 미연결이면 PCB가 신호를 보내도
-모터가 안 돌아 tach=0 → 키 자체 SET 안 됨 → exporter `client.exists()` 게이트로 자동 제외.
+The pump/fan PWM duty keys and fan_rpm keys are SET (sticky) only for channels mapped in
+wiring whose Tach signal has been observed at least once. If a pump/fan is physically
+unplugged, the motor won't spin even when the PCB drives it, so tach=0 → the key is never
+SET → the exporter's `client.exists()` gate excludes it automatically.
 
-누수 감지: PCB **AIN CH8** voltage register(IR 39, 0.01V 단위, 0~10.5V 풀스케일)를
-threshold 비교 → wet ≈ 0V, dry ≈ 10.5V (실측). 단발 read 노이즈 심해 N-of-M
-majority filter로 chattering 억제 (5 sample 윈도우, 3+ 일치 시 confirmed).
-수위는 DIN2 디지털 신호(IR 25 bit) 사용, 동일 debounce.
+Leak detection: compares the PCB **AIN CH8** voltage register (IR 39, 0.01 V units, 0~10.5 V
+full scale) against a threshold → wet ~= 0 V, dry ~= 10.5 V (measured). Single reads are
+noisy, so an N-of-M majority filter is applied to suppress chattering (5-sample window,
+confirmed on 3+ agreement). Level uses the DIN2 digital signal (IR 25 bit) with the same
+debounce.
 """
 import logging
 from collections import deque
@@ -23,58 +26,59 @@ from .modbus_client import s16
 log = logging.getLogger(__name__)
 
 
-# ──────────────────────────────────────────────
-# 연결 감지 sticky state — service lifetime 동안 누적
-# (한 번이라도 tach > 0 이면 "연결됨"으로 표시. 일시적 정지/seizure로 0으로 떨어져도
-# 유지되며, 서비스 재시작 시 초기화된다.)
-# ──────────────────────────────────────────────
-_pump_connected = set()    # 논리 인덱스 (0-based)
+# ==============================================
+# Connection-detection sticky state - accumulated over the service lifetime
+# (Once tach > 0 is seen, mark the channel "connected". The flag survives transient stops
+# or seizures dropping back to 0 and only resets on service restart.)
+# ==============================================
+_pump_connected = set()    # logical indices (0-based)
 _fan_connected = set()
 
 
-# ──────────────────────────────────────────────
-# DIN debounce — 누수/수위 신호 N-of-M majority filter
-# WINDOW=5, THRESHOLD=3 → 1초 cycle 기준 ~3초 안에 안정 confirmed state 도출
-# ──────────────────────────────────────────────
+# ==============================================
+# DIN debounce - N-of-M majority filter for leak/level signals
+# WINDOW=5, THRESHOLD=3 → stable confirmed state within ~3 s on a 1 s cycle
+# ==============================================
 _DIN_WINDOW = 5
-_DIN_THRESHOLD = 3   # 5 중 3+이면 majority
+_DIN_THRESHOLD = 3   # majority means 3+ out of 5
 _leak_history = deque(maxlen=_DIN_WINDOW)
 _level_history = deque(maxlen=_DIN_WINDOW)
-# Confirmed state 캐시. None 이면 아직 첫 confirm 전 (초기 N cycle 동안 raw 그대로 통과)
+# Confirmed-state cache. None means we haven't confirmed yet (raw passes through during the
+# first N cycles).
 _leak_confirmed = None
 _level_confirmed = None
 
 
 def _debounce(history, current_raw, prev_confirmed):
-    """N-of-M majority filter. WINDOW 채우기 전엔 raw 통과, 채워지면 majority로 결정.
+    """N-of-M majority filter. Raw passes through until WINDOW is filled, then majority rules.
 
-    history: deque(maxlen=N), 최근 N raw 값 누적
-    current_raw: 이번 cycle의 0/1
-    prev_confirmed: 직전 confirmed state (없으면 None)
+    history: deque(maxlen=N), accumulates the last N raw values
+    current_raw: this cycle's 0/1
+    prev_confirmed: most recent confirmed state (None if not yet confirmed)
     """
     history.append(current_raw)
     if len(history) < _DIN_WINDOW:
-        # 워밍업 — raw 그대로 (전원 켠 직후 빠른 반응 위해)
+        # Warmup - pass raw through (for fast response right after power-on)
         return current_raw
     leak_count = sum(history)
     if leak_count >= _DIN_THRESHOLD:
         return 1
     if leak_count <= _DIN_WINDOW - _DIN_THRESHOLD:
         return 0
-    # hysteresis 영역 (이론상 N=5,T=3 에선 발생 안 함; 안전망)
+    # Hysteresis region (theoretically unreachable with N=5,T=3; safety net)
     return prev_confirmed if prev_confirmed is not None else current_raw
 
 
 def poll_once(pcb, rd, cfg):
     """One polling cycle. Returns True if all PCB reads succeeded.
 
-    cfg는 control_board config 전체 (wiring, pump 섹션 모두 사용).
+    cfg is the full control_board config (uses both the wiring and pump sections).
     """
     wiring = cfg.get('wiring', {}) or {}
     pump_cfg = cfg.get('pump', {}) or {}
     pipe = rd.pipeline(transaction=False)
 
-    # ── NTC (IR 28~31, signed int16, 0.1°C, -999=no sensor) ──
+    # === NTC (IR 28~31, signed int16, 0.1°C, -999=no sensor) ===
     ntcs = pcb.read_input_registers(R.IR_NTC_TEMP_BASE, 4)
     if ntcs is None:
         return False
@@ -104,7 +108,7 @@ def poll_once(pcb, rd, cfg):
 
     global _leak_confirmed, _level_confirmed
 
-    # ── 수위: DIN (IR 25 bitmask) — N-of-M debounce ──
+    # === Level: DIN (IR 25 bitmask) - N-of-M debounce ===
     din_regs = pcb.read_input_registers(R.IR_DIN_BITMASK, 1)
     if din_regs is None:
         return False
@@ -112,28 +116,28 @@ def poll_once(pcb, rd, cfg):
     din_map = wiring.get('din', {}) or {}
     level_bit = din_map.get('level_bit')
     if level_bit is not None:
-        # active-high 가정: bit=1 → 정상(HIGH), bit=0 → 부족
+        # active-high assumed: bit=1 → OK (HIGH), bit=0 → low
         raw = 1 if (bits >> level_bit) & 1 else 0
         _level_confirmed = _debounce(_level_history, raw, _level_confirmed)
         pipe.set(K.COOLANT_LEVEL, _level_confirmed)
 
-    # ── 누수: AIN voltage (IR 32~39, 0.01V 단위) — threshold + debounce ──
-    # PCB가 1:2 divider로 외부 0~10V 측정 → wet ≈ 0V, dry ≈ 4.3V (실측 2026-05-04).
-    # threshold 미만이면 leak=1.
+    # === Leak: AIN voltage (IR 32~39, 0.01 V units) - threshold + debounce ===
+    # PCB measures the external 0~10 V via a 1:2 divider → wet ~= 0 V, dry ~= 4.3 V
+    # (measured 2026-05-04). leak=1 when below the threshold.
     ain_map = wiring.get('ain', {}) or {}
     leak_ch = ain_map.get('leak_ch')
     if leak_ch is not None and 1 <= leak_ch <= 8:
         voltages = pcb.read_input_registers(R.IR_VOLTAGE_BASE, 8)
         if voltages is None:
             return False
-        v_reg = voltages[leak_ch - 1]                              # 0.01V 단위
+        v_reg = voltages[leak_ch - 1]                              # 0.01 V units
         threshold_reg = int(float(ain_map.get('leak_threshold_v', 5.0)) * 100)
         raw = 1 if v_reg < threshold_reg else 0
         _leak_confirmed = _debounce(_leak_history, raw, _leak_confirmed)
         pipe.set(K.COOLANT_LEAK, _leak_confirmed)
 
-    # ── Pulse Freq (IR 13~24) ──
-    # 팬은 Tach RPM 표시, 펌프는 유량 추정. 양쪽 모두 sticky 연결 감지에 사용.
+    # === Pulse Freq (IR 13~24) ===
+    # Fans: shown as Tach RPM. Pumps: used for flow estimation. Both feed sticky connection detection.
     pulses = pcb.read_input_registers(R.IR_PULSE_FREQ_BASE, 12)
     if pulses is None:
         return False
@@ -142,9 +146,9 @@ def poll_once(pcb, rd, cfg):
     pump_pwm_chs = pwm_map.get('pump_ch') or []
     fan_pwm_chs = pwm_map.get('fan_ch') or []
 
-    # 연결 감지 sticky: tach > 0 이 한 번이라도 관측된 채널만 등록.
-    # 가정: PWM 출력 CH N의 Tach가 같은 번호 Pulse 입력 CH N으로 라우팅.
-    # 인덱스는 0-based (display profile / GPU/CPU 컨벤션과 일치).
+    # Sticky connection detection: only register channels where tach > 0 has been observed at least once.
+    # Assumption: the Tach for PWM output CH N is routed to the matching Pulse input CH N.
+    # Indices are 0-based (matches display profile / GPU/CPU conventions).
     for i, ch in enumerate(pump_pwm_chs):
         if 1 <= ch <= 12 and pulses[ch - 1] > 0:
             _pump_connected.add(i)
@@ -152,19 +156,19 @@ def poll_once(pcb, rd, cfg):
         if 1 <= ch <= 12 and pulses[ch - 1] > 0:
             _fan_connected.add(i)
 
-    # 팬 RPM — 연결 확인된 채널만 SET (2 p/r → RPM = Hz × 30)
+    # Fan RPM - SET only confirmed-connected channels (2 p/r → RPM = Hz x 30)
     for i, ch in enumerate(fan_pwm_chs):
         if i in _fan_connected and 1 <= ch <= 12:
             pipe.set(K.fan_rpm(i), pulses[ch - 1] * 30)
         else:
             pipe.delete(K.fan_rpm(i))
 
-    # ── PWM duty readback (HR 0~11) ──
+    # === PWM duty readback (HR 0~11) ===
     duties = pcb.read_holding_registers(R.HR_PWM_DUTY_BASE, 12)
     if duties is None:
         return False
 
-    # PWM duty — 연결 확인된 채널만 SET, 나머지는 DEL (UI에서 자동 제외)
+    # PWM duty - SET only confirmed-connected channels, DEL the rest (UI excludes them automatically)
     for i, ch in enumerate(pump_pwm_chs):
         if i in _pump_connected and 1 <= ch <= 12:
             pipe.set(K.pwm_duty_pump(i), duties[ch - 1])
@@ -176,7 +180,7 @@ def poll_once(pcb, rd, cfg):
         else:
             pipe.delete(K.pwm_duty_fan(i))
 
-    # ── 펌프 유량 추정 (연결 확인된 펌프 duty의 평균 사용) ──
+    # === Pump flow estimation (uses the average duty of confirmed-connected pumps) ===
     connected_pump_duties = [
         duties[ch - 1]
         for i, ch in enumerate(pump_pwm_chs)

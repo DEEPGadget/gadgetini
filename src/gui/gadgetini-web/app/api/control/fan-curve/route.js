@@ -2,7 +2,7 @@
 // PUT  /api/control/fan-curve  → writes new fan_curve into config.yaml (atomic rename)
 //
 // Schema: linear interpolation between (min_temp, min_duty) and (max_temp, max_duty).
-// duty 단위는 0.1% (0~1000). control_board 는 mtime polling 으로 다음 cycle (~1s) 안에 반영.
+// duty unit is 0.1% (0~1000). control_board picks up the change via mtime polling within the next cycle (~1s).
 import { NextResponse } from "next/server";
 import { promises as fs } from "node:fs";
 import path from "node:path";

@@ -22,7 +22,7 @@ VIEWER_CLASSES = {
 
 
 def _parse_icon(hex_str):
-    """'0xf0510' -> chr(0xf0510) unicode character."""
+    """'0xf0510' → chr(0xf0510) unicode character."""
     if not hex_str:
         return None
     return chr(int(hex_str, 16))
@@ -35,7 +35,7 @@ def _make_formula(expr_str):
 
 
 def _expand_templates(templates, config):
-    """Expand sensor_templates using count from config. {i} -> 0,1,...,N-1."""
+    """Expand sensor_templates using count from config. {i} → 0,1,...,N-1."""
     result = []
     for tmpl in templates:
         count_key = tmpl['count']
@@ -103,7 +103,7 @@ def _expand_viewer_params(params, count, palettes):
             if all(isinstance(item, dict) for item in v):
                 expanded[k] = [_expand_viewer_params(item, count, palettes) for item in v]
             elif all(isinstance(c, list) for c in v):
-                # Color lists: [[r,g,b], ...] -> [(r,g,b), ...]
+                # Color lists: [[r,g,b], ...] → [(r,g,b), ...]
                 expanded[k] = [tuple(c) for c in v]
             else:
                 expanded[k] = v

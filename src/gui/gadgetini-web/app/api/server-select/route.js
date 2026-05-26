@@ -5,7 +5,7 @@ import os from "os";
 
 const homeDir =
   os.platform() === "win32"
-    ? "C:\\Users\\yjeon\\OneDrive\\바탕 화면\\gadgetini\\src\\display\\"
+    ? "C:\\Users\\yjeon\\OneDrive\\Desktop\\gadgetini\\src\\display\\"
     : "/home/gadgetini/gadgetini/src/display";
 
 const CONFIG_PATH = path.join(homeDir, "config.ini");

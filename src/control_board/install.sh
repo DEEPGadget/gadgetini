@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # control_board installer
-#   - Python 의존성 설치
-#   - systemd unit 등록 (pcb_bootstrap.service, control_board.service)
-#   - pcb_bootstrap.service enable + 검증 실행
+#   - Install Python dependencies
+#   - Register systemd units (pcb_bootstrap.service, control_board.service)
+#   - Enable pcb_bootstrap.service and run a verification pass
 #
 # Usage: sudo bash install.sh
 set -euo pipefail
@@ -22,14 +22,14 @@ echo "Repo: $REPO_ROOT"
 echo
 
 # ─────────────────────────────────────────────
-# 1. Python 의존성 — requirements.txt가 source of truth.
-#   pcb_bootstrap은 root, control_board는 gadgetini로 실행 → 양쪽 site-packages에 모두 설치.
+# 1. Python dependencies - requirements.txt is the source of truth.
+#   pcb_bootstrap runs as root, control_board as gadgetini -> install into both site-packages.
 # ─────────────────────────────────────────────
 REQ_FILE="$SCRIPT_DIR/requirements.txt"
 
 echo "[1/4] Installing Python dependencies from $REQ_FILE ..."
-# Bookworm 이후 Pi OS는 PEP 668 protected → 시스템 전역 설치는 --break-system-packages 필요.
-# 구 OS에서는 해당 옵션이 없을 수 있으니 plain install 먼저 시도 후 fallback.
+# Pi OS since Bookworm is PEP 668 protected -> system-wide install needs --break-system-packages.
+# Older OS versions may not have this flag, so try plain install first and fall back.
 pip_install() {
     local py_user="$1"; shift
     if [[ -n "$py_user" ]]; then
@@ -44,7 +44,7 @@ pip_install ""           # root (pcb_bootstrap.service)
 pip_install "gadgetini"  # gadgetini user (control_board.service)
 
 # ─────────────────────────────────────────────
-# 2. systemd unit 파일 복사
+# 2. Copy systemd unit files
 # ─────────────────────────────────────────────
 echo "[2/4] Copying systemd unit files..."
 install -m 644 "$DAEMON_DIR/pcb_bootstrap.service"  "$SYSTEMD_DIR/pcb_bootstrap.service"
@@ -60,7 +60,7 @@ systemctl enable pcb_bootstrap.service
 systemctl enable --now pcb_watcher.service
 
 # ─────────────────────────────────────────────
-# 4. 검증 실행 (1회)
+# 4. One-shot verification run
 # ─────────────────────────────────────────────
 echo "[4/4] Triggering pcb_bootstrap.service for verification..."
 systemctl restart pcb_bootstrap.service

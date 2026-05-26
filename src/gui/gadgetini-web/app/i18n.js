@@ -1,12 +1,13 @@
 "use client";
 // Minimal i18n — React Context + localStorage. No external dependency.
 //
-// 사용:
-//   <LocaleProvider> { children } </LocaleProvider>   — page.js 최상위에서 한 번
-//   const { locale, setLocale, t } = useLocale();      — 컴포넌트 안에서
-//   t("save")                                          — 키 → 현재 locale 의 문자열
+// Usage:
+//   <LocaleProvider> { children } </LocaleProvider>   — once at the top of page.js
+//   const { locale, setLocale, t } = useLocale();      — inside components
+//   t("save")                                          — key → string for the current locale
 //
-// 새 키 추가 시 두 언어 모두에 작성. 누락된 키는 en fallback, en 도 없으면 키 자체 반환.
+// When adding a new key, write it in both languages. Missing keys fall back to en,
+// and if en is also missing, the key itself is returned.
 import {
   createContext,
   useCallback,
@@ -17,17 +18,17 @@ import {
 
 const STRINGS = {
   en: {
-    // ── Header / Reboot ──
+    // === Header / Reboot ===
     reboot: "Gadgetini Reboot",
     rebooting: "Rebooting...",
     reboot_confirm: "System will reboot. Proceed?",
     reboot_sent: "Reboot command sent. The system may go down shortly.",
     reboot_failed: "Failed to reboot",
 
-    // ── Sidebar ──
+    // === Sidebar ===
     settings: "Settings",
 
-    // ── Section headers ──
+    // === Section headers ===
     section_system: "System",
     section_general: "General",
     section_hardware_count: "Hardware Count",
@@ -40,7 +41,7 @@ const STRINGS = {
     section_control_board: "Control Board",
     fan_curve_title: "Fan Curve (Auto)",
 
-    // ── System block ──
+    // === System block ===
     current_ip: "Current IP",
     eth0_active: "eth0 active",
     eth0_inactive: "eth0 not detected",
@@ -59,7 +60,7 @@ const STRINGS = {
     ip_update_failed: "Failed to update IP",
     config_update_failed: "Failed to update config",
 
-    // ── Display / LCD ──
+    // === Display / LCD ===
     display: "Display",
     display_master: "LCD master on/off",
     orientation: "Orientation",
@@ -85,7 +86,7 @@ const STRINGS = {
     coolant_daily: "Coolant Daily",
     apply: "Apply",
 
-    // ── Control Board status ──
+    // === Control Board status ===
     service_active: "Service Active",
     service_inactive: "Service Inactive",
     pcb_connected: "PCB Connected",
@@ -100,12 +101,12 @@ const STRINGS = {
     service_inactive_warning: "⚠ control_board.service inactive — controls disabled",
     pcb_unreachable_warning: "⚠ PCB unreachable — controls disabled",
 
-    // ── PWM duty section ──
+    // === PWM duty section ===
     pumps_label: "Pumps · CH 1~4",
     fans_label: "Fans · CH 5~12",
     estimated_flow: "Est. flow",
 
-    // ── Fan curve ──
+    // === Fan curve ===
     fan_curve_desc:
       "Below idle temp: idle PWM. Above warning temp: max PWM. Linear interpolation between.",
     idle_group: "Idle",
@@ -120,17 +121,17 @@ const STRINGS = {
     service_inactive_tooltip: "control_board.service is inactive",
   },
   ko: {
-    // ── Header / Reboot ──
+    // === Header / Reboot ===
     reboot: "Gadgetini 재부팅",
     rebooting: "재부팅 중...",
     reboot_confirm: "시스템이 재부팅됩니다. 계속할까요?",
     reboot_sent: "재부팅 명령이 전송되었습니다. 곧 시스템이 종료됩니다.",
     reboot_failed: "재부팅 실패",
 
-    // ── Sidebar ──
+    // === Sidebar ===
     settings: "설정",
 
-    // ── Section headers ──
+    // === Section headers ===
     section_system: "시스템",
     section_general: "일반",
     section_hardware_count: "하드웨어 수량",
@@ -143,7 +144,7 @@ const STRINGS = {
     section_control_board: "제어 보드",
     fan_curve_title: "팬 곡선 (자동)",
 
-    // ── System block ──
+    // === System block ===
     current_ip: "현재 IP",
     eth0_active: "eth0 활성",
     eth0_inactive: "eth0 미감지",
@@ -162,7 +163,7 @@ const STRINGS = {
     ip_update_failed: "IP 변경 실패",
     config_update_failed: "설정 변경 실패",
 
-    // ── Display / LCD ──
+    // === Display / LCD ===
     display: "디스플레이",
     display_master: "LCD 마스터 on/off",
     orientation: "방향",
@@ -188,7 +189,7 @@ const STRINGS = {
     coolant_daily: "냉각수 일별",
     apply: "적용",
 
-    // ── Control Board status ──
+    // === Control Board status ===
     service_active: "서비스 활성",
     service_inactive: "서비스 비활성",
     pcb_connected: "PCB 연결됨",
@@ -203,12 +204,12 @@ const STRINGS = {
     service_inactive_warning: "⚠ control_board.service 비활성 — 제어 불가",
     pcb_unreachable_warning: "⚠ PCB 응답 없음 — 제어 불가",
 
-    // ── PWM duty section ──
+    // === PWM duty section ===
     pumps_label: "펌프 · CH 1~4",
     fans_label: "팬 · CH 5~12",
     estimated_flow: "추정 유량",
 
-    // ── Fan curve ──
+    // === Fan curve ===
     fan_curve_desc:
       "기본 온도 이하: 기본 PWM 으로 idle. 경고 온도 이상: 최대 PWM 도달. 그 사이는 선형 보간.",
     idle_group: "기본",

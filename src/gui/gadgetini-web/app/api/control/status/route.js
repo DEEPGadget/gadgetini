@@ -1,12 +1,12 @@
 // GET /api/control/status
 // Returns:
-//   service_active : control_board.service systemd 실행 여부
-//   pcb_connected  : PCB Modbus 통신 OK 여부 (Redis comm_status === 'ok')
-//   comm_status    : 'ok' / 'timeout' / 'disconnected' (raw Redis 값)
-//   active         : (legacy) service_active && pcb_connected — UI에서 단일 boolean으로 사용
-//   mode           : 현재 'auto' 고정 (Manual은 미구현)
+//   service_active : whether control_board.service systemd unit is running
+//   pcb_connected  : whether PCB Modbus communication is OK (Redis comm_status === 'ok')
+//   comm_status    : 'ok' / 'timeout' / 'disconnected' (raw Redis value)
+//   active         : (legacy) service_active && pcb_connected — used as a single boolean in the UI
+//   mode           : currently fixed to 'auto' (Manual not implemented yet)
 //
-// Service가 active여도 PCB가 분리/타임아웃되면 active=false. Redis stale data 영향 회피.
+// Even if the service is active, active=false when the PCB is detached/timed out. Avoids stale Redis data influence.
 import { NextResponse } from "next/server";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";

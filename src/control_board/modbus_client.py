@@ -1,4 +1,4 @@
-"""Thin pymodbus RTU wrapper — 단일 시리얼 버스, 순차 R/W."""
+"""Thin pymodbus RTU wrapper - single serial bus, sequential R/W."""
 import logging
 from pymodbus.client import ModbusSerialClient
 
@@ -6,7 +6,7 @@ log = logging.getLogger(__name__)
 
 
 def s16(u16):
-    """Unsigned 16-bit → signed (NTC -999 sentinel용)."""
+    """Unsigned 16-bit → signed (used for the NTC -999 sentinel)."""
     return u16 - 0x10000 if u16 >= 0x8000 else u16
 
 

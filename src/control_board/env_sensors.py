@@ -1,8 +1,9 @@
-"""RPi 직접 수집 환경 센서 — HDC302x/DHT11 자동 감지 + MPU6050 stub.
+"""Environment sensors read directly from the RPi - HDC302x/DHT11 auto-detect + MPU6050 stub.
 
-PCB 통신과 별개로 호스트에 직접 연결된 센서들. 모든 init/read는 try/except로
-graceful — 칩 미장착·라이브러리 미설치·통신 실패 어떤 경우에도 import 단계에서
-죽지 않고 fail-safe 값을 반환한다 (dlc_sensors.py 패턴 동일).
+Sensors connected directly to the host, independent of PCB communication. All init/read
+calls are wrapped in try/except for graceful degradation - no matter the cause (chip not
+installed, library missing, comm failure), import never dies and fail-safe values are
+returned (same pattern as dlc_sensors.py).
 """
 import configparser
 import time
@@ -14,9 +15,9 @@ except Exception:
     _HAS_NP = False
 
 
-# ──────────────────────────────────────────────
-# Machine 식별 — display/config.ini 단일 원천 (machine_config.py와 동일)
-# ──────────────────────────────────────────────
+# ==============================================
+# Machine identification - single source of truth is display/config.ini (same as machine_config.py)
+# ==============================================
 def _detect_machine():
     try:
         cfg = configparser.ConfigParser()
@@ -29,9 +30,9 @@ def _detect_machine():
 MACHINE = _detect_machine()
 
 
-# ──────────────────────────────────────────────
-# 온/습도 — HDC302x 우선 (I2C deterministic), fallback DHT11
-# ──────────────────────────────────────────────
+# ==============================================
+# Temperature/humidity - prefer HDC302x (I2C deterministic), fallback to DHT11
+# ==============================================
 
 def _probe_hdc302x():
     try:
@@ -45,9 +46,9 @@ def _probe_hdc302x():
 
 
 def _probe_dht11():
-    # GPIO 셋업만 검증. DHT11은 read가 본래 flaky해서 probe 단계에서
-    # read 성공을 요구하면 startup 운에 따라 영구적으로 None에 갇혀 키가 안 박힘.
-    # 런타임 read는 get_air_temp/humit에서 자체 retry함.
+    # Only verify GPIO setup. DHT11 reads are inherently flaky, so if we require a successful
+    # read at probe time, startup luck could lock us into None forever and the key would never
+    # be set. Runtime reads retry internally in get_air_temp/humit.
     try:
         import adafruit_dht, board
         return adafruit_dht.DHT11(board.D4)
@@ -112,9 +113,9 @@ def temp_humid_kind():
     return _temp_humid_kind
 
 
-# ──────────────────────────────────────────────
-# 자이로 — MPU6050 (dg5w 한정, 사실상 미사용)
-# ──────────────────────────────────────────────
+# ==============================================
+# Gyro - MPU6050 (dg5w only, effectively unused)
+# ==============================================
 
 _gyro_dev = None
 if MACHINE == 'dg5w':
@@ -126,9 +127,9 @@ if MACHINE == 'dg5w':
 
 
 def get_chassis_stabil():
-    """1=stable, 0=unstable, None=non-dg5w (caller가 SET 생략).
+    """1=stable, 0=unstable, None=non-dg5w (caller skips the SET).
 
-    dg5w 한정. init 실패·read 실패 시 fail-safe로 1.
+    dg5w only. Fail-safe returns 1 on init or read failure.
     """
     if MACHINE != 'dg5w':
         return None

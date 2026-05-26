@@ -1,7 +1,7 @@
 [Unit]
 Description=Run npm start for gadgetini web ui service:3001
-# pcb_bootstrap이 먼저 끝나야 control_board.service / data_crawler.service 분기가
-# 결정된 상태에서 UI가 PCB 연결 상태를 정확히 표시할 수 있다.
+# pcb_bootstrap must finish first so the control_board.service / data_crawler.service
+# branch is decided; only then can the UI report the PCB connection state correctly.
 After=network.target pcb_bootstrap.service redis.service
 
 [Service]

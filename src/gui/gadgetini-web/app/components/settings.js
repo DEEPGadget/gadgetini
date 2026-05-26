@@ -109,9 +109,9 @@ export default function Settings() {
     applyDisplayConfig: false,
   });
 
-  // ── Control Board state ──
+  // === Control Board state ===
   // status: { active, service_active, pcb_connected, comm_status, mode }
-  // active = service_active && pcb_connected (UI 활성/비활성 단일 게이트)
+  // active = service_active && pcb_connected (single gate for UI enabled/disabled)
   const [cbStatus, setCbStatus] = useState({
     active: false,
     service_active: false,
@@ -212,8 +212,8 @@ export default function Settings() {
     }
   };
 
-  // ── Control Board polls ──
-  // Status: 5s cadence — service active 여부 확인 (systemctl is-active)
+  // === Control Board polls ===
+  // Status: 5s cadence — check whether the service is active (systemctl is-active)
   useEffect(() => {
     const fetchStatus = () =>
       fetch("/api/control/status")
@@ -225,9 +225,9 @@ export default function Settings() {
     return () => clearInterval(id);
   }, []);
 
-  // PWM duty readback: 2s cadence — pump CH1~4 + fan CH5~12 (8슬롯 고정).
-  // API가 wiring.pwm 매핑을 보고 물리 채널 위치로 재배치해 반환.
-  // fan RPM과 펌프 유량 추정도 같은 cadence로 함께 갱신.
+  // PWM duty readback: 2s cadence — pump CH1~4 + fan CH5~12 (fixed 8 slots).
+  // The API reads the wiring.pwm mapping and remaps to physical channel positions.
+  // Fan RPM and estimated pump flow are refreshed on the same cadence.
   useEffect(() => {
     const fetchPwm = () =>
       fetch("/api/control/pwm")
@@ -249,7 +249,7 @@ export default function Settings() {
     return () => clearInterval(id);
   }, []);
 
-  // fan_curve: 최초 1회만 fetch (편집 중 외부 변경 덮어쓰지 않도록)
+  // fan_curve: fetch only once initially (so external changes don't overwrite edits in progress)
   useEffect(() => {
     setFanCurveLoading(true);
     fetch("/api/control/fan-curve")
@@ -417,7 +417,7 @@ export default function Settings() {
             {t("section_lcd_control")}
           </p>
 
-          {/* ── General ── */}
+          {/* === General === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_general")} colorClass="bg-slate-700" />
             <div className="bg-white p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -487,7 +487,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* ── Hardware Count ── */}
+          {/* === Hardware Count === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_hardware_count")} colorClass="bg-gray-600" />
             <div className="bg-white p-4 grid grid-cols-3 gap-4">
@@ -524,7 +524,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* ── Compute + Cooling side by side ── */}
+          {/* === Compute + Cooling side by side === */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Compute */}
             <div className="rounded-2xl overflow-hidden shadow-sm">
@@ -572,7 +572,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* ── Daily Graphs ── */}
+          {/* === Daily Graphs === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_daily_graphs")} colorClass="bg-violet-600" />
             <div className="bg-violet-50/60 p-3 grid grid-cols-3 gap-2">
@@ -618,11 +618,11 @@ export default function Settings() {
             {t("section_control_board")}
           </p>
 
-          {/* ── Status + Mode ── */}
+          {/* === Status + Mode === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_pcb_status")} colorClass="bg-emerald-700" />
             <div className="bg-white p-4 flex flex-wrap items-center gap-x-6 gap-y-3">
-              {/* Service running 여부 */}
+              {/* Whether the service is running */}
               <div className="flex items-center gap-2">
                 <span
                   className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
@@ -634,7 +634,7 @@ export default function Settings() {
                 </span>
                 <span className="text-xs text-gray-400">control_board.service</span>
               </div>
-              {/* PCB Modbus 통신 상태 */}
+              {/* PCB Modbus communication status */}
               <div className="flex items-center gap-2">
                 <span
                   className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
@@ -682,7 +682,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* ── PWM Duty (read-only) ── */}
+          {/* === PWM Duty (read-only) === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_pwm_duty")} colorClass="bg-emerald-600" />
             <div className="bg-emerald-50/60 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -709,7 +709,7 @@ export default function Settings() {
                     </div>
                   ))}
                 </div>
-                {/* 펌프 유량 추정 — duty + 토폴로지 multiplier 기반 (config.yaml § pump). */}
+                {/* Estimated pump flow — based on duty + topology multiplier (config.yaml § pump). */}
                 <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-sm">
                   <span className="text-gray-500 text-xs uppercase tracking-wider">
                     {t("estimated_flow")}
@@ -763,7 +763,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* ── Fan Curve editor ── */}
+          {/* === Fan Curve editor === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("fan_curve_title")} colorClass="bg-emerald-500" />
             <div className="bg-white p-4">

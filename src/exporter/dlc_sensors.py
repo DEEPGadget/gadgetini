@@ -26,9 +26,10 @@ def _probe_hdc302x():
 
 
 def _probe_dht11():
-    # GPIO 셋업만 검증. DHT11은 read가 본래 flaky해서 probe 단계에서
-    # read 성공을 요구하면 startup 운에 따라 영구적으로 None에 갇혀 0이 박힘.
-    # 런타임 read는 get_air_temp/humit에서 자체 retry함.
+    # Only verify the GPIO setup. DHT11 reads are inherently flaky, so if we
+    # require a successful read at probe time, bad startup luck can leave us
+    # permanently stuck on None and pin the value at 0.
+    # Runtime reads retry on their own inside get_air_temp/humit.
     try:
         import adafruit_dht
         return adafruit_dht.DHT11(board.D4)
@@ -36,7 +37,7 @@ def _probe_dht11():
         return None
 
 
-# HDC302x를 먼저 시도 (I2C는 deterministic). 없으면 DHT11로 fallback.
+# Try HDC302x first (I2C is deterministic). Fall back to DHT11 if not present.
 tempHumidDevice = _probe_hdc302x()
 tempHumidType = 'hdc302x' if tempHumidDevice is not None else None
 if tempHumidDevice is None:

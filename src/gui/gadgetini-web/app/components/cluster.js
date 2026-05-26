@@ -25,7 +25,7 @@ export default function Cluster() {
     ip: "",
     alias: "",
   });
-  // TODO node table fetch할때 사용용
+  // TODO used when fetching the node table
   const [nodeTable, setNodeTable] = useState([]);
   // Nodes that selected ad node table
   const [selectedNode, setSelectedNode] = useState([]);
@@ -260,7 +260,7 @@ export default function Cluster() {
       setLoadingState({ ...setLoadingState, loaddingDeleteNodes: false });
     }
   };
-  // TODO nodetable에서 일부 노드 display config
+  // TODO display config for selected nodes in the node table
 
   return (
     <div className="p-4 ">

@@ -14,4 +14,4 @@ Group=gadgetini
 SupplementaryGroups=dialout
 
 [Install]
-# WantedBy 없음 — pcb_bootstrap.service가 직접 start.
+# No WantedBy — pcb_bootstrap.service starts this directly.
