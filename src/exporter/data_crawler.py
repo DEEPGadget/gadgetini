@@ -1,54 +1,127 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-import redis
-import dlc_sensors
+"""DLC 통합 sensor collector — 단일 entrypoint, 단일 service.
+
+백엔드 family는 ADS1256 존재 여부로 자동 결정 (pcb_driver.detect_backend):
+  - legacy (Gen1~2): ADS1256 직결 → dlc_sensors.poll_coolant
+  - pcb (Gen3): 제어보드 Modbus → PCBDriver, 매 cycle health check로 liveness 추적
+
+env(air_temp/humit)·chassis는 Pi 직결이라 양 백엔드 공통·무조건 실행 (Rev_C에서
+메인보드 OFF로 PCB가 죽어도 온/습도는 계속 수집됨).
+"""
+import logging
+import os
 import time
-from machine_config import MACHINE, COOLANT_CHANNELS
 
-rd = redis.StrictRedis(host='localhost', port=6379, db=0)
+import redis
+
+import dlc_sensors
+import pcb_driver
+import redis_keys as K
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)-7s %(name)s: %(message)s',
+)
+log = logging.getLogger('data_crawler')
+
+PCB_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pcb_config.yaml')
+
+rd = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
 
-def is_host_alive(key: str, dead_after_sec: float = 5.0) -> int:
+def is_host_alive(key, dead_after_sec=5.0):
     ttl_ms = rd.pttl(key)
-    return 1 if ttl_ms > 0 else 0
+    return 1 if ttl_ms is not None and ttl_ms > 0 else 0
 
 
-while True:
-    adc = dlc_sensors._collect_adc_samples()
-    channels = COOLANT_CHANNELS.get(MACHINE, {})
+def _update_comm_state(fails, timeout_n, disconnect_n):
+    if fails == 0:
+        rd.set(K.COMM_STATUS, 'ok')
+    elif fails >= disconnect_n:
+        rd.set(K.COMM_STATUS, 'disconnected')
+    elif fails >= timeout_n:
+        rd.set(K.COMM_STATUS, 'timeout')
 
-    pipe = rd.pipeline(transaction=False)
 
-    temps = {}
-    for name, idx in channels.items():
-        temp = dlc_sensors.get_coolant_temp(idx, adc)
-        temps[name] = temp
-        key = f"coolant_temp_{name}"
-        if temp is None:
-            pipe.delete(key)
-        else:
-            pipe.set(key, temp)
+def _load_yaml(path):
+    import yaml
+    with open(path) as f:
+        return yaml.safe_load(f)
 
-    # compute delta_t only when both inlet and outlet of the pair are present this cycle
-    def _delta_or_clear(in_name, out_name, key):
-        i, o = temps.get(in_name), temps.get(out_name)
-        if i is not None and o is not None:
-            pipe.set(key, round(o - i, 2))
-        else:
-            pipe.delete(key)
 
-    _delta_or_clear('inlet1', 'outlet1', 'coolant_delta_t1')
-    _delta_or_clear('inlet2', 'outlet2', 'coolant_delta_t2')
+def main():
+    backend = pcb_driver.detect_backend()
+    log.info("backend = %s (temp/humid via Pi-side, always-on)", backend)
 
-    pipe.set("coolant_leak",  dlc_sensors.get_coolant_leak_detection(adc))
-    pipe.set("coolant_level", dlc_sensors.get_coolant_level_detection(adc))
-    pipe.set("air_temp",      dlc_sensors.get_air_temp())
-    pipe.set("air_humit",     dlc_sensors.get_air_humit())
-    pipe.set("host_stat",     str(is_host_alive("host_ttl", 5.0)))
+    driver = None
+    reloader = None
+    cycle_s = 1.0
+    timeout_n = disconnect_n = None
+    prev_alive = False
+    consecutive_fail = 0
 
-    stabil = dlc_sensors.get_chassis_stabil()
-    if stabil is not None:
-        pipe.set("chassis_stabil", stabil)
+    if backend == 'pcb':
+        import pcb_control
+        cfg = _load_yaml(PCB_CONFIG_PATH)
+        cycle_s = float(cfg.get('loop', {}).get('cycle_seconds', 1.0))
+        comm_cfg = cfg.get('comm', {}) or {}
+        timeout_n = int(comm_cfg.get('timeout_after_failures', 3))
+        disconnect_n = int(comm_cfg.get('disconnected_after_failures', 10))
+        driver = pcb_driver.PCBDriver(cfg)
+        reloader = pcb_control.ConfigReloader(PCB_CONFIG_PATH, cfg)
+        log.info("PCB collector @ %.2fs cadence (liveness via 1Hz health check)", cycle_s)
 
-    pipe.execute()
-    time.sleep(1)
+    try:
+        while True:
+            t0 = time.monotonic()
+
+            if backend == 'pcb':
+                controller = reloader.maybe_reload(driver)
+                alive = driver.health_check()
+                if alive:
+                    if not prev_alive:
+                        log.info("PCB alive — applying initial state")
+                        driver.on_connect(rd)
+                    ok = False
+                    try:
+                        ok = driver.poll(rd)
+                    except Exception:
+                        log.exception("driver.poll raised")
+                    consecutive_fail = 0 if ok else consecutive_fail + 1
+                    if ok:
+                        try:
+                            controller.update(driver, rd)
+                        except Exception:
+                            log.exception("controller.update failed")
+                else:
+                    consecutive_fail += 1
+                prev_alive = alive
+                rd.set(K.COMM_CONSECUTIVE_FAILURES, consecutive_fail)
+                _update_comm_state(consecutive_fail, timeout_n, disconnect_n)
+            else:
+                try:
+                    dlc_sensors.poll_coolant(rd)
+                except Exception:
+                    log.exception("poll_coolant failed")
+
+            # ── env / chassis — 양 백엔드 공통, 무조건 (Pi-side 상시) ──
+            try:
+                dlc_sensors.update_env(rd)
+                dlc_sensors.update_chassis(rd)
+            except Exception:
+                log.exception("env/chassis update failed")
+
+            rd.set(K.HOST_STAT, str(is_host_alive("host_ttl", 5.0)))
+
+            elapsed = time.monotonic() - t0
+            time.sleep(max(0.0, cycle_s - elapsed))
+    except KeyboardInterrupt:
+        log.info("interrupted")
+    finally:
+        if driver is not None:
+            driver.close()
+
+
+if __name__ == '__main__':
+    main()
