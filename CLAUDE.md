@@ -34,7 +34,7 @@ Gadgetini is a server monitoring system for Direct Liquid Cooling (DLC) systems 
 
 **Key data flow:**
 - Host: `data_crawler_host.py` collects CPU/GPU/NIC metrics → writes directly to Gadgetini Redis via USB gadget network (TCP/IPv6)
-- Gadgetini: `data_crawler.py` collects DLC sensor metrics (coolant, leak, gyro) → Redis
+- Gadgetini: a single `data_crawler.py` collects DLC sensor metrics (coolant, leak, gyro, air temp/humidity) → Redis. It auto-detects the backend at startup — PCB control board (Modbus RTU) when no ADS1256 is present, else legacy ADS1256 (SPI). Air temp/humidity and gyro are Pi-attached on both paths.
 - Redis → Exporter (:9003) → Prometheus (:9090) → Grafana (:3000)
 - Redis → TFT Display (reads sensor data)
 - Next.js Web (:3001) is a configuration UI for the TFT display (config.ini), not a Redis consumer
@@ -43,7 +43,7 @@ Gadgetini is a server monitoring system for Direct Liquid Cooling (DLC) systems 
 
 - `src/display/` - Physical TFT display rendering (ST7789 driver, plotting)
 - `src/exporter/` - Sensor collection, Prometheus exporter, serial communication
-- `src/exporter/daemon/` - systemd service files for gadgetini and host
+- `src/configure/daemons/` - systemd service files for gadgetini and host
 - `src/gui/gadgetini-web/` - Next.js 15 web dashboard
 - `src/configure/` - USB gadget network setup scripts
 
@@ -64,20 +64,18 @@ sudo dnf install -y redis python311 python3.11-pip lm_sensors
 sudo python3.11 -m pip install pyserial-asyncio redis jsons rich
 
 # Run components manually
-python3 src/exporter/data_crawler.py        # Sensor data collection
+python3 src/exporter/data_crawler.py        # Sensor data collection (auto-detects PCB / ADS1256)
 python3 src/exporter/sensor_exporter.py     # Prometheus endpoint :9003
-python3 src/exporter/serial_sender_v2.py    # Host-side serial sender
-python3 src/exporter/serial_receiver_v2.py  # Gadgetini-side serial receiver
+python3 src/exporter/data_crawler_host.py   # Host-side metrics → Gadgetini Redis over USB net
 python3 src/display/display_main.py         # TFT display driver
 ```
 
 ### systemd Services
-Service files in `src/exporter/daemon/gadgetini/` and `src/exporter/daemon/host/`
+Service files in `src/configure/daemons/gadgetini/` and `src/configure/daemons/host/`
 ```bash
 sudo systemctl enable --now redis
-sudo systemctl enable sensor_exporter.service
-sudo systemctl enable serial_receiver.service
-sudo systemctl enable data_crawler.service
+sudo systemctl enable --now data_crawler.service
+sudo systemctl enable --now sensor_exporter.service
 ```
 
 ### USB Network Configuration
@@ -88,8 +86,10 @@ sudo bash src/configure/usb-gadget-gadgetini.sh
 
 ## Key Files
 
-- `src/exporter/dlc_sensors.py` - Sensor abstractions (temperature via Steinhart-Hart, leak detection, gyro)
-- `src/exporter/serial_sender_v2.py` / `serial_receiver_v2.py` - Async serial protocol with handshaking
+- `src/exporter/dlc_sensors.py` - Pi-attached sensors (ADS1256 coolant via Steinhart-Hart, HDC302x/DHT11 air, MPU6050 gyro) + graceful ADS1256 fallback
+- `src/exporter/pcb_driver.py` - PCB Modbus driver (PCBDriver, health_check/poll, detect_backend)
+- `src/exporter/pcb_control.py` - PCB cooling policy (FanCurveController) + pcb_config.yaml hot-reload
+- `src/exporter/legacy/serial_sender_v2.py` / `serial_receiver_v2.py` - Legacy async serial host link (superseded by USB gadget network)
 - `src/display/display_main.py` - Main display loop reading from Redis
 - `src/display/config.ini` - Display layout configuration
 - `src/gui/gadgetini-web/app/api/` - Next.js API routes for node health, system control
