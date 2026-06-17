@@ -7,6 +7,7 @@ liveness is tracked every cycle by health_check().
 Register map: board manual section 4 (Rev2).
 """
 import logging
+import os
 from collections import deque
 
 from pymodbus.client import ModbusSerialClient
@@ -48,11 +49,17 @@ def s16(u16):
 
 
 def detect_backend():
-    """'legacy' if an ADS1256 is present (Gen1~2), else 'pcb' (Gen3 control board).
+    """'pcb' or 'legacy'.
 
-    ADS1256 is a Pi SPI board, so its presence is deterministic and independent of
-    mainboard power.
+    GADGETINI_BACKEND env var overrides auto-detect ('pcb' or 'legacy') — used on
+    bench machines that have an ADS1256 attached but should run the PCB path. When
+    unset/'auto', auto-detect by ADS1256 presence (a Pi SPI board, deterministic and
+    independent of mainboard power): present = legacy (Gen1~2), absent = pcb (Gen3).
     """
+    override = os.environ.get('GADGETINI_BACKEND', '').strip().lower()
+    if override in ('pcb', 'legacy'):
+        log.info("backend forced to '%s' via GADGETINI_BACKEND", override)
+        return override
     import dlc_sensors
     return 'legacy' if dlc_sensors._ADC_AVAILABLE else 'pcb'
 
