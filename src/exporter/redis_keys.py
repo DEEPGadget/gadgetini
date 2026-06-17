@@ -29,12 +29,12 @@ NTC_LOGICAL_TO_KEY = {
 # 자세한 모델은 pcb_config.yaml의 pump 섹션 참고.
 COOLANT_FLOW_LPM = 'coolant_flow_lpm'
 
-# 팬 Tach RPM — 인덱스 0-based (gpu_temp_{i} 등 기존 컨벤션과 동일).
+# Fan Tach RPM - 0-based index (matches existing conventions like gpu_temp_{i}).
 def fan_rpm(idx):
     return f'fan_rpm_{idx}'
 
 # PWM duty readback (HR 0~11, 0~1000 = 0~100.0%)
-# 인덱스 0-based, 채널 매핑은 wiring.pwm.{pump_ch,fan_ch} 기준.
+# 0-based index; channel mapping comes from wiring.pwm.{pump_ch,fan_ch}.
 def pwm_duty_pump(idx):
     return f'pwm_duty_pump_{idx}'
 

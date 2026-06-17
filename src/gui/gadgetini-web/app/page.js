@@ -24,7 +24,7 @@ function LocaleToggle() {
       <button
         onClick={() => setLocale("ko")}
         className={btn("ko")}
-        title="한국어"
+        title="Korean"
       >
         KO
       </button>

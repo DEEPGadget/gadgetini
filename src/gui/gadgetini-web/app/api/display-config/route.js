@@ -6,7 +6,7 @@ import os from "os";
 let homeDir;
 if (os.platform() === "win32") {
   // at windows => TODO erase at final code
-  homeDir = "C:\\Users\\yjeon\\OneDrive\\바탕 화면\\gadgetini\\src\\display\\";
+  homeDir = "C:\\Users\\yjeon\\OneDrive\\Desktop\\gadgetini\\src\\display\\";
 } else {
   // at Linux
   homeDir = "/home/gadgetini/gadgetini/src/display";
