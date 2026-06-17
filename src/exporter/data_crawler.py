@@ -30,9 +30,17 @@ PCB_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pcb_
 rd = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
 
-def is_host_alive(key, dead_after_sec=5.0):
-    ttl_ms = rd.pttl(key)
-    return 1 if ttl_ms is not None and ttl_ms > 0 else 0
+# data_crawler_host.py가 매 cycle `host_ttl`을 EXPIRE 7로 갱신한다. 키 존재 자체를
+# host telemetry가 실제 도착 중이라는 증거로 본다 — USB gadget/외부 라우터 경로 무관,
+# host 스크립트 크래시도 포착 (순수 링크 체크가 놓치는 케이스).
+HOST_TTL_KEY = 'host_ttl'
+
+
+def is_host_alive():
+    try:
+        return 1 if rd.exists(HOST_TTL_KEY) else 0
+    except redis.RedisError:
+        return 0
 
 
 def _update_comm_state(fails, timeout_n, disconnect_n):
@@ -112,7 +120,7 @@ def main():
             except Exception:
                 log.exception("env/chassis update failed")
 
-            rd.set(K.HOST_STAT, str(is_host_alive("host_ttl", 5.0)))
+            rd.set(K.HOST_STAT, str(is_host_alive()))
 
             elapsed = time.monotonic() - t0
             time.sleep(max(0.0, cycle_s - elapsed))
