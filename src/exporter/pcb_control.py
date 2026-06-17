@@ -1,14 +1,11 @@
-"""PCB 냉각 정책 — fan duty 제어 + config 핫리로드.
+"""Control-board cooling policy — fan-duty control + config hot-reload.
 
-Fan duty: outlet1 온도 ↔ duty linear interpolation.
-  min_temp 이하 → min_duty (silent baseline, 영구 회전).
-  max_temp 이상 → max_duty (보통 1000 = 100%).
-  그 사이 선형 보간. 단계 chattering 없어 hysteresis 불필요.
-펌프 duty는 고정 (pcb_config.yaml initial_pwm_duty 그대로) — 유량 센서 없음.
-STANDBY/ACTIVE 상태 머신 없음 (12V 하드웨어 인터록이 그 역할).
+Fan duty is a linear interpolation of outlet1 temperature between (min_temp, min_duty)
+and (max_temp, max_duty). Pump duty is fixed (no flow sensor). There is no state
+machine: the 12V supply being mainboard-gated is the hardware interlock.
 
-config 핫리로드: pcb_config.yaml mtime 변화 시 fan_curve / pump duty / DOUT 런타임 반영
-(web UI 편집 → REST API → 파일 write → 다음 cycle 픽업).
+Hot-reload: on a pcb_config.yaml mtime change, fan_curve / pump duty / DOUT are applied
+at runtime (web UI edit -> REST API -> file write -> picked up next cycle).
 """
 import logging
 import os
@@ -20,12 +17,12 @@ import redis_keys as K
 
 log = logging.getLogger('pcb_control')
 
-# duty 변화가 이 값 미만이면 modbus write skip — 0.1°C 노이즈에 매 cycle write 회피.
+# Skip the Modbus write if duty moved less than this (avoid per-cycle writes on noise).
 _WRITE_DEADBAND = 5  # 0.5%
 
 
 def _contiguous_runs(channels):
-    """[8,9,10,12] → [(8,[8,9,10]), (12,[12])] — 연속 채널 묶기."""
+    """[8,9,10,12] -> [(8,[8,9,10]), (12,[12])] — group consecutive channels."""
     if not channels:
         return []
     sorted_chs = sorted(set(channels))
@@ -55,7 +52,7 @@ class FanCurveController:
         if self.max_temp <= self.min_temp:
             self.max_temp = self.min_temp + 1.0
         self.fan_chs = list(fan_pwm_chs or [])
-        # 연속 채널은 FC16 한 트랜잭션으로 atomic write.
+        # Consecutive channels are written in one FC16 transaction (atomic).
         self._runs = _contiguous_runs(self.fan_chs)
         self._last_written = None
 
@@ -68,7 +65,7 @@ class FanCurveController:
         return int(round(self.min_duty + frac * (self.max_duty - self.min_duty)))
 
     def update(self, pcb, rd):
-        """Read outlet1 → compute duty → write to all configured fan channels."""
+        """Read outlet1 -> compute duty -> write to all configured fan channels."""
         if not self.fan_chs:
             return
         v = rd.get(K.COOLANT_TEMP_OUTLET1)
@@ -80,7 +77,7 @@ class FanCurveController:
         except (TypeError, ValueError):
             return
         duty = self._compute_duty(temp_c)
-        # write-deadband: 직전 쓴 값과 차이가 작으면 skip (단, min/max 끝값 도달은 1회 보장)
+        # deadband, but always emit once when reaching the min/max clamp
         if self._last_written is not None and abs(duty - self._last_written) < _WRITE_DEADBAND:
             if duty in (self.min_duty, self.max_duty) and self._last_written != duty:
                 pass
@@ -95,7 +92,7 @@ class FanCurveController:
             if not ok:
                 log.warning("fan duty write failed: CH %s (HR %d) duty=%d", run, base_hr, duty)
         self._last_written = duty
-        log.debug("outlet=%.1f °C → duty=%d → CH %s", temp_c, duty, self.fan_chs)
+        log.debug("outlet=%.1f C -> duty=%d -> CH %s", temp_c, duty, self.fan_chs)
 
 
 def _fan_chs(cfg):
@@ -107,10 +104,10 @@ def make_controller(cfg):
 
 
 class ConfigReloader:
-    """pcb_config.yaml mtime watch — 변경 시 cfg/controller 갱신.
+    """Watches pcb_config.yaml mtime and rebuilds cfg/controller on change.
 
-    펌프 duty 또는 DOUT bitmask가 바뀐 경우에만 PCB에 재write (매 cycle write 회피;
-    fan duty는 controller가 어차피 갱신). Reload 실패 시 기존 유지하고 죽지 않음.
+    Pump duty / DOUT are re-written only when they actually change (fan duty is
+    written by the controller anyway). A failed reload keeps the previous cfg.
     """
 
     def __init__(self, config_path, cfg):
@@ -133,7 +130,7 @@ class ConfigReloader:
         return {k: int(v) for k, v in pump.items()}
 
     def maybe_reload(self, driver):
-        """변경 감지 시 cfg/controller 갱신하고 driver에 반영. 항상 현재 controller 반환."""
+        """Reload on change and apply to driver; always returns the current controller."""
         m = self._mtime()
         if m is None or m == self.last_mtime:
             return self.controller
@@ -154,5 +151,5 @@ class ConfigReloader:
             log.info("pcb_config.yaml reloaded (mtime change)")
         except Exception:
             log.exception("config reload failed; keeping previous cfg")
-            self.last_mtime = m   # 같은 깨진 파일 매 cycle 재시도 방지
+            self.last_mtime = m   # don't retry the same broken file every cycle
         return self.controller

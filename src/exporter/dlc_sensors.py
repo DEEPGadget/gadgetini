@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-"""Pi 직결 센서 — ADS1256(coolant, legacy 한정) + 환경(HDC302x/DHT11) + MPU6050.
+"""Pi-attached sensors — ADS1256 (coolant, legacy only) + HDC302x/DHT11 + MPU6050.
 
-ADS1256 init은 graceful: 미장착(PCB 머신)이면 _ADC_AVAILABLE=False 로 두고 import
-단계에서 죽지 않는다. _ADC_AVAILABLE 은 백엔드 family discriminator로도 쓰인다
-(True=legacy Gen1~2, False=PCB Gen3 → pcb_driver.detect_backend 참고).
+ADS1256 init is graceful: when absent (PCB machine) _ADC_AVAILABLE stays False instead
+of failing at import. _ADC_AVAILABLE also serves as the backend discriminator
+(True = legacy Gen1~2, False = PCB Gen3; see pcb_driver.detect_backend).
 
-env(air_temp/humit)·chassis(MPU6050)는 Pi 직결이라 메인보드/PCB 전원과 무관하게
-**양 백엔드 공통·상시** 센싱된다 (Rev_C에서 PCB OFF여도 온/습도는 계속 수집).
+Env (air temp/humidity) and chassis are Pi-attached, so they run on both backends and
+keep working regardless of PCB/mainboard power.
 """
 import math
 import sys
@@ -32,9 +32,7 @@ def _median(samples):
     return s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2.0
 
 
-# ──────────────────────────────────────────────────────────────────
-# ADS1256 (coolant, legacy 한정) — graceful fallback
-# ──────────────────────────────────────────────────────────────────
+# ── ADS1256 (coolant, legacy only) — graceful fallback ─────────────
 try:
     sys.path.append('/home/gadgetini/High-Precision-AD-DA-Board-Code/RaspberryPI/ADS1256/python3')
     import ADS1256 as _ads_lib
@@ -65,7 +63,7 @@ def get_coolant_temp(ad_index, adc_samples=None):
             adc_samples = _collect_adc_samples()
         vs = [float(s[ad_index]) * VREF / 0x7fffff for s in adc_samples]
         vout = float(_median(vs))
-        # Voltage pinned to either rail → NTC not connected on this channel.
+        # Pinned to a rail = NTC not connected -> None so the caller omits the key.
         if vout <= 0.001 or vout >= (VIN_DIV - 0.05):
             return None
         r_ntc = (vout * R_FIXED) / (VIN_DIV - vout)
@@ -94,9 +92,7 @@ def get_coolant_level_detection(adc_samples=None):
     return 0 if float(_median(samples)) > 1.2 else 1
 
 
-# ──────────────────────────────────────────────────────────────────
-# 온/습도 — HDC302x 우선 (I2C deterministic), fallback DHT11. 양 백엔드 공통.
-# ──────────────────────────────────────────────────────────────────
+# ── Air temp/humidity — HDC302x first (I2C), DHT11 fallback. Both backends. ──
 def _probe_hdc302x():
     try:
         import busio, board, adafruit_hdc302x
@@ -109,8 +105,8 @@ def _probe_hdc302x():
 
 
 def _probe_dht11():
-    # GPIO 셋업만 검증. DHT11 read는 본래 flaky해서 probe 단계에서 read 성공을
-    # 요구하면 startup 운에 따라 영구적으로 None에 갇힘. 런타임 retry는 get_*에서.
+    # Only verify GPIO setup. DHT11 reads are flaky; requiring a read here can get
+    # stuck on None at startup. Runtime reads retry in get_air_temp/humit.
     try:
         import adafruit_dht, board
         return adafruit_dht.DHT11(board.D4)
@@ -153,7 +149,7 @@ def _read_n(read_fn, n=5):
 
 
 def get_air_temp():
-    """°C, fail-safe None."""
+    """Celsius, fail-safe None."""
     return _read_n(_read_temp_once)
 
 
@@ -162,9 +158,7 @@ def get_air_humit():
     return _read_n(_read_humid_once)
 
 
-# ──────────────────────────────────────────────────────────────────
-# 자이로 — MPU6050 (dg5w 한정). 양 백엔드 공통 (Rev_D에서 PCB 이관 예정).
-# ──────────────────────────────────────────────────────────────────
+# ── Gyro — MPU6050 (dg5w only). Both backends (moves to PCB on Rev_D). ──
 _gyro_dev = None
 if MACHINE == 'dg5w':
     try:
@@ -176,7 +170,7 @@ if MACHINE == 'dg5w':
 
 
 def get_chassis_stabil():
-    """1=stable, 0=unstable, None=non-dg5w (caller가 SET 생략)."""
+    """1=stable, 0=unstable, None=non-dg5w (caller omits the key)."""
     if MACHINE != 'dg5w':
         return None
     if _gyro_dev is None:
@@ -192,14 +186,9 @@ def get_chassis_stabil():
         return 1
 
 
-# ──────────────────────────────────────────────────────────────────
-# Entry 함수 — data_crawler.py가 호출
-# ──────────────────────────────────────────────────────────────────
+# ── Entry points called by data_crawler.py ─────────────────────────
 def poll_coolant(rd):
-    """ADS1256으로 coolant_temp_*, delta_t, leak, level 일괄 read + Redis SET.
-
-    Legacy hw 한정. _ADC_AVAILABLE False면 no-op (PCB 경로에선 어차피 호출 안 됨).
-    """
+    """ADS1256 -> coolant_temp_*, delta_t, leak, level. Legacy only; no-op without ADC."""
     if not _ADC_AVAILABLE:
         return
     adc = _collect_adc_samples()
@@ -236,7 +225,7 @@ def poll_coolant(rd):
 
 
 def update_env(rd):
-    """HDC302x/DHT11으로 air_temp, air_humit Redis SET. 양 백엔드 공통 (Pi-side 상시)."""
+    """air_temp, air_humit -> Redis. Both backends (Pi-attached, always-on)."""
     t = get_air_temp()
     if t is not None:
         rd.set("air_temp", round(t, 1))
@@ -246,7 +235,7 @@ def update_env(rd):
 
 
 def update_chassis(rd):
-    """MPU6050으로 chassis_stabil Redis SET. dg5w 한정 (None이면 생략)."""
+    """chassis_stabil -> Redis. dg5w only (None is skipped)."""
     stabil = get_chassis_stabil()
     if stabil is not None:
         rd.set("chassis_stabil", stabil)

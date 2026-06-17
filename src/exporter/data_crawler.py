@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-"""DLC 통합 sensor collector — 단일 entrypoint, 단일 service.
+"""Unified DLC sensor collector — single entrypoint, single service.
 
-백엔드 family는 ADS1256 존재 여부로 자동 결정 (pcb_driver.detect_backend):
-  - legacy (Gen1~2): ADS1256 직결 → dlc_sensors.poll_coolant
-  - pcb (Gen3): 제어보드 Modbus → PCBDriver, 매 cycle health check로 liveness 추적
+Backend is chosen by ADS1256 presence (pcb_driver.detect_backend):
+  legacy = ADS1256 direct (poll_coolant); pcb = control board Modbus (PCBDriver,
+  liveness tracked by a per-cycle health check).
 
-env(air_temp/humit)·chassis는 Pi 직결이라 양 백엔드 공통·무조건 실행 (Rev_C에서
-메인보드 OFF로 PCB가 죽어도 온/습도는 계속 수집됨).
+Air temp/humidity and chassis come from Pi-attached sensors, so they run on both
+backends unconditionally — they keep collecting even when the PCB is powered down.
 """
 import logging
 import os
@@ -30,9 +30,8 @@ PCB_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pcb_
 rd = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
 
-# data_crawler_host.py가 매 cycle `host_ttl`을 EXPIRE 7로 갱신한다. 키 존재 자체를
-# host telemetry가 실제 도착 중이라는 증거로 본다 — USB gadget/외부 라우터 경로 무관,
-# host 스크립트 크래시도 포착 (순수 링크 체크가 놓치는 케이스).
+# host writes `host_ttl` with EXPIRE 7 each cycle; key presence = host telemetry
+# is arriving (catches host-script crashes a link check would miss).
 HOST_TTL_KEY = 'host_ttl'
 
 
@@ -103,7 +102,7 @@ def main():
                         except Exception:
                             log.exception("controller.update failed")
                 else:
-                    consecutive_fail += 1
+                    consecutive_fail += 1   # PCB down (mainboard off / cycling)
                 prev_alive = alive
                 rd.set(K.COMM_CONSECUTIVE_FAILURES, consecutive_fail)
                 _update_comm_state(consecutive_fail, timeout_n, disconnect_n)
@@ -113,7 +112,7 @@ def main():
                 except Exception:
                     log.exception("poll_coolant failed")
 
-            # ── env / chassis — 양 백엔드 공통, 무조건 (Pi-side 상시) ──
+            # Pi-attached env/chassis — both backends, always (independent of PCB)
             try:
                 dlc_sensors.update_env(rd)
                 dlc_sensors.update_chassis(rd)

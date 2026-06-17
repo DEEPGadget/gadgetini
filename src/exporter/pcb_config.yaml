@@ -1,7 +1,7 @@
-# PCB(Gen3 제어보드) 운용 config — data_crawler.py가 PCB 머신에서만 로드.
-# "machine 모델이 바뀌면 같이 바뀌는 값"은 여기가 아니라 machine_config.py로.
-# 이 파일은 "PCB가 있을 때만 의미 있는" 운용 knob.
-# web UI 편집 → REST API → 파일 write → 다음 cycle에 mtime watch로 핫리로드.
+# PCB (Gen3 control board) runtime config — loaded by data_crawler.py on PCB machines only.
+# Values that change with the machine model live in machine_config.py, not here;
+# this file holds knobs that only matter when a PCB is present.
+# Hot-reloaded on mtime change (web UI edit -> REST API -> file write -> next cycle).
 modbus:
   port:
     - /dev/serial0
@@ -29,7 +29,7 @@ initial_pwm_duty:
   fan:
     ch5: 0
     ch6: 0
-    ch7: 80        # 8% — fan_curve.min_duty와 일치 (영구 회전 baseline)
+    ch7: 80        # 8% — matches fan_curve.min_duty (always-spinning baseline)
     ch8: 80
     ch9: 80
     ch10: 1000     # RPi cooling fan, always 100%

@@ -1,10 +1,10 @@
-"""Redis 키 상수 (flat naming — sensor_exporter.py 호환).
+"""Redis key constants (flat naming, sensor_exporter.py compatible).
 
-통합 collector(data_crawler.py)가 SET, sensor_exporter / display 가 read.
-양 백엔드(PCB Modbus, legacy ADS1256)가 동일 키 셋을 쓴다.
+Written by data_crawler.py, read by sensor_exporter / display. Both backends
+(PCB Modbus, legacy ADS1256) use the same key set.
 """
 
-# 센서
+# Sensors
 COOLANT_TEMP_INLET1  = 'coolant_temp_inlet1'
 COOLANT_TEMP_INLET2  = 'coolant_temp_inlet2'
 COOLANT_TEMP_OUTLET1 = 'coolant_temp_outlet1'
@@ -25,8 +25,8 @@ NTC_LOGICAL_TO_KEY = {
     'outlet2': COOLANT_TEMP_OUTLET2,
 }
 
-# 펌프 유량 추정 — 유량 센서 미장착이라 PWM duty + 토폴로지 multiplier 기반.
-# 자세한 모델은 pcb_config.yaml의 pump 섹션 참고.
+# Pump flow estimate (no flow sensor): from PWM duty + topology multiplier.
+# See the pump section of pcb_config.yaml.
 COOLANT_FLOW_LPM = 'coolant_flow_lpm'
 
 # Fan Tach RPM - 0-based index (matches existing conventions like gpu_temp_{i}).
@@ -41,8 +41,7 @@ def pwm_duty_pump(idx):
 def pwm_duty_fan(idx):
     return f'pwm_duty_fan_{idx}'
 
-# 통신 상태 (PCB 경로 한정 — health check / poll 결과 기반)
-# 임계 알람은 Prometheus/Grafana 측에서 raw metric으로 평가하므로 별도 키 없음.
+# Comm status (PCB path only — from health check / poll results).
 COMM_STATUS               = 'comm_status'
 COMM_CONSECUTIVE_FAILURES = 'comm_consecutive_failures'
 COMM_LAST_ERROR           = 'comm_last_error'
