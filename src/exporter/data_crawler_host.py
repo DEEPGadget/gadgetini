@@ -147,7 +147,7 @@ def parse_cpu_telemetry(sensors_data):
     # Use temp_list as fallback when package_temp_list is empty
     effective_temp_list = package_temp_list if package_temp_list else temp_list
     cpusinfo = [temp_list, effective_temp_list]
-    print("cpusinfo", effective_temp_list)
+    # print("cpusinfo", effective_temp_list)
     return cpusinfo
 
 def get_CPU_telemetry(sensors=None, sensors_output=None):
@@ -297,17 +297,19 @@ def get_CPU_power_telemetry(ipmi_proc=None, ipmi_output=None, sensors_data=None)
             return result
         raise RuntimeError("ipmitool returned no valid readings")
     except Exception as e:
-        print(f"[WARN] ipmitool failed, trying sensors fallback: {e}")
+        # print(f"[WARN] ipmitool failed, trying sensors fallback: {e}")
+        pass
 
     # Fallback to sensors -j
     try:
         if sensors_data is not None:
             return parse_cpu_power_from_sensors(sensors_data)
     except Exception as e:
-        print(f"[WARN] sensors fallback also failed: {e}")
+        # print(f"[WARN] sensors fallback also failed: {e}")
+        pass
 
     # Both failed — skip
-    print("[WARN] CPU power telemetry unavailable, skipping")
+    # print("[WARN] CPU power telemetry unavailable, skipping")
     return {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
 
 
@@ -394,21 +396,21 @@ if __name__ == "__main__":
         pipe = client.pipeline(transaction=False)
         # lpush for multi socket cpu, multi gpu 
         for idx, cpu in enumerate(curr_cpusinfo[1]):
-            print("cpu_temp_" + str(idx), str(cpu))
+            # print("cpu_temp_" + str(idx), str(cpu))
             pipe.set("cpu_temp_" + str(idx), str(cpu))
         # ipmi cpu power
         for idx, key in enumerate(curr_ipmi_telemetry):
             if curr_ipmi_telemetry[key] is not None:
                 pipe.set(str(key), str(curr_ipmi_telemetry[key]))
-                print(curr_ipmi_telemetry)
-                print(key)
-                print(curr_ipmi_telemetry[key])
+                # print(curr_ipmi_telemetry)
+                # print(key)
+                # print(curr_ipmi_telemetry[key])
 		# nic link status
         for nic in curr_link_status:
             key ,val = next(iter(nic.items()))
             pipe.set("nic_"+str(key)+"_stat", str(val))
-            print(key)
-            print(val)
+            # print(key)
+            # print(val)
         for idx, gpu in enumerate(curr_chipsinfo):
             pipe.set("gpu_name_" + str(idx), str(gpu[0]))
         
