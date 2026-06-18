@@ -189,13 +189,30 @@ class PCBDriver:
             applied[key] = int(v)
         log.info("PWM freq applied: %s", applied or 'none')
 
+    def _clamp_pump_duty(self, duty):
+        """Keep the pump within its rated voltage window (pump.min_duty/max_duty).
+
+        0 = off (passed through); any non-zero drive is clamped into range so the
+        pump is never driven below its minimum (e.g. 6V) or above its max (12V).
+        """
+        pump_cfg = self.cfg.get('pump', {}) or {}
+        lo = int(pump_cfg.get('min_duty', 0))
+        hi = int(pump_cfg.get('max_duty', 1000))
+        if duty <= 0:
+            return 0
+        clamped = max(lo, min(hi, duty))
+        if clamped != duty:
+            log.warning("pump duty %d clamped to %d (allowed %d-%d, pump rated 6-12VDC)",
+                        duty, clamped, lo, hi)
+        return clamped
+
     def apply_initial_state(self):
         """Write non-flash-persisted state (PWM duty, DOUT) at boot/recovery."""
         duty_cfg = self.cfg.get('initial_pwm_duty', {}) or {}
         pump = duty_cfg.get('pump') or {}
         fan = duty_cfg.get('fan') or {}
         for ch in range(1, 5):
-            self.write_register(hr_pwm_duty(ch), int(pump.get(f'ch{ch}', 0)))
+            self.write_register(hr_pwm_duty(ch), self._clamp_pump_duty(int(pump.get(f'ch{ch}', 0))))
         for ch in range(5, 13):
             self.write_register(hr_pwm_duty(ch), int(fan.get(f'ch{ch}', 0)))
         self.write_register(HR_DOUT_BITMASK, int(self.cfg.get('initial_dout_bitmask', 0)))

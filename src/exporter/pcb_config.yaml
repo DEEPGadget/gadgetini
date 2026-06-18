@@ -47,6 +47,11 @@ comm:
 pump:
   max_flow_lpm: 16
   flow_multiplier: 1.47
+  # Pump rated 6-12 VDC (Koolance PMP-500). Forbid drive outside this window.
+  # Assumes linear duty->voltage (1000 = 12V), so 6V = 500. Tune if the driver
+  # transfer function differs. 0 = off (passed through); non-zero is clamped.
+  min_duty: 500
+  max_duty: 1000
 wiring:
   ntc:
     inlet1: 13
