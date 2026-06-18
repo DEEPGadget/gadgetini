@@ -164,7 +164,20 @@ def get_CPU_telemetry(sensors=None, sensors_output=None):
         output, errors = sensors.communicate()
         sensors_data = json.loads(output)
 
-    return parse_cpu_telemetry(sensors_data)
+    cpusinfo = parse_cpu_telemetry(sensors_data)
+    if cpusinfo[1]:
+        return cpusinfo
+
+    # Fallback: sensors -j exposed no CPU temperature → try ipmitool (BMC).
+    try:
+        proc = get_ipmi_temp_output()
+        out, _ = proc.communicate(timeout=3)
+        temps = parse_cpu_temp_from_ipmi(out or "")
+        if temps:
+            return [temps, temps]
+    except Exception:
+        pass
+    return cpusinfo
 
 
 def get_ipmi_power_output():
@@ -174,6 +187,24 @@ def get_ipmi_power_output():
     """
     return subprocess.Popen(
         ["ipmitool", "sensor", "reading", "POWER_CPU1", "POWER_CPU2"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+# IPMI CPU temperature sensor names — BMC-specific. Verify on your host with
+# `ipmitool sdr type Temperature` or `ipmitool sensor list | grep -i cpu` and
+# adjust these names to match (parsing keys off this list).
+IPMI_CPU_TEMP_SENSORS = ["TEMP_CPU1", "TEMP_CPU2"]
+
+
+def get_ipmi_temp_output():
+    """Launch ipmitool to read CPU temperature sensors. Returns a Popen handle.
+
+    Used only as a fallback when `sensors -j` exposes no CPU temperature.
+    """
+    return subprocess.Popen(
+        ["ipmitool", "sensor", "reading", *IPMI_CPU_TEMP_SENSORS],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True
@@ -263,6 +294,29 @@ def parse_cpu_power_from_sensors(sensors_data):
                     result[f"cpu_curr_pwr_{cpu_idx}"] = round(float(val), 1)
                     cpu_idx += 1
     return result
+
+
+def parse_cpu_temp_from_ipmi(ipmi_text):
+    """Parse `ipmitool sensor reading <TEMP_CPU*>` output → [cpu0_temp, cpu1_temp, ...] (°C).
+
+    Keys off IPMI_CPU_TEMP_SENSORS, so changing that list updates parsing too.
+    Takes the first numeric token of each matching line; non-numeric (na/disabled) is skipped.
+    Handles 'TEMP_CPU1 | 55', 'TEMP_CPU1 | 55.000 | degrees C | ok', etc.
+    """
+    idx_of = {name: i for i, name in enumerate(IPMI_CPU_TEMP_SENSORS)}
+    by_idx = {}
+    for line in ipmi_text.splitlines():
+        line = line.strip()
+        if "|" not in line:
+            continue
+        name, _, rest = line.partition("|")
+        i = idx_of.get(name.strip())
+        if i is None:
+            continue
+        m = re.search(r"[-+]?[0-9]+(?:\.[0-9]+)?", rest)
+        if m:
+            by_idx[i] = round(float(m.group(0)), 1)
+    return [by_idx[k] for k in sorted(by_idx)]
 
 
 def get_CPU_power_telemetry(ipmi_proc=None, ipmi_output=None, sensors_data=None):
