@@ -54,7 +54,7 @@ wiring:
     outlet2: 15
     inlet2: 16
   din:
-    level_bit: 1
+    level_bit: 0        # DIN1 (bit0)
   ain:
     leak_ch: 8
     leak_threshold_v: 2
