@@ -104,6 +104,19 @@ def _probe_hdc302x():
         return None
 
 
+def _probe_aht20():
+    # Adafruit AHT20 (#4566), I2C 0x38. Library: adafruit-circuitpython-ahtx0.
+    # Exposes .temperature / .relative_humidity (same API as HDC302x).
+    try:
+        import busio, board, adafruit_ahtx0
+        i2c = busio.I2C(board.SCL, board.SDA)
+        dev = adafruit_ahtx0.AHTx0(i2c)
+        _ = dev.temperature
+        return dev
+    except Exception:
+        return None
+
+
 def _probe_dht11():
     # Only verify GPIO setup. DHT11 reads are flaky; requiring a read here can get
     # stuck on None at startup. Runtime reads retry in get_air_temp/humit.
@@ -114,8 +127,13 @@ def _probe_dht11():
         return None
 
 
+# Detection order: HDC302x (0x44) → AHT20 (0x38) → DHT11 (GPIO fallback).
+# I2C sensors use different addresses, so probing both is safe.
 _temp_humid_dev = _probe_hdc302x()
 _temp_humid_kind = 'hdc302x' if _temp_humid_dev is not None else None
+if _temp_humid_dev is None:
+    _temp_humid_dev = _probe_aht20()
+    _temp_humid_kind = 'aht20' if _temp_humid_dev is not None else None
 if _temp_humid_dev is None:
     _temp_humid_dev = _probe_dht11()
     _temp_humid_kind = 'dht11' if _temp_humid_dev is not None else None
