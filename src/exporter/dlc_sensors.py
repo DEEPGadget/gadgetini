@@ -92,7 +92,7 @@ def get_coolant_level_detection(adc_samples=None):
     return 0 if float(_median(samples)) > 1.2 else 1
 
 
-# ── Air temp/humidity — DHT11 → HDC302x → AHT20. Both backends. ──
+# ── Air temp/humidity — HDC302x → AHT20 (I2C, instant) → DHT11 (catch-all). Both backends. ──
 def _probe_hdc302x():
     try:
         import busio, board, adafruit_hdc302x
@@ -118,35 +118,29 @@ def _probe_aht20():
 
 
 def _probe_dht11():
-    # DHT11 has no I2C address; confirm presence with an actual read (DHT11 reads are
-    # flaky, so retry). Returning only on a successful read lets the chain fall through
-    # to HDC302x/AHT20 when no DHT11 is wired. Costs up to ~6s at startup only when
-    # DHT11 is absent.
+    # Last-resort catch-all: DHT11 is a 1-wire GPIO sensor with no I2C address to probe,
+    # so we only set up the GPIO (no read = no startup delay). Runtime reads in
+    # get_air_temp/humit retry, since DHT11 reads are flaky.
     try:
         import adafruit_dht, board
-        dev = adafruit_dht.DHT11(board.D4)
+        return adafruit_dht.DHT11(board.D4)
     except Exception:
         return None
-    for _ in range(3):
-        try:
-            if dev.temperature is not None:
-                return dev
-        except Exception:
-            pass
-        time.sleep(2)   # DHT11 needs ~2s between reads
-    return None
 
 
-# Detection order: DHT11 (GPIO, read-verified) → HDC302x (I2C 0x44) → AHT20 (I2C 0x38).
-# DHT11 first so fielded units keep their sensor; units without it fall through to I2C.
-_temp_humid_dev = _probe_dht11()
-_temp_humid_kind = 'dht11' if _temp_humid_dev is not None else None
-if _temp_humid_dev is None:
-    _temp_humid_dev = _probe_hdc302x()
-    _temp_humid_kind = 'hdc302x' if _temp_humid_dev is not None else None
+# Detection order: HDC302x (I2C 0x44) → AHT20 (I2C 0x38) → DHT11 (GPIO, catch-all).
+# I2C sensors are detected instantly by address, so an absent one is skipped with no
+# delay. DHT11 has no address (can't be quick-probed), so it is the last fallback.
+# A machine carries exactly one of these sensors → order only affects speed, not which
+# sensor wins.
+_temp_humid_dev = _probe_hdc302x()
+_temp_humid_kind = 'hdc302x' if _temp_humid_dev is not None else None
 if _temp_humid_dev is None:
     _temp_humid_dev = _probe_aht20()
     _temp_humid_kind = 'aht20' if _temp_humid_dev is not None else None
+if _temp_humid_dev is None:
+    _temp_humid_dev = _probe_dht11()
+    _temp_humid_kind = 'dht11' if _temp_humid_dev is not None else None
 print(f"Temp/humid sensor: {_temp_humid_kind or 'none'}", flush=True)
 
 
