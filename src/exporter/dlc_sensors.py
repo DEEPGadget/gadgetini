@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-"""Pi-attached sensors — ADS1256 (coolant, legacy only) + HDC302x/DHT11 + MPU6050.
+"""Pi-attached sensors — ADS1256 (coolant, legacy only) + DHT11/HDC302x/AHT20 + MPU6050.
 
 ADS1256 init is graceful: when absent (PCB machine) _ADC_AVAILABLE stays False instead
 of failing at import. _ADC_AVAILABLE also serves as the backend discriminator
@@ -92,7 +92,7 @@ def get_coolant_level_detection(adc_samples=None):
     return 0 if float(_median(samples)) > 1.2 else 1
 
 
-# ── Air temp/humidity — HDC302x first (I2C), DHT11 fallback. Both backends. ──
+# ── Air temp/humidity — DHT11 → HDC302x → AHT20. Both backends. ──
 def _probe_hdc302x():
     try:
         import busio, board, adafruit_hdc302x
@@ -118,26 +118,36 @@ def _probe_aht20():
 
 
 def _probe_dht11():
-    # Only verify GPIO setup. DHT11 reads are flaky; requiring a read here can get
-    # stuck on None at startup. Runtime reads retry in get_air_temp/humit.
+    # DHT11 has no I2C address; confirm presence with an actual read (DHT11 reads are
+    # flaky, so retry). Returning only on a successful read lets the chain fall through
+    # to HDC302x/AHT20 when no DHT11 is wired. Costs up to ~6s at startup only when
+    # DHT11 is absent.
     try:
         import adafruit_dht, board
-        return adafruit_dht.DHT11(board.D4)
+        dev = adafruit_dht.DHT11(board.D4)
     except Exception:
         return None
+    for _ in range(3):
+        try:
+            if dev.temperature is not None:
+                return dev
+        except Exception:
+            pass
+        time.sleep(2)   # DHT11 needs ~2s between reads
+    return None
 
 
-# Detection order: HDC302x (0x44) → AHT20 (0x38) → DHT11 (GPIO fallback).
-# I2C sensors use different addresses, so probing both is safe.
-_temp_humid_dev = _probe_hdc302x()
-_temp_humid_kind = 'hdc302x' if _temp_humid_dev is not None else None
+# Detection order: DHT11 (GPIO, read-verified) → HDC302x (I2C 0x44) → AHT20 (I2C 0x38).
+# DHT11 first so fielded units keep their sensor; units without it fall through to I2C.
+_temp_humid_dev = _probe_dht11()
+_temp_humid_kind = 'dht11' if _temp_humid_dev is not None else None
+if _temp_humid_dev is None:
+    _temp_humid_dev = _probe_hdc302x()
+    _temp_humid_kind = 'hdc302x' if _temp_humid_dev is not None else None
 if _temp_humid_dev is None:
     _temp_humid_dev = _probe_aht20()
     _temp_humid_kind = 'aht20' if _temp_humid_dev is not None else None
-if _temp_humid_dev is None:
-    _temp_humid_dev = _probe_dht11()
-    _temp_humid_kind = 'dht11' if _temp_humid_dev is not None else None
-print(f"Temp/humid sensor: {_temp_humid_kind or 'none'}")
+print(f"Temp/humid sensor: {_temp_humid_kind or 'none'}", flush=True)
 
 
 def _read_temp_once():
