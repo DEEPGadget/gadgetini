@@ -79,41 +79,27 @@ export async function GET() {
       });
     }
 
-    // Fetch duty + RPM + flow together in a single mget
-    // (Redis is SET using the logical index of wiring order — see polling.py)
-    const pumpDutyKeys = wiredPump.map((_, i) => `pwm_duty_pump_${i}`);
-    const fanDutyKeys = wiredFan.map((_, i) => `pwm_duty_fan_${i}`);
-    const fanRpmKeys = wiredFan.map((_, i) => `fan_rpm_${i}`);
+    // Redis keys are PHYSICAL-channel indexed (pump CH1~4 -> _0~3, fan CH5~12 -> _0~7);
+    // see PCBDriver.poll. Read them directly in physical order — no remap.
+    const pumpDutyKeys = PUMP_CHANNELS.map((_, i) => `pwm_duty_pump_${i}`);
+    const fanDutyKeys = FAN_CHANNELS.map((_, i) => `pwm_duty_fan_${i}`);
+    const fanRpmKeys = FAN_CHANNELS.map((_, i) => `fan_rpm_${i}`);
     const allKeys = [
       ...pumpDutyKeys,
       ...fanDutyKeys,
       ...fanRpmKeys,
       "coolant_flow_lpm",
     ];
-    const values = allKeys.length > 0 ? await r.mget(...allKeys) : [];
+    const values = await r.mget(...allKeys);
 
     let off = 0;
-    const pumpDutyLogical = values.slice(off, off + pumpDutyKeys.length).map(toIntOrNull);
+    const pump = values.slice(off, off + pumpDutyKeys.length).map(toIntOrNull);
     off += pumpDutyKeys.length;
-    const fanDutyLogical = values.slice(off, off + fanDutyKeys.length).map(toIntOrNull);
+    const fan = values.slice(off, off + fanDutyKeys.length).map(toIntOrNull);
     off += fanDutyKeys.length;
-    const fanRpmLogical = values.slice(off, off + fanRpmKeys.length).map(toIntOrNull);
+    const fanRpm = values.slice(off, off + fanRpmKeys.length).map(toIntOrNull);
     off += fanRpmKeys.length;
     const coolantFlowLpm = toFloatOrNull(values[off]);
-
-    // Remap to physical channel positions — only channels mapped in wiring get values, the rest are null.
-    const pump = PUMP_CHANNELS.map((ch) => {
-      const i = wiredPump.indexOf(ch);
-      return i >= 0 ? pumpDutyLogical[i] : null;
-    });
-    const fan = FAN_CHANNELS.map((ch) => {
-      const i = wiredFan.indexOf(ch);
-      return i >= 0 ? fanDutyLogical[i] : null;
-    });
-    const fanRpm = FAN_CHANNELS.map((ch) => {
-      const i = wiredFan.indexOf(ch);
-      return i >= 0 ? fanRpmLogical[i] : null;
-    });
 
     return NextResponse.json({
       pump,
@@ -122,6 +108,8 @@ export async function GET() {
       coolantFlowLpm,
       pumpChannels: PUMP_CHANNELS,
       fanChannels: FAN_CHANNELS,
+      // Channels the fan curve / manual sliders actually control; the rest are fixed
+      // (e.g. CH10 RPi fan @100%) and shown read-only with a "fixed" tag.
       wiredPumpChannels: wiredPump,
       wiredFanChannels: wiredFan,
       comm_status: "ok",
@@ -187,14 +175,14 @@ export async function PUT(request) {
     const pipe = r.pipeline();
 
     // Store manual PWM in Redis (logical indices, matching wiring)
-    // pumpPwm/fanPwm are physical-channel-ordered (CH1~4 / CH5~12); the Redis
-    // keys are logical wiring slots, so map each wired channel to its value.
+    // Instant feedback for the controllable channels (poll re-publishes readback for
+    // all channels next cycle). Keys are PHYSICAL-indexed: pump CH-1, fan CH-5.
     const { wiredPump, wiredFan } = await loadWiring();
-    wiredPump.forEach((ch, i) => {
-      pipe.set(`pwm_duty_pump_${i}`, pumpPwm[ch - 1]);
+    wiredPump.forEach((ch) => {
+      pipe.set(`pwm_duty_pump_${ch - 1}`, pumpPwm[ch - 1]);
     });
-    wiredFan.forEach((ch, i) => {
-      pipe.set(`pwm_duty_fan_${i}`, fanPwm[ch - 5]);
+    wiredFan.forEach((ch) => {
+      pipe.set(`pwm_duty_fan_${ch - 5}`, fanPwm[ch - 5]);
     });
 
     // Switch mode to manual

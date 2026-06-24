@@ -42,26 +42,6 @@ def is_host_alive():
         return 0
 
 
-def _store_pump_pwm_to_redis(rd, cfg):
-    """Store pump PWM (from config) in Redis for Web UI readback."""
-    try:
-        pump_cfg = (cfg.get('initial_pwm_duty') or {}).get('pump') or {}
-        wiring = (cfg.get('wiring') or {}).get('pwm') or {}
-        pump_chs = wiring.get('pump_ch') or []
-
-        for i, ch in enumerate(pump_chs):
-            # config keys are 'ch1'..'ch4' (strings); index by physical channel
-            duty = pump_cfg.get(f"ch{ch}")
-            if duty is None:
-                continue
-            duty = int(duty)
-            if 0 <= duty <= 1000:
-                rd.set(f"pwm_duty_pump_{i}", duty)
-        log.debug("pump PWM stored to Redis: %s", pump_cfg)
-    except Exception:
-        log.exception("failed to store pump PWM to Redis")
-
-
 def _apply_manual_pwm(driver, rd):
     """Apply manual PWM from config (channel write) — no temperature feedback."""
     try:
@@ -146,8 +126,6 @@ def main():
                     if not prev_alive:
                         log.info("PCB alive — applying initial state")
                         driver.on_connect(rd)
-                        # Store pump PWM in Redis for Web UI
-                        _store_pump_pwm_to_redis(rd, reloader.cfg)
                     ok = False
                     try:
                         ok = driver.poll(rd)

@@ -65,27 +65,29 @@ class FanCurveController:
         return int(round(self.min_duty + frac * (self.max_duty - self.min_duty)))
 
     def update(self, pcb, rd):
-        """Read outlet1 -> compute duty -> write to all configured fan channels + Redis."""
+        """Read outlet1 -> compute duty -> write to all configured fan channels.
+
+        The Web UI reads duty back via PCBDriver.poll (register readback), so this
+        only writes the channels; it does not publish to Redis itself.
+        """
         if not self.fan_chs:
             return
         v = rd.get(K.COOLANT_TEMP_OUTLET1)
-        if v is None:
-            log.warning("no %s — fan duty unchanged", K.COOLANT_TEMP_OUTLET1)
-            return
-        try:
-            temp_c = float(v)
-        except (TypeError, ValueError):
-            return
-        duty = self._compute_duty(temp_c)
-
-        # Publish the computed duty to Redis every cycle for the Web UI readback,
-        # independent of the Modbus write deadband below — so auto-mode fan duty is
-        # always visible in the UI even when the channel write is skipped as unchanged.
-        try:
-            for i in range(len(self.fan_chs)):
-                rd.set(f"pwm_duty_fan_{i}", duty)
-        except Exception:
-            log.exception("failed to store fan duty to Redis")
+        temp_c = None
+        if v is not None:
+            try:
+                temp_c = float(v)
+            except (TypeError, ValueError):
+                temp_c = None
+        if temp_c is None:
+            # No outlet temp (NTC unwired / read failed) — fall back to the idle
+            # baseline (min_duty) so fans keep an always-spinning floor and the Web UI
+            # shows a value instead of blank. NOTE: this is the *low* fallback; on a
+            # unit where the NTC can drop out while hot, prefer max_duty as fail-safe.
+            log.warning("no %s — fan duty -> idle baseline (%d)", K.COOLANT_TEMP_OUTLET1, self.min_duty)
+            duty = self.min_duty
+        else:
+            duty = self._compute_duty(temp_c)
 
         # deadband, but always emit once when reaching the min/max clamp
         if self._last_written is not None and abs(duty - self._last_written) < _WRITE_DEADBAND:
@@ -103,7 +105,7 @@ class FanCurveController:
                 log.warning("fan duty write failed: CH %s (HR %d) duty=%d", run, base_hr, duty)
 
         self._last_written = duty
-        log.debug("outlet=%.1f C -> duty=%d -> CH %s", temp_c, duty, self.fan_chs)
+        log.debug("outlet=%s C -> duty=%d -> CH %s", temp_c, duty, self.fan_chs)
 
 
 def _fan_chs(cfg):

@@ -83,7 +83,6 @@ class PCBDriver:
         self.baud = None
 
         # sticky connection + DIN debounce state (per instance)
-        self._pump_connected = set()
         self._fan_connected = set()
         self._din_window = 5
         self._din_threshold = 3
@@ -299,45 +298,41 @@ class PCBDriver:
             return False
         pwm_map = wiring.get('pwm', {}) or {}
         pump_pwm_chs = pwm_map.get('pump_ch') or []
-        fan_pwm_chs = pwm_map.get('fan_ch') or []
 
-        for i, ch in enumerate(pump_pwm_chs):
-            if 1 <= ch <= 12 and pulses[ch - 1] > 0:
-                self._pump_connected.add(i)
-        for i, ch in enumerate(fan_pwm_chs):
-            if 1 <= ch <= 12 and pulses[ch - 1] > 0:
-                self._fan_connected.add(i)
+        # Sticky tach detection (fan only) by PHYSICAL slot: CH5~12 -> 0~7. A channel
+        # with no tach wire reads 0 pulses and never becomes "connected".
+        for ch in range(5, 13):
+            if pulses[ch - 1] > 0:
+                self._fan_connected.add(ch - 5)
 
-        # Fan RPM for connected channels only (2 pulses/rev -> RPM = Hz * 30)
-        for i, ch in enumerate(fan_pwm_chs):
-            if i in self._fan_connected and 1 <= ch <= 12:
+        # Fan RPM (tach) for connected channels only (2 pulses/rev -> RPM = Hz * 30).
+        for ch in range(5, 13):
+            i = ch - 5
+            if i in self._fan_connected:
                 pipe.set(K.fan_rpm(i), pulses[ch - 1] * 30)
             else:
                 pipe.delete(K.fan_rpm(i))
 
-        # PWM duty readback (HR 0~11), connected channels only
+        # PWM duty readback (HR 0~11): published as-is for EVERY physical channel,
+        # independent of tach (duty and tach are separate). pump CH1~4 -> pwm_duty_pump_0~3,
+        # fan CH5~12 -> pwm_duty_fan_0~7. This includes fixed channels (e.g. CH10 RPi fan
+        # @100%) that the fan curve never touches, so the UI can show them too.
         duties = self.read_holding_registers(HR_PWM_DUTY_BASE, 12)
         if duties is None:
             return False
-        for i, ch in enumerate(pump_pwm_chs):
-            if i in self._pump_connected and 1 <= ch <= 12:
-                pipe.set(K.pwm_duty_pump(i), duties[ch - 1])
-            else:
-                pipe.delete(K.pwm_duty_pump(i))
-        for i, ch in enumerate(fan_pwm_chs):
-            if i in self._fan_connected and 1 <= ch <= 12:
-                pipe.set(K.pwm_duty_fan(i), duties[ch - 1])
-            else:
-                pipe.delete(K.pwm_duty_fan(i))
+        for ch in range(1, 5):
+            pipe.set(K.pwm_duty_pump(ch - 1), duties[ch - 1])
+        for ch in range(5, 13):
+            pipe.set(K.pwm_duty_fan(ch - 5), duties[ch - 1])
 
-        # Pump flow estimate (no flow sensor): from mean connected-pump duty
-        connected_pump_duties = [
+        # Pump flow estimate (no flow sensor): from mean wired-pump commanded duty
+        wired_pump_duties = [
             duties[ch - 1]
             for i, ch in enumerate(pump_pwm_chs)
-            if i in self._pump_connected and 1 <= ch <= 12
+            if 1 <= ch <= 12
         ]
-        if connected_pump_duties and pump_cfg:
-            avg_duty = sum(connected_pump_duties) / len(connected_pump_duties)
+        if wired_pump_duties and pump_cfg:
+            avg_duty = sum(wired_pump_duties) / len(wired_pump_duties)
             max_lpm = float(pump_cfg.get('max_flow_lpm', 16))
             mult = float(pump_cfg.get('flow_multiplier', 1.0))
             pipe.set(K.COOLANT_FLOW_LPM, round(max_lpm * (avg_duty / 1000.0) * mult, 2))

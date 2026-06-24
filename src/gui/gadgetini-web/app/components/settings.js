@@ -123,6 +123,8 @@ export default function Settings() {
     fan: [null, null, null, null, null, null, null, null],
     fanRpm: [null, null, null, null, null, null, null, null],
     coolantFlowLpm: null,
+    curvePump: [], // pump channels the controller/manual drives (rest are fixed)
+    curveFan: [], // fan channels the curve/manual drives (rest are fixed, e.g. CH10)
   });
   const [fanCurve, setFanCurve] = useState({
     min_temp: 25,
@@ -244,6 +246,8 @@ export default function Settings() {
               fanRpm: Array.isArray(d.fanRpm) ? d.fanRpm : Array(d.fan.length).fill(null),
               coolantFlowLpm:
                 typeof d.coolantFlowLpm === "number" ? d.coolantFlowLpm : null,
+              curvePump: Array.isArray(d.wiredPumpChannels) ? d.wiredPumpChannels : [],
+              curveFan: Array.isArray(d.wiredFanChannels) ? d.wiredFanChannels : [],
             });
           }
         })
@@ -759,7 +763,14 @@ export default function Settings() {
                 <div className="space-y-1">
                   {cbPwm.pump.map((duty, i) => (
                     <div key={`pump-${i}`} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600 font-mono">CH{i + 1}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-gray-600 font-mono">CH{i + 1}</span>
+                        {!cbPwm.curvePump?.includes(i + 1) && (
+                          <span className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-gray-100 text-gray-400 border border-gray-200">
+                            {t("pwm_fixed")}
+                          </span>
+                        )}
+                      </span>
                       <span className="font-mono">
                         {duty === null ? (
                           <span className="text-gray-300">—</span>
@@ -799,7 +810,14 @@ export default function Settings() {
                 <div className="space-y-1">
                   {cbPwm.fan.map((duty, i) => (
                     <div key={`fan-${i}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-sm">
-                      <span className="text-gray-600 font-mono">CH{i + 5}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-gray-600 font-mono">CH{i + 5}</span>
+                        {!cbPwm.curveFan?.includes(i + 5) && (
+                          <span className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-gray-100 text-gray-400 border border-gray-200">
+                            {t("pwm_fixed")}
+                          </span>
+                        )}
+                      </span>
                       <span className="font-mono text-right">
                         {duty === null ? (
                           <span className="text-gray-300">—</span>

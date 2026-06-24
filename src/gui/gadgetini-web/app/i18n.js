@@ -105,6 +105,8 @@ const STRINGS = {
     pumps_label: "Pumps · CH 1~4",
     fans_label: "Fans · CH 5~12",
     estimated_flow: "Est. flow",
+    pwm_fixed: "fixed",
+    pwm_controlled: "controlled",
 
     // === Fan curve ===
     fan_curve_desc:
@@ -213,6 +215,8 @@ const STRINGS = {
     pumps_label: "펌프 · CH 1~4",
     fans_label: "팬 · CH 5~12",
     estimated_flow: "추정 유량",
+    pwm_fixed: "고정",
+    pwm_controlled: "제어",
 
     // === Fan curve ===
     fan_curve_desc:
