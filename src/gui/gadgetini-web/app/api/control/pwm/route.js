@@ -2,10 +2,10 @@
 // Returns pump CH1~4 / fan CH5~12 in **physical channel order** (fixed length 4 / 8).
 // Also returns fan RPM (`fan_rpm_*`) and estimated pump flow (`coolant_flow_lpm`).
 //
-// The Redis keys `pwm_duty_{pump,fan}_{i}` and `fan_rpm_{i}` are indexed by the
-// logical slot (0-based) of wiring.pwm.{pump_ch,fan_ch}, so reading them as-is would
-// cause "CH9's duty showing up at fan[0] and being labeled CH5". Here we read wiring
-// and remap to physical channel positions — fan[ch-5] = that CH's value.
+// PWM duty Redis keys are PHYSICAL-channel indexed (pump CH1~4 -> pwm_duty_pump_0~3,
+// fan CH5~12 -> pwm_duty_fan_0~7), written by PCBDriver.poll register readback — read
+// directly, no remap. fan_rpm_{i} is LOGICAL (wiring order, to match the TFT display's
+// "FanN" labels), so it is read per wired fan and remapped to physical slots here.
 //
 // If comm_status is not 'ok' (PCB communication is down), do not show stale Redis
 // values — return all null to avoid displaying incorrect info in the UI.
@@ -79,11 +79,12 @@ export async function GET() {
       });
     }
 
-    // Redis keys are PHYSICAL-channel indexed (pump CH1~4 -> _0~3, fan CH5~12 -> _0~7);
-    // see PCBDriver.poll. Read them directly in physical order — no remap.
+    // PWM duty is PHYSICAL-channel indexed (pump CH1~4 -> _0~3, fan CH5~12 -> _0~7);
+    // read directly. fan_rpm is LOGICAL (wiring order, to match the TFT display), so
+    // read the wired-fan slots and remap to physical positions below.
     const pumpDutyKeys = PUMP_CHANNELS.map((_, i) => `pwm_duty_pump_${i}`);
     const fanDutyKeys = FAN_CHANNELS.map((_, i) => `pwm_duty_fan_${i}`);
-    const fanRpmKeys = FAN_CHANNELS.map((_, i) => `fan_rpm_${i}`);
+    const fanRpmKeys = wiredFan.map((_, i) => `fan_rpm_${i}`);
     const allKeys = [
       ...pumpDutyKeys,
       ...fanDutyKeys,
@@ -97,9 +98,15 @@ export async function GET() {
     off += pumpDutyKeys.length;
     const fan = values.slice(off, off + fanDutyKeys.length).map(toIntOrNull);
     off += fanDutyKeys.length;
-    const fanRpm = values.slice(off, off + fanRpmKeys.length).map(toIntOrNull);
+    const fanRpmLogical = values.slice(off, off + fanRpmKeys.length).map(toIntOrNull);
     off += fanRpmKeys.length;
     const coolantFlowLpm = toFloatOrNull(values[off]);
+
+    // Map logical fan RPM (wiring order) onto physical fan slots CH5~12; the rest null.
+    const fanRpm = FAN_CHANNELS.map((ch) => {
+      const li = wiredFan.indexOf(ch);
+      return li >= 0 ? fanRpmLogical[li] : null;
+    });
 
     return NextResponse.json({
       pump,
@@ -174,7 +181,7 @@ export async function PUT(request) {
     const r = getRedis();
     const pipe = r.pipeline();
 
-    // Store manual PWM in Redis (logical indices, matching wiring)
+    // Store manual PWM in Redis (physical channel indices, matching poll readback)
     // Instant feedback for the controllable channels (poll re-publishes readback for
     // all channels next cycle). Keys are PHYSICAL-indexed: pump CH-1, fan CH-5.
     const { wiredPump, wiredFan } = await loadWiring();

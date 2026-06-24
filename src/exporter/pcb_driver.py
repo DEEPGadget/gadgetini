@@ -298,17 +298,18 @@ class PCBDriver:
             return False
         pwm_map = wiring.get('pwm', {}) or {}
         pump_pwm_chs = pwm_map.get('pump_ch') or []
+        fan_pwm_chs = pwm_map.get('fan_ch') or []
 
-        # Sticky tach detection (fan only) by PHYSICAL slot: CH5~12 -> 0~7. A channel
-        # with no tach wire reads 0 pulses and never becomes "connected".
-        for ch in range(5, 13):
-            if pulses[ch - 1] > 0:
-                self._fan_connected.add(ch - 5)
+        # Sticky tach detection (fan only) by WIRING ORDER (Fan0, Fan1, ...), NOT physical
+        # channel — so fan_rpm_{i} lines up with the TFT display's fan_rpm_{0..N} / "FanN"
+        # labels (first N wired fans). (PWM duty below is physical; rpm and duty differ.)
+        for i, ch in enumerate(fan_pwm_chs):
+            if 1 <= ch <= 12 and pulses[ch - 1] > 0:
+                self._fan_connected.add(i)
 
-        # Fan RPM (tach) for connected channels only (2 pulses/rev -> RPM = Hz * 30).
-        for ch in range(5, 13):
-            i = ch - 5
-            if i in self._fan_connected:
+        # Fan RPM (tach) for connected fans only (2 pulses/rev -> RPM = Hz * 30).
+        for i, ch in enumerate(fan_pwm_chs):
+            if i in self._fan_connected and 1 <= ch <= 12:
                 pipe.set(K.fan_rpm(i), pulses[ch - 1] * 30)
             else:
                 pipe.delete(K.fan_rpm(i))

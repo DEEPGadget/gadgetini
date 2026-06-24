@@ -150,7 +150,7 @@ class DLCCollector:
         # Coolant flow (control_board SETs an estimate based on pump duty)
         if client.exists("coolant_flow_lpm"):
             g.add_metric([srv, "cooling", "coolant_flow", "L/min", ""], get_float("coolant_flow_lpm"))
-        # Fan tach RPM (control_board polling reads IR 21~22 and SETs)
+        # Fan tach RPM (PCBDriver.poll reads pulse freq IR 13~24 and SETs; idx = wiring order)
         for fan_key in sorted(client.keys("fan_rpm_*")):
             idx = fan_key.split("_")[-1]
             g.add_metric([srv, "cooling", "fan_rpm", "rpm", idx], get_int(fan_key))
