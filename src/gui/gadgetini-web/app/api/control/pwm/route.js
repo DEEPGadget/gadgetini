@@ -4,8 +4,8 @@
 //
 // PWM duty Redis keys are PHYSICAL-channel indexed (pump CH1~4 -> pwm_duty_pump_0~3,
 // fan CH5~12 -> pwm_duty_fan_0~7), written by PCBDriver.poll register readback — read
-// directly, no remap. fan_rpm_{i} is LOGICAL (wiring order, to match the TFT display's
-// "FanN" labels), so it is read per wired fan and remapped to physical slots here.
+// directly, no remap. fan_rpm is ALSO physical (fan_rpm_0~7 = CH5~12), so RPM lines up
+// with the per-channel duty; tach is measured per-channel, independent of PWM wiring.
 //
 // If comm_status is not 'ok' (PCB communication is down), do not show stale Redis
 // values — return all null to avoid displaying incorrect info in the UI.
@@ -80,11 +80,10 @@ export async function GET() {
     }
 
     // PWM duty is PHYSICAL-channel indexed (pump CH1~4 -> _0~3, fan CH5~12 -> _0~7);
-    // read directly. fan_rpm is LOGICAL (wiring order, to match the TFT display), so
-    // read the wired-fan slots and remap to physical positions below.
+    // read directly. fan_rpm is ALSO physical (fan_rpm_0~7 = CH5~12) — read directly too.
     const pumpDutyKeys = PUMP_CHANNELS.map((_, i) => `pwm_duty_pump_${i}`);
     const fanDutyKeys = FAN_CHANNELS.map((_, i) => `pwm_duty_fan_${i}`);
-    const fanRpmKeys = wiredFan.map((_, i) => `fan_rpm_${i}`);
+    const fanRpmKeys = FAN_CHANNELS.map((_, i) => `fan_rpm_${i}`);
     const allKeys = [
       ...pumpDutyKeys,
       ...fanDutyKeys,
@@ -98,15 +97,9 @@ export async function GET() {
     off += pumpDutyKeys.length;
     const fan = values.slice(off, off + fanDutyKeys.length).map(toIntOrNull);
     off += fanDutyKeys.length;
-    const fanRpmLogical = values.slice(off, off + fanRpmKeys.length).map(toIntOrNull);
+    const fanRpm = values.slice(off, off + fanRpmKeys.length).map(toIntOrNull);
     off += fanRpmKeys.length;
     const coolantFlowLpm = toFloatOrNull(values[off]);
-
-    // Map logical fan RPM (wiring order) onto physical fan slots CH5~12; the rest null.
-    const fanRpm = FAN_CHANNELS.map((ch) => {
-      const li = wiredFan.indexOf(ch);
-      return li >= 0 ? fanRpmLogical[li] : null;
-    });
 
     return NextResponse.json({
       pump,

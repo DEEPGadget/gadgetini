@@ -113,7 +113,10 @@ def main():
         disconnect_n = int(comm_cfg.get('disconnected_after_failures', 10))
         driver = pcb_driver.PCBDriver(cfg)
         reloader = pcb_control.ConfigReloader(PCB_CONFIG_PATH, cfg)
-        log.info("PCB collector @ %.2fs cadence (liveness via 1Hz health check)", cycle_s)
+        # Always boot into auto (fan-curve) mode — safe default. Manual is entered only
+        # via the web UI, which captures the current PWM at switch time (no jump).
+        rd.set('control_mode', 'auto')
+        log.info("PCB collector @ %.2fs cadence (liveness via 1Hz health check), mode=auto", cycle_s)
 
     try:
         while True:

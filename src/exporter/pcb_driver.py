@@ -298,18 +298,19 @@ class PCBDriver:
             return False
         pwm_map = wiring.get('pwm', {}) or {}
         pump_pwm_chs = pwm_map.get('pump_ch') or []
-        fan_pwm_chs = pwm_map.get('fan_ch') or []
 
-        # Sticky tach detection (fan only) by WIRING ORDER (Fan0, Fan1, ...), NOT physical
-        # channel — so fan_rpm_{i} lines up with the TFT display's fan_rpm_{0..N} / "FanN"
-        # labels (first N wired fans). (PWM duty below is physical; rpm and duty differ.)
-        for i, ch in enumerate(fan_pwm_chs):
-            if 1 <= ch <= 12 and pulses[ch - 1] > 0:
-                self._fan_connected.add(i)
+        # Tach is measured on every channel CH1~12 (IR 13~24), independent of PWM wiring.
+        # Publish fan RPM for every fan slot CH5~12 by PHYSICAL index (fan_rpm_0~7), so it
+        # lines up with the per-channel PWM duty. Sticky: a slot is "connected" once it
+        # ever shows pulses; slots with no tach read 0 and the key is deleted.
+        for ch in range(5, 13):
+            if pulses[ch - 1] > 0:
+                self._fan_connected.add(ch - 5)
 
-        # Fan RPM (tach) for connected fans only (2 pulses/rev -> RPM = Hz * 30).
-        for i, ch in enumerate(fan_pwm_chs):
-            if i in self._fan_connected and 1 <= ch <= 12:
+        # Fan RPM for connected slots only (2 pulses/rev -> RPM = Hz * 30).
+        for ch in range(5, 13):
+            i = ch - 5
+            if i in self._fan_connected:
                 pipe.set(K.fan_rpm(i), pulses[ch - 1] * 30)
             else:
                 pipe.delete(K.fan_rpm(i))

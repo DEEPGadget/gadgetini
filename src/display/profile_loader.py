@@ -35,15 +35,20 @@ def _make_formula(expr_str):
 
 
 def _expand_templates(templates, config):
-    """Expand sensor_templates using count from config. {i} → 0,1,...,N-1."""
+    """Expand sensor_templates. {i} iterates explicit `indices` if given, else 0..count-1
+    where count is read from config (PRODUCT/<count key>). `indices` lets a template map
+    to fixed physical channels (e.g. fan_rpm at physical slots [2,3,4] = CH7~9)."""
     result = []
     for tmpl in templates:
-        count_key = tmpl['count']
-        count = config.getint('PRODUCT', count_key, fallback=0) if config else 0
-        for i in range(count):
+        if 'indices' in tmpl:
+            idxs = tmpl['indices']
+        else:
+            count = config.getint('PRODUCT', tmpl['count'], fallback=0) if config else 0
+            idxs = range(count)
+        for i in idxs:
             sensor = {}
             for k, v in tmpl.items():
-                if k == 'count':
+                if k in ('count', 'indices'):
                     continue
                 sensor[k] = v.replace('{i}', str(i)) if isinstance(v, str) else v
             result.append(sensor)
