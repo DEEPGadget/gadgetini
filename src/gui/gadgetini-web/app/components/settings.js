@@ -118,6 +118,9 @@ export default function Settings() {
     comm_status: "unknown",
     mode: "auto",
   });
+  // Pending (unsaved) mode selection — applied only when the user clicks Save.
+  const [pendingMode, setPendingMode] = useState("auto");
+  const [modeSaving, setModeSaving] = useState(false);
   const [cbPwm, setCbPwm] = useState({
     pump: [null, null, null, null],
     fan: [null, null, null, null, null, null, null, null],
@@ -231,6 +234,12 @@ export default function Settings() {
     return () => clearInterval(id);
   }, []);
 
+  // Keep the pending selection in sync with the actual mode — only fires when the actual
+  // mode value changes (e.g. after a save), so an in-progress selection isn't clobbered.
+  useEffect(() => {
+    setPendingMode(cbStatus.mode);
+  }, [cbStatus.mode]);
+
   // PWM duty readback: 2s cadence — pump CH1~4 + fan CH5~12 (fixed 8 slots).
   // The API reads the wiring.pwm mapping and remaps to physical channel positions.
   // Fan RPM and estimated pump flow are refreshed on the same cadence.
@@ -298,6 +307,7 @@ export default function Settings() {
   };
 
   const handleModeChange = async (newMode) => {
+    setModeSaving(true);
     try {
       // Switching to manual: seed from the most recent (auto) PWM and persist it
       // as manual_pwm so the board continues at the same duty instead of jumping
@@ -343,6 +353,8 @@ export default function Settings() {
       setCbStatus((p) => ({ ...p, mode: newMode }));
     } catch (err) {
       alert(`${t("save_failed")}: ${err?.message || err}`);
+    } finally {
+      setModeSaving(false);
     }
   };
 
@@ -727,9 +739,9 @@ export default function Settings() {
                   <input
                     type="radio"
                     name="cb-mode"
-                    checked={cbStatus.mode === "auto"}
-                    onChange={() => handleModeChange("auto")}
-                    disabled={!cbStatus.pcb_connected}
+                    checked={pendingMode === "auto"}
+                    onChange={() => setPendingMode("auto")}
+                    disabled={!cbStatus.pcb_connected || modeSaving}
                   />
                   {t("auto")}
                 </label>
@@ -737,12 +749,36 @@ export default function Settings() {
                   <input
                     type="radio"
                     name="cb-mode"
-                    checked={cbStatus.mode === "manual"}
-                    onChange={() => handleModeChange("manual")}
-                    disabled={!cbStatus.pcb_connected}
+                    checked={pendingMode === "manual"}
+                    onChange={() => setPendingMode("manual")}
+                    disabled={!cbStatus.pcb_connected || modeSaving}
                   />
                   {t("manual")}
                 </label>
+                {(() => {
+                  const dirty = pendingMode !== cbStatus.mode;
+                  const enabled = dirty && cbStatus.pcb_connected && !modeSaving;
+                  return (
+                    <button
+                      onClick={() => handleModeChange(pendingMode)}
+                      disabled={!enabled}
+                      className={`inline-flex items-center justify-center h-8 px-4 text-xs font-semibold rounded-lg transition-all ${
+                        (dirty || modeSaving) && cbStatus.pcb_connected
+                          ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      }`}
+                    >
+                      {modeSaving ? (
+                        <LoadingSpinner color={"white"} />
+                      ) : (
+                        <>
+                          <CheckIcon className="w-3.5 h-3.5 mr-1" />
+                          {t("save")}
+                        </>
+                      )}
+                    </button>
+                  );
+                })()}
               </div>
               {!cbStatus.pcb_connected && (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1">

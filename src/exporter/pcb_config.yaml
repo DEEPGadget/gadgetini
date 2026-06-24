@@ -70,6 +70,18 @@ wiring:
       - 7
       - 8
       - 9
-# manual_pwm is runtime-managed: the web UI writes it when switching to manual mode,
-# seeding from the most recent (auto) PWM so the board continues at the same duty.
-# No hand-set initial values are needed here — auto is the boot default.
+manual_pwm:
+  pump:
+    - 600
+    - 600
+    - 600
+    - 600
+  fan:
+    - 0
+    - 0
+    - 80
+    - 80
+    - 80
+    - 1000
+    - 0
+    - 0
