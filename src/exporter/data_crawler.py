@@ -42,6 +42,62 @@ def is_host_alive():
         return 0
 
 
+def _store_pump_pwm_to_redis(rd, cfg):
+    """Store pump PWM (from config) in Redis for Web UI readback."""
+    try:
+        pump_cfg = (cfg.get('initial_pwm_duty') or {}).get('pump') or {}
+        wiring = (cfg.get('wiring') or {}).get('pwm') or {}
+        pump_chs = wiring.get('pump_ch') or []
+
+        for i, ch in enumerate(pump_chs):
+            # config keys are 'ch1'..'ch4' (strings); index by physical channel
+            duty = pump_cfg.get(f"ch{ch}")
+            if duty is None:
+                continue
+            duty = int(duty)
+            if 0 <= duty <= 1000:
+                rd.set(f"pwm_duty_pump_{i}", duty)
+        log.debug("pump PWM stored to Redis: %s", pump_cfg)
+    except Exception:
+        log.exception("failed to store pump PWM to Redis")
+
+
+def _apply_manual_pwm(driver, rd):
+    """Apply manual PWM from config (channel write) — no temperature feedback."""
+    try:
+        import yaml
+        cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pcb_config.yaml')
+        with open(cfg_path) as f:
+            cfg = yaml.safe_load(f) or {}
+        manual_cfg = cfg.get('manual_pwm') or {}
+        pump_duties = manual_cfg.get('pump') or []
+        fan_duties = manual_cfg.get('fan') or []
+
+        wiring = (cfg.get('wiring') or {}).get('pwm') or {}
+        pump_chs = wiring.get('pump_ch') or []
+        fan_chs = wiring.get('fan_ch') or []
+
+        # manual_pwm arrays are in PHYSICAL channel order (pump=CH1~4, fan=CH5~12),
+        # matching the Web UI sliders — index by channel offset, not by wiring slot.
+        for ch in pump_chs:
+            idx = ch - 1
+            if 0 <= idx < len(pump_duties) and pump_duties[idx] is not None:
+                duty = int(pump_duties[idx])
+                if 0 <= duty <= 1000:
+                    driver.write_register(pcb_driver.hr_pwm_duty(ch), duty)
+
+        for ch in fan_chs:
+            idx = ch - 5
+            if 0 <= idx < len(fan_duties) and fan_duties[idx] is not None:
+                duty = int(fan_duties[idx])
+                if 0 <= duty <= 1000:
+                    driver.write_register(pcb_driver.hr_pwm_duty(ch), duty)
+
+        log.debug("manual PWM applied: pump=%s fan=%s", pump_duties, fan_duties)
+    except Exception:
+        log.exception("manual PWM apply failed")
+
+
 def _update_comm_state(fails, timeout_n, disconnect_n):
     if fails == 0:
         rd.set(K.COMM_STATUS, 'ok')
@@ -90,6 +146,8 @@ def main():
                     if not prev_alive:
                         log.info("PCB alive — applying initial state")
                         driver.on_connect(rd)
+                        # Store pump PWM in Redis for Web UI
+                        _store_pump_pwm_to_redis(rd, reloader.cfg)
                     ok = False
                     try:
                         ok = driver.poll(rd)
@@ -98,9 +156,14 @@ def main():
                     consecutive_fail = 0 if ok else consecutive_fail + 1
                     if ok:
                         try:
-                            controller.update(driver, rd)
+                            # Check control_mode: manual or auto (default)
+                            control_mode = rd.get('control_mode') or 'auto'
+                            if control_mode == 'manual':
+                                _apply_manual_pwm(driver, rd)
+                            else:
+                                controller.update(driver, rd)
                         except Exception:
-                            log.exception("controller.update failed")
+                            log.exception("control update failed")
                 else:
                     consecutive_fail += 1   # PCB down (mainboard off / cycling)
                 prev_alive = alive

@@ -65,7 +65,7 @@ class FanCurveController:
         return int(round(self.min_duty + frac * (self.max_duty - self.min_duty)))
 
     def update(self, pcb, rd):
-        """Read outlet1 -> compute duty -> write to all configured fan channels."""
+        """Read outlet1 -> compute duty -> write to all configured fan channels + Redis."""
         if not self.fan_chs:
             return
         v = rd.get(K.COOLANT_TEMP_OUTLET1)
@@ -77,6 +77,16 @@ class FanCurveController:
         except (TypeError, ValueError):
             return
         duty = self._compute_duty(temp_c)
+
+        # Publish the computed duty to Redis every cycle for the Web UI readback,
+        # independent of the Modbus write deadband below — so auto-mode fan duty is
+        # always visible in the UI even when the channel write is skipped as unchanged.
+        try:
+            for i in range(len(self.fan_chs)):
+                rd.set(f"pwm_duty_fan_{i}", duty)
+        except Exception:
+            log.exception("failed to store fan duty to Redis")
+
         # deadband, but always emit once when reaching the min/max clamp
         if self._last_written is not None and abs(duty - self._last_written) < _WRITE_DEADBAND:
             if duty in (self.min_duty, self.max_duty) and self._last_written != duty:
@@ -91,6 +101,7 @@ class FanCurveController:
                 ok = pcb.write_registers(base_hr, [duty] * len(run))
             if not ok:
                 log.warning("fan duty write failed: CH %s (HR %d) duty=%d", run, base_hr, duty)
+
         self._last_written = duty
         log.debug("outlet=%.1f C -> duty=%d -> CH %s", temp_c, duty, self.fan_chs)
 

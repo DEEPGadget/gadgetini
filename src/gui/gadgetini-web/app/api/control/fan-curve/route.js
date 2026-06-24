@@ -10,7 +10,7 @@ import yaml from "js-yaml";
 
 const CONFIG_PATH =
   process.env.CONTROL_BOARD_CONFIG ||
-  "/home/gadgetini/gadgetini/src/control_board/config.yaml";
+  "/home/gadgetini/gadgetini/src/exporter/pcb_config.yaml";
 
 const DEFAULTS = { min_temp: 25, max_temp: 60, min_duty: 100, max_duty: 1000 };
 

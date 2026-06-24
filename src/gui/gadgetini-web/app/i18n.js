@@ -115,10 +115,15 @@ const STRINGS = {
     warning_temp: "Warning Temp (°C)",
     idle_pwm: "Idle PWM (%)",
     max_pwm: "Max PWM (%)",
+
+    // === Manual PWM ===
+    manual_pwm_title: "Manual PWM Control",
+    manual_pwm_desc: "Set pump and fan PWM duty (0-100%)",
+
     save: "Save",
-    save_failed: "Failed to save fan curve",
+    save_failed: "Failed to save",
     loading: "Loading...",
-    service_inactive_tooltip: "control_board.service is inactive",
+    service_inactive_tooltip: "PCB is not connected",
   },
   ko: {
     // === Header / Reboot ===
@@ -218,10 +223,15 @@ const STRINGS = {
     warning_temp: "경고 온도 (°C)",
     idle_pwm: "기본 PWM (%)",
     max_pwm: "최대 PWM (%)",
+
+    // === Manual PWM ===
+    manual_pwm_title: "수동 PWM 제어",
+    manual_pwm_desc: "펌프 및 팬 PWM duty 설정 (0-100%)",
+
     save: "저장",
-    save_failed: "팬 곡선 저장 실패",
+    save_failed: "저장 실패",
     loading: "불러오는 중...",
-    service_inactive_tooltip: "control_board.service 가 비활성 상태",
+    service_inactive_tooltip: "PCB 가 연결되지 않았습니다",
   },
 };
 

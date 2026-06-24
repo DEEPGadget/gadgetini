@@ -37,7 +37,11 @@ try:
     sys.path.append('/home/gadgetini/High-Precision-AD-DA-Board-Code/RaspberryPI/ADS1256/python3')
     import ADS1256 as _ads_lib
     _ADC = _ads_lib.ADS1256()
-    _ADC.ADS1256_init()
+    # ADS1256_init() returns -1 (it does NOT raise) when the chip ID read fails —
+    # i.e. the board is absent and SPI reads garbage. Treat that as "not present"
+    # so the backend discriminator doesn't false-positive to legacy on a PCB machine.
+    if _ADC.ADS1256_init() != 0:
+        raise RuntimeError("ADS1256_init failed (chip ID mismatch / board not present)")
     _ADC_AVAILABLE = True
 except Exception as e:
     print(f"ADS1256 init failed (OK if PCB present): {e}")

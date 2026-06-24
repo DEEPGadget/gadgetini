@@ -1,7 +1,3 @@
-# PCB (Gen3 control board) runtime config — loaded by data_crawler.py on PCB machines only.
-# Values that change with the machine model live in machine_config.py, not here;
-# this file holds knobs that only matter when a PCB is present.
-# Hot-reloaded on mtime change (web UI edit -> REST API -> file write -> next cycle).
 modbus:
   port:
     - /dev/serial0
@@ -29,17 +25,17 @@ initial_pwm_duty:
   fan:
     ch5: 0
     ch6: 0
-    ch7: 80        # 8% — matches fan_curve.min_duty (always-spinning baseline)
+    ch7: 80
     ch8: 80
     ch9: 80
-    ch10: 1000     # RPi cooling fan, always 100%
+    ch10: 1000
     ch11: 0
     ch12: 0
 initial_dout_bitmask: 0
 fan_curve:
   min_temp: 25
   max_temp: 60
-  min_duty: 80     # 8%
+  min_duty: 80
   max_duty: 1000
 comm:
   timeout_after_failures: 3
@@ -47,9 +43,6 @@ comm:
 pump:
   max_flow_lpm: 16
   flow_multiplier: 1.47
-  # Pump rated 6-12 VDC (Koolance PMP-500). Forbid drive outside this window.
-  # Assumes linear duty->voltage (1000 = 12V), so 6V = 500. Tune if the driver
-  # transfer function differs. 0 = off (passed through); non-zero is clamped.
   min_duty: 500
   max_duty: 1000
 wiring:
@@ -59,7 +52,7 @@ wiring:
     outlet2: 15
     inlet2: 16
   din:
-    level_bit: 0        # DIN1 (bit0)
+    level_bit: 0
   ain:
     leak_ch: 8
     leak_threshold_v: 2
@@ -77,3 +70,18 @@ wiring:
       - 7
       - 8
       - 9
+manual_pwm:
+  pump:
+    - 500
+    - 500
+    - 500
+    - 500
+  fan:
+    - 500
+    - 500
+    - 500
+    - 500
+    - 500
+    - 500
+    - 500
+    - 500
