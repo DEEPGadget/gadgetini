@@ -304,7 +304,7 @@
     },
     {
       "key": "fan_rpm_{i}",
-      "indices": [2, 3, 4],
+      "indices": [0, 1, 2, 3, 4, 5, 6, 7],
       "title": "Fan{i} RPM",
       "unit": "RPM",
       "min": 0,
@@ -565,9 +565,14 @@
       "params": {
         "title": "Fan RPM",
         "sensor_keys": [
+          "fan_rpm_0",
+          "fan_rpm_1",
           "fan_rpm_2",
           "fan_rpm_3",
-          "fan_rpm_4"
+          "fan_rpm_4",
+          "fan_rpm_5",
+          "fan_rpm_6",
+          "fan_rpm_7"
         ],
         "colors": [
           [
@@ -584,12 +589,42 @@
             0,
             220,
             120
+          ],
+          [
+            60,
+            220,
+            100
+          ],
+          [
+            255,
+            60,
+            60
+          ],
+          [
+            100,
+            100,
+            255
+          ],
+          [
+            200,
+            100,
+            255
+          ],
+          [
+            255,
+            200,
+            100
           ]
         ],
         "labels": [
+          "CH5",
+          "CH6",
           "CH7",
           "CH8",
-          "CH9"
+          "CH9",
+          "CH10",
+          "CH11",
+          "CH12"
         ]
       }
     }
