@@ -365,7 +365,12 @@ class PCBDriver:
         i = ntcs.get(in_logical)
         o = ntcs.get(out_logical)
         if i is not None and o is not None:
-            pipe.set(dest_key, round(o - i, 2))
+            delta = round(o - i, 2)
+            pipe.set(dest_key, delta)
+            # Auto-detect inlet/outlet reversal: if inlet > outlet consistently
+            if o < i - 5.0:  # outlet is 5°C+ lower than inlet = likely reversed
+                log.warning("Inlet/outlet may be reversed: inlet=%.1f > outlet=%.1f (ΔT=%.1f)",
+                            i, o, delta)
         else:
             pipe.delete(dest_key)
 
