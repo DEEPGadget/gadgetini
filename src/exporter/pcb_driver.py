@@ -208,22 +208,20 @@ class PCBDriver:
     def apply_initial_state(self):
         """Write non-flash-persisted state (PWM duty, DOUT) at boot/recovery.
 
-        Only writes fixed (non-controlled) channels. Fan curve channels are controlled
-        by FanCurveController, so we skip them here to avoid overwriting control updates.
+        ALL fan channels (5~12) are initialized to safe defaults. FanCurveController
+        will immediately overwrite with computed duty on first update. This ensures
+        no fan channel is left at 0 PWM (which = 100% fan speed due to no control signal).
         """
         duty_cfg = self.cfg.get('initial_pwm_duty', {}) or {}
         pump = duty_cfg.get('pump') or {}
         fan = duty_cfg.get('fan') or {}
-        wiring = self.cfg.get('wiring', {}) or {}
-        fan_curve_chs = set(wiring.get('pwm', {}).get('fan_ch') or [])
 
         for ch in range(1, 5):
             self.write_register(hr_pwm_duty(ch), self._clamp_pump_duty(int(pump.get(f'ch{ch}', 0))))
         for ch in range(5, 13):
-            if ch not in fan_curve_chs:
-                self.write_register(hr_pwm_duty(ch), int(fan.get(f'ch{ch}', 0)))
+            self.write_register(hr_pwm_duty(ch), int(fan.get(f'ch{ch}', 0)))
         self.write_register(HR_DOUT_BITMASK, int(self.cfg.get('initial_dout_bitmask', 0)))
-        log.info("initial PWM duty + DOUT applied (fixed channels only)")
+        log.info("initial PWM duty + DOUT applied")
 
     def on_connect(self, rd):
         """Run once on a PCB down->up transition: re-apply state + reset comm status."""
