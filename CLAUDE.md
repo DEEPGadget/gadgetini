@@ -51,7 +51,7 @@ Gadgetini is a server monitoring system for Direct Liquid Cooling (DLC) systems 
 
 ### Web Dashboard (src/gui/gadgetini-web/)
 ```bash
-npm run dev       # Development server on :3000
+npm run dev       # Development server on :3001
 npm run build     # Production build
 npm run start     # Run production build
 npm run lint      # ESLint
@@ -87,8 +87,8 @@ sudo bash src/configure/usb-gadget-gadgetini.sh
 ## Key Files
 
 - `src/exporter/dlc_sensors.py` - Pi-attached sensors (ADS1256 coolant via Steinhart-Hart, HDC302x/DHT11 air, MPU6050 gyro) + graceful ADS1256 fallback
-- `src/exporter/pcb_driver.py` - PCB Modbus driver (PCBDriver, health_check/poll, detect_backend)
-- `src/exporter/pcb_control.py` - PCB cooling policy (FanCurveController) + pcb_config.yaml hot-reload
+- `src/exporter/pcb_driver.py` - PCB Modbus driver (PCBDriver, health_check/poll, detect_backend, apply_initial_state)
+- `src/exporter/pcb_control.py` - Fan/pump control via temperature curve (FanCurveController, ConfigReloader) + pcb_config.yaml hot-reload. Ensures PWM is never 0 (which = 100% fan speed)
 - `src/exporter/legacy/serial_sender_v2.py` / `serial_receiver_v2.py` - Legacy async serial host link (superseded by USB gadget network)
 - `src/display/display_main.py` - Main display loop reading from Redis
 - `src/display/config.ini` - Display layout configuration
@@ -96,7 +96,23 @@ sudo bash src/configure/usb-gadget-gadgetini.sh
 
 ## Redis Keys
 
-Data is cached in Redis with keys like: `coolant_temp`, `coolant_leak`, `cpu_temp_0`, `gpu_temp_*`, `mem_*`, `cpu_*`
+**Coolant System:**
+- `coolant_temp_inlet1`, `coolant_temp_outlet1`, `coolant_temp_inlet2`, `coolant_temp_outlet2` (°C, from NTC thermistors)
+- `coolant_delta_t1`, `coolant_delta_t2` (temperature difference)
+- `coolant_level`, `coolant_leak`, `coolant_flow_lpm` (flow estimate)
+
+**Fan/Pump Control:**
+- `pwm_duty_pump_0..3` (pump CH1~4, 0~1000 = 0~100%, controlled by initial_pwm_duty)
+- `pwm_duty_fan_0..7` (fan CH5~12, 0~1000, controlled by FanCurveController or manual mode)
+- `fan_rpm_0..7` (fan tachometer readings, RPM, sticky: only set if tach ever >0)
+- `control_mode` ('auto' = FanCurveController, 'manual' = fixed duty from pcb_config.yaml)
+
+**Host Metrics (from data_crawler_host.py):**
+- `cpu_temp_0`, `gpu_temp_0..3`, `gpu_curr_pwr_*`, `mem_usage`, `mem_total`
+
+**System Status:**
+- `comm_status` ('ok' / 'timeout' / 'disconnected')
+- `comm_consecutive_failures` (PCB communication retry count)
 
 ## Hardware Context
 
