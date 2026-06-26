@@ -80,14 +80,12 @@ class FanCurveController:
             except (TypeError, ValueError):
                 temp_c = None
         if temp_c is None:
-            # No outlet temp (NTC unwired / read failed) — fall back to the idle
-            # baseline (min_duty) so fans keep an always-spinning floor and the Web UI
-            # shows a value instead of blank. NOTE: this is the *low* fallback; on a
-            # unit where the NTC can drop out while hot, prefer max_duty as fail-safe.
-            log.warning("no %s — fan duty -> idle baseline (%d)", K.COOLANT_TEMP_OUTLET1, self.min_duty)
-            duty = self.min_duty
-        else:
-            duty = self._compute_duty(temp_c)
+            # No outlet temp (NTC unwired / read failed) — leave fans unchanged
+            # (don't override manual settings or last computed value).
+            log.warning("no %s — fan duty unchanged", K.COOLANT_TEMP_OUTLET1)
+            return
+
+        duty = self._compute_duty(temp_c)
 
         # deadband, but always emit once when reaching the min/max clamp
         if self._last_written is not None and abs(duty - self._last_written) < _WRITE_DEADBAND:

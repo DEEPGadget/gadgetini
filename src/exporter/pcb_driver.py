@@ -206,16 +206,24 @@ class PCBDriver:
         return clamped
 
     def apply_initial_state(self):
-        """Write non-flash-persisted state (PWM duty, DOUT) at boot/recovery."""
+        """Write non-flash-persisted state (PWM duty, DOUT) at boot/recovery.
+
+        Only writes fixed (non-controlled) channels. Fan curve channels are controlled
+        by FanCurveController, so we skip them here to avoid overwriting control updates.
+        """
         duty_cfg = self.cfg.get('initial_pwm_duty', {}) or {}
         pump = duty_cfg.get('pump') or {}
         fan = duty_cfg.get('fan') or {}
+        wiring = self.cfg.get('wiring', {}) or {}
+        fan_curve_chs = set(wiring.get('pwm', {}).get('fan_ch') or [])
+
         for ch in range(1, 5):
             self.write_register(hr_pwm_duty(ch), self._clamp_pump_duty(int(pump.get(f'ch{ch}', 0))))
         for ch in range(5, 13):
-            self.write_register(hr_pwm_duty(ch), int(fan.get(f'ch{ch}', 0)))
+            if ch not in fan_curve_chs:
+                self.write_register(hr_pwm_duty(ch), int(fan.get(f'ch{ch}', 0)))
         self.write_register(HR_DOUT_BITMASK, int(self.cfg.get('initial_dout_bitmask', 0)))
-        log.info("initial PWM duty + DOUT applied")
+        log.info("initial PWM duty + DOUT applied (fixed channels only)")
 
     def on_connect(self, rd):
         """Run once on a PCB down->up transition: re-apply state + reset comm status."""
@@ -261,8 +269,16 @@ class PCBDriver:
                 ntc_values[logical] = None
             else:
                 temp_c = round(signed / 10.0, 1)
-                pipe.set(rkey, temp_c)
-                ntc_values[logical] = temp_c
+                # Sanity check: realistic coolant temperature range (-20 to 100 °C)
+                # If outside range, treat as sensor error (wiring reversed, ADC malfunction, etc.)
+                if -20 <= temp_c <= 100:
+                    pipe.set(rkey, temp_c)
+                    ntc_values[logical] = temp_c
+                else:
+                    log.warning("NTC %s (CH%d) out of range: %.1f °C (expected -20~100) — sensor error",
+                                logical, ch, temp_c)
+                    pipe.delete(rkey)
+                    ntc_values[logical] = None
 
         self._delta_t(pipe, ntc_values, 'inlet1', 'outlet1', K.COOLANT_DELTA_T1)
         self._delta_t(pipe, ntc_values, 'inlet2', 'outlet2', K.COOLANT_DELTA_T2)
