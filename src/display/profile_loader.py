@@ -9,6 +9,7 @@ from daily_viewer import DailyViewer
 from coolant_detail_viewer import CoolantDetailViewer
 from dual_sensor_viewer import DualSensorViewer
 from temp_util_viewer import TempUtilViewer
+from nvme_viewer import NvmeViewer
 
 
 VIEWER_CLASSES = {
@@ -18,6 +19,7 @@ VIEWER_CLASSES = {
     "DualSensorViewer": DualSensorViewer,
     "CoolantDetailViewer": CoolantDetailViewer,
     "TempUtilViewer": TempUtilViewer,
+    "NvmeViewer": NvmeViewer,
 }
 
 
