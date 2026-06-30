@@ -94,16 +94,17 @@ class FanCurveController:
                 except (TypeError, ValueError):
                     pass
 
-        # Use maximum of coolant and NVMe temperature (NVMe: 0-50°C safe, 50-60°C warn, 60°C+ critical)
+        # Use maximum of coolant and NVMe temperature
+        # Note: NVMe temp in Redis may already include sensor/conversion offset
+        # Safe ranges: coolant 0-50°C, NVMe 0-50°C
         control_temp = None
         if coolant_temp is not None and nvme_max_temp is not None:
             control_temp = max(coolant_temp, nvme_max_temp)
         elif coolant_temp is not None:
             control_temp = coolant_temp
         elif nvme_max_temp is not None:
-            # If only NVMe available, scale it up by +10°C to match coolant logic
-            # (NVMe 50°C ~ coolant 60°C in terms of heat concern)
-            control_temp = nvme_max_temp + 10
+            # Use NVMe directly (already includes any sensor offset)
+            control_temp = nvme_max_temp
 
         temp_c = control_temp
         if temp_c is None:
