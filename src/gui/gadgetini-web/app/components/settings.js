@@ -268,9 +268,10 @@ export default function Settings() {
     setPendingMode(cbStatus.mode);
   }, [cbStatus.mode]);
 
-  // PWM duty readback: 1s cadence — pump CH1~4 + fan CH5~12 (fixed 8 slots).
+  // PWM duty readback: 500ms cadence — pump CH1~4 + fan CH5~12 (fixed 8 slots).
   // The API reads the wiring.pwm mapping and remaps to physical channel positions.
   // Fan RPM and estimated pump flow are refreshed on the same cadence.
+  // 500ms interval ensures faster feedback when manual PWM is applied by data_crawler.
   useEffect(() => {
     const fetchPwm = () =>
       fetch("/api/control/pwm")
@@ -290,7 +291,7 @@ export default function Settings() {
         })
         .catch(() => {});
     fetchPwm();
-    const id = setInterval(fetchPwm, 1000);
+    const id = setInterval(fetchPwm, 500);
     return () => clearInterval(id);
   }, []);
 
@@ -426,14 +427,12 @@ export default function Settings() {
         return;
       }
 
-      // API success indicates values were saved to Redis and config
-      // PCB will apply on next poll cycle (data_crawler reads and applies changes)
-      alert("PWM saved successfully");
+      // API success indicates values were saved to Redis and config.
+      // data_crawler will apply to PCB on next poll cycle (~1 second).
+      // Faster polling interval (500ms) will reflect changes quickly.
+      alert("PWM saved. Applying to PCB...");
       setSelectedChannels(new Set());
       setInputValue("");
-
-      // Clear verification timeout - pcb polling will update values naturally
-      // Waiting 2s for confirmation adds unnecessary latency
     } catch (err) {
       alert(`${t("save_failed")}: ${err?.message || err}`);
     } finally {
@@ -806,15 +805,15 @@ export default function Settings() {
                   />
                   {t("auto")}
                 </label>
-                <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <label className="flex items-center gap-1.5 text-sm cursor-not-allowed opacity-50">
                   <input
                     type="radio"
                     name="cb-mode"
                     checked={pendingMode === "manual"}
                     onChange={() => setPendingMode("manual")}
-                    disabled={!cbStatus.pcb_connected || modeSaving}
+                    disabled={true}
                   />
-                  {t("manual")}
+                  {t("manual")} (disabled)
                 </label>
                 {(() => {
                   const dirty = pendingMode !== cbStatus.mode;
@@ -1245,3 +1244,4 @@ export default function Settings() {
     </div>
   );
 }
+
