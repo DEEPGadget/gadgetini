@@ -170,7 +170,7 @@ export async function PUT(request) {
     await fs.writeFile(tmpPath, updated, "utf8");
     await fs.rename(tmpPath, CONFIG_PATH);
 
-    // Set Redis keys for manual PWM + control_mode
+    // Set Redis keys for manual PWM (without changing control_mode)
     const r = getRedis();
     const pipe = r.pipeline();
 
@@ -185,15 +185,17 @@ export async function PUT(request) {
       pipe.set(`pwm_duty_fan_${ch - 5}`, fanPwm[ch - 5]);
     });
 
-    // Switch mode to manual
-    pipe.set("control_mode", "manual");
+    // Do NOT change control_mode here — let user explicitly switch via mode button
     await pipe.exec();
+
+    // Get current mode to return in response
+    const currentMode = await r.get("control_mode") || "auto";
 
     return NextResponse.json({
       success: true,
       pump: pumpPwm,
       fan: fanPwm,
-      mode: "manual",
+      mode: currentMode,
     });
   } catch (err) {
     return NextResponse.json(
