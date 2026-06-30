@@ -805,15 +805,15 @@ export default function Settings() {
                   />
                   {t("auto")}
                 </label>
-                <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <label className="flex items-center gap-1.5 text-sm cursor-not-allowed opacity-50">
                   <input
                     type="radio"
                     name="cb-mode"
                     checked={pendingMode === "manual"}
                     onChange={() => setPendingMode("manual")}
-                    disabled={!cbStatus.pcb_connected || modeSaving}
+                    disabled={true}
                   />
-                  {t("manual")}
+                  {t("manual")} (disabled)
                 </label>
                 {(() => {
                   const dirty = pendingMode !== cbStatus.mode;
