@@ -338,9 +338,19 @@ export default function Settings() {
   const handleModeChange = async (newMode) => {
     setModeSaving(true);
     try {
-      // Switching to manual: seed from the most recent (auto) PWM and persist it
-      // as manual_pwm so the board continues at the same duty instead of jumping
-      // to stale config. The pwm PUT also flips control_mode to 'manual'.
+      // Always use /api/control/mode for mode changes to ensure Redis is updated
+      const r = await fetch("/api/control/mode", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: newMode }),
+      });
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        alert(`${t("save_failed")}: ${e.error || r.status}`);
+        return;
+      }
+
+      // When switching to manual, also seed current PWM values
       if (newMode === "manual") {
         const curPump = Array.isArray(cbPwm?.pump) ? cbPwm.pump : [];
         const curFan = Array.isArray(cbPwm?.fan) ? cbPwm.fan : [];
@@ -354,30 +364,17 @@ export default function Settings() {
           pump: pumpDuty.map((v) => Math.round(v / 10)),
           fan: fanDuty.map((v) => Math.round(v / 10)),
         });
-        const r = await fetch("/api/control/pwm", {
+        // Save PWM values in config
+        const pwmR = await fetch("/api/control/pwm", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ pump: pumpDuty, fan: fanDuty }),
         });
-        if (!r.ok) {
-          const e = await r.json().catch(() => ({}));
-          alert(`${t("save_failed")}: ${e.error || r.status}`);
-          return;
+        if (!pwmR.ok) {
+          console.warn("PWM seed failed (non-critical)");
         }
-        setCbStatus((p) => ({ ...p, mode: "manual" }));
-        return;
       }
 
-      const r = await fetch("/api/control/mode", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: newMode }),
-      });
-      if (!r.ok) {
-        const e = await r.json().catch(() => ({}));
-        alert(`${t("save_failed")}: ${e.error || r.status}`);
-        return;
-      }
       setCbStatus((p) => ({ ...p, mode: newMode }));
     } catch (err) {
       alert(`${t("save_failed")}: ${err?.message || err}`);
