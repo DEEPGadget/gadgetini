@@ -129,22 +129,24 @@ def main():
                     if not prev_alive:
                         log.info("PCB alive — applying initial state")
                         driver.on_connect(rd)
+
+                    # Apply PWM BEFORE poll: ensures poll() reads the actual (just-written) values
+                    try:
+                        control_mode = rd.get('control_mode') or 'auto'
+                        if control_mode == 'manual':
+                            _apply_manual_pwm(driver, rd)
+                        else:
+                            controller.update(driver, rd)
+                    except Exception:
+                        log.exception("control update failed")
+
+                    # Now poll reads the actual PCB state (post-apply)
                     ok = False
                     try:
                         ok = driver.poll(rd)
                     except Exception:
                         log.exception("driver.poll raised")
                     consecutive_fail = 0 if ok else consecutive_fail + 1
-                    if ok:
-                        try:
-                            # Check control_mode: manual or auto (default)
-                            control_mode = rd.get('control_mode') or 'auto'
-                            if control_mode == 'manual':
-                                _apply_manual_pwm(driver, rd)
-                            else:
-                                controller.update(driver, rd)
-                        except Exception:
-                            log.exception("control update failed")
                 else:
                     consecutive_fail += 1   # PCB down (mainboard off / cycling)
                 prev_alive = alive

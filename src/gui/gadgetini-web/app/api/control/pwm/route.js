@@ -170,42 +170,17 @@ export async function PUT(request) {
     await fs.writeFile(tmpPath, updated, "utf8");
     await fs.rename(tmpPath, CONFIG_PATH);
 
-    // Apply PWM to PCB hardware asynchronously (don't block API response)
-    // data_crawler will also pick up the updated config on next poll cycle
-    setImmediate(() => {
-      try {
-        const { exec } = require("child_process");
-        const scriptPath = "/tmp/apply_pwm_" + Date.now() + ".py";
-        const script = `import sys
-sys.path.insert(0, '/home/gadgetini/gadgetini/src/exporter')
-import yaml, redis, pcb_driver
-try:
-    with open('${CONFIG_PATH}') as f:
-        cfg = yaml.safe_load(f)
-    r = redis.Redis(host='127.0.0.1', port=6379, db=0)
-    driver = pcb_driver.PCBDriver(cfg, r)
-    driver.apply_initial_state()
-except Exception as e:
-    print(f"PCB apply failed: {e}", file=sys.stderr)
-`;
-        fs.writeFileSync(scriptPath, script, "utf8");
-        exec(`python3 ${scriptPath}`, { timeout: 10000 }, (err, stdout, stderr) => {
-          if (err) console.warn("PCB apply warning:", err.message);
-          else console.log("PCB PWM applied");
-          fs.unlink(scriptPath, () => {});
-        });
-      } catch (err) {
-        console.warn("PCB apply error:", err.message);
-      }
-    });
+    // PWM will be applied by data_crawler on next poll cycle (once per second).
+    // Do NOT spawn a subprocess here: the legacy apply_initial_state() approach
+    // incorrectly applies boot-time initial_pwm_duty, not the user's manual_pwm.
 
-    // Set Redis keys for manual PWM (without changing control_mode)
+    // Set Redis keys for manual PWM (without changing control_mode).
+    // This provides instant UI feedback while data_crawler applies to PCB on next cycle.
     const r = getRedis();
     const pipe = r.pipeline();
 
-    // Store manual PWM in Redis (physical channel indices, matching poll readback)
-    // Instant feedback for the controllable channels (poll re-publishes readback for
-    // all channels next cycle). Keys are PHYSICAL-indexed: pump CH-1, fan CH-5.
+    // Store manual PWM in Redis (physical channel indices, matching poll readback).
+    // These keys are PHYSICAL-indexed: pump CH-1, fan CH-5.
     const { wiredPump, wiredFan } = await loadWiring();
     wiredPump.forEach((ch) => {
       pipe.set(`pwm_duty_pump_${ch - 1}`, pumpPwm[ch - 1]);
