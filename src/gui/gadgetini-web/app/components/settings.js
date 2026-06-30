@@ -146,17 +146,16 @@ export default function Settings() {
   const [selectedChannels, setSelectedChannels] = useState(new Set());
   const [inputValue, setInputValue] = useState("");
 
-  // Sync manual PWM with current readback when switching to manual mode or on mount
+  // Always sync manualPwm with current Redis values (cbPwm)
+  // This ensures UI displays actual hardware state, not stale placeholders
   useEffect(() => {
-    if (cbStatus.mode === "manual") {
-      if (cbPwm.pump.some(v => v !== null) || cbPwm.fan.some(v => v !== null)) {
-        setManualPwm({
-          pump: cbPwm.pump.map(v => (v !== null ? Math.round(v / 10) : 500)),
-          fan: cbPwm.fan.map(v => (v !== null ? Math.round(v / 10) : 500))
-        });
-      }
+    if (cbPwm.pump.some(v => v !== null) || cbPwm.fan.some(v => v !== null)) {
+      setManualPwm({
+        pump: cbPwm.pump.map(v => (v !== null ? Math.round(v / 10) : 500)),
+        fan: cbPwm.fan.map(v => (v !== null ? Math.round(v / 10) : 500))
+      });
     }
-  }, [cbStatus.mode, cbPwm.pump, cbPwm.fan]);
+  }, [cbPwm.pump, cbPwm.fan]);
 
   useEffect(() => {
     getDisplayConfig().then(setDisplayMode);
@@ -427,8 +426,31 @@ export default function Settings() {
         return;
       }
 
-      // API success indicates PWM was written to Redis and config
-      alert("PWM saved successfully");
+      // Wait for PCB communication and Redis update (typically 1-2 seconds)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Verify values were actually applied by checking current cbPwm against expected values
+      const allVerified = Array.from(selectedChannels).every((chId) => {
+        if (chId.startsWith("pump-")) {
+          const idx = parseInt(chId.split("-")[1], 10);
+          const expected = Math.min(1000, Math.max(0, manualPwm.pump[idx] * 10));
+          const actual = cbPwm.pump[idx];
+          return actual === expected;
+        } else if (chId.startsWith("fan-")) {
+          const idx = parseInt(chId.split("-")[1], 10);
+          const expected = Math.min(1000, Math.max(0, manualPwm.fan[idx] * 10));
+          const actual = cbPwm.fan[idx];
+          return actual === expected;
+        }
+        return false;
+      });
+
+      if (!allVerified) {
+        alert(`${t("save_failed")}: PWM values not applied to hardware. Check PCB connection.`);
+        return;
+      }
+
+      alert("PWM saved and verified successfully");
       setSelectedChannels(new Set());
       setInputValue("");
     } catch (err) {
