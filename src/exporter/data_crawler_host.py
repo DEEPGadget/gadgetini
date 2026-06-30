@@ -1,233 +1,168 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# deepgadget Monitoring Agent (v0.4)
-#
-# This code collects basic host hardware/resource metrics (e.g., CPU, memory, disk, network)
-# and forwards them to the deepgadget monitoring system for observability purposes.
-#
-# It is intended for monitoring only: it does not control, modify, or tune host resources,
-# and it should not be interpreted as performing benchmarking or enforcing limits.
+
+import json
+import os
+import re
+import subprocess
+import time
+from typing import Dict, List
 
 import redis
-import json
-import jsons
-import subprocess
-import re
-from rich.live import Live
-from rich.text import Text
-from rich.console import Group
-import time
-import math
-from typing import List, Dict
-import os
-client = redis.StrictRedis(host='fd12:3456:789a:1::2', port=6379, db=0)
 
-def get_sensors_output():
-    result = subprocess.Popen(["sensors", "-j"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    return result
+
+REDIS_HOST = os.environ.get("GADGETINI_REDIS_HOST", "fd12:3456:789a:1::2")
+REDIS_PORT = int(os.environ.get("GADGETINI_REDIS_PORT", "6379"))
+REDIS_DB = int(os.environ.get("GADGETINI_REDIS_DB", "0"))
+
+client = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+
+NVME_KEY_TTL_SEC = 60
+
+
+def get_sensors_json() -> dict:
+    p = subprocess.run(
+        ["sensors", "-j"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=5,
+        check=False,
+    )
+    if p.returncode != 0:
+        raise RuntimeError(f"sensors -j failed: {p.stderr.strip()}")
+    return json.loads(p.stdout)
+
+
+def get_sensors_text() -> str:
+    p = subprocess.run(
+        ["sensors"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=5,
+        check=False,
+    )
+    if p.returncode != 0:
+        raise RuntimeError(f"sensors failed: {p.stderr.strip()}")
+    return p.stdout
+
 
 def get_memory_usage_mb():
     meminfo = {}
-    memoutput = []
+
     with open("/proc/meminfo", "r") as f:
         for line in f:
-            parts = line.split(":")
-            key = parts[0]
-            value = parts[1].strip().split()[0]
-            meminfo[key] = int(value)
-    mem_total = meminfo.get("MemTotal",0)
-    mem_available = meminfo.get("MemAvailable",0)
+            key, value = line.split(":", 1)
+            meminfo[key] = int(value.strip().split()[0])
+
+    mem_total = meminfo.get("MemTotal", 0)
+    mem_available = meminfo.get("MemAvailable", 0)
     mem_used = mem_total - mem_available
-    memoutput.append(round(mem_total / (1024 * 1024),1))
-    memoutput.append(round(mem_used / (1024 * 1024),1))
-    memoutput.append(round(mem_available / (1024 * 1024),1))
-#    for val in memoutput:
-#        ##print(val)
-#        ##print(type(val))
-#    exit()
-    return memoutput
+
+    return [
+        round(mem_total / (1024 * 1024), 1),
+        round(mem_used / (1024 * 1024), 1),
+        round(mem_available / (1024 * 1024), 1),
+    ]
+
 
 def get_cpu_usage_percent(interval=0.5):
     def read_cpu_times():
         with open("/proc/stat", "r") as f:
             for line in f:
-                if line.startswith("cpu"):
-                    parts = line.split()
-                    values = list(map(int, parts[1:]))
+                if line.startswith("cpu "):
+                    values = list(map(int, line.split()[1:]))
                     total = sum(values)
                     idle = values[3] + values[4]
                     return total, idle
-        return 0,0
+        return 0, 0
+
     total1, idle1 = read_cpu_times()
     time.sleep(interval)
     total2, idle2 = read_cpu_times()
 
     delta_total = total2 - total1
     delta_idle = idle2 - idle1
+
     if delta_total == 0:
         return 0.0
-    usage = (1 - delta_idle / delta_total) * 100
-    return round(usage, 1)
+
+    return round((1 - delta_idle / delta_total) * 100, 1)
+
 
 def get_nvidia_gpu_telemetry():
-    result = subprocess.Popen(["nvidia-smi", "--query-gpu=name,temperature.gpu,power.draw,power.limit,memory.used,memory.total","--format=csv,noheader,nounits"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    output, errors = result.communicate() # results generate 1 single string
-    gpus = output.split("\n")# split single gpu info by \n, 
-    gpus.pop()# and remove useless blank at last.
+    p = subprocess.run(
+        [
+            "nvidia-smi",
+            "--query-gpu=name,temperature.gpu,power.draw,power.limit,memory.used,memory.total",
+            "--format=csv,noheader,nounits",
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+
+    if p.returncode != 0 or not p.stdout.strip():
+        return []
+
     gpus_info = []
-    for i in gpus: gpus_info.append(i.split(", "))
-    return gpus_info # 2-dim array
+    for line in p.stdout.strip().splitlines():
+        parts = [x.strip() for x in line.split(",")]
+        if len(parts) >= 6:
+            gpus_info.append(parts[:6])
 
-#print(get_nvidia_gpu_telemetry())
-#exit()
+    return gpus_info
 
-
-def get_amd_gpu_telemetry(sensors):
-    chipsinfo = []
-    asic_temp_list = []
-    mem_temp_list = []
-    pwr_list = []
-   
-    output, errors = sensors.communicate()
-    sensors_data = json.loads(output)
-    for device, metrics in sensors_data.items():
-        if device.startswith("amdgpu-pci-"):
-            edge_temp = metrics.get("edge", {}).get("temp1_input")
-            mem_temp = metrics.get("mem", {}).get("temp3_input")
-            power_avg = metrics.get("PPT", {}).get("power1_average")
-            asic_temp_list.append(round(edge_temp, 1) if edge_temp is not None else None)
-            mem_temp_list.append(round(mem_temp, 1) if mem_temp is not None else None)
-            pwr_list.append(round(power_avg, 1) if power_avg is not None else None)
-    chipsinfo = [asic_temp_list, mem_temp_list, pwr_list]
-    return chipsinfo
-
-def get_TT_telemetry(sensors):
-    chipsinfo = []
-    temp_list = []
-    pwr_list = []
-    pattern = r"wormhole-pci-[a-f0-9]"
-    output, errors = sensors.communicate()
-    sensors_data = json.loads(output)
-
-    for key in sensors_data.keys():
-        whkey_match = re.search(pattern, key)
-        if whkey_match:
-            wh_metric = sensors_data[key]
-            chipsinfo.append(wh_metric)
-    for chip_id, chip in enumerate(chipsinfo):
-        temp_list.append(round(chip["asic1_temp"]["temp1_input"], 1))
-        pwr_list.append(chip["power1"]["power1_input"])
-    chipsinfo = [temp_list, pwr_list]
-    return chipsinfo
 
 def parse_cpu_telemetry(sensors_data):
-    cpusinfo = []
     temp_list = []
     package_temp_list = []
+
     pattern = r"(k10temp-pci-[a-f0-9]+|coretemp-isa-[0-9]+)"
 
-    for key in sensors_data.keys():
-        cpukey_match = re.search(pattern, key)
-        if cpukey_match:
-            cpu_metric = sensors_data[key]
-            cpusinfo.append(cpu_metric)
-    for cpu in cpusinfo:
-        tctl = cpu.get('Tctl', {})
-        if 'temp1_input' in tctl:
-            if tctl['temp1_input'] > 50:
-                temp_list.append(round(tctl['temp1_input'] - 25, 1))
+    for key, metrics in sensors_data.items():
+        if not re.search(pattern, key):
+            continue
+        if not isinstance(metrics, dict):
+            continue
+
+        tctl = metrics.get("Tctl", {})
+        if isinstance(tctl, dict) and "temp1_input" in tctl:
+            temp = float(tctl["temp1_input"])
+            if temp > 50:
+                temp_list.append(round(temp - 25, 1))
             else:
-                temp_list.append(round(tctl['temp1_input'], 1))
-        for metric_name, metric_value in cpu.items():
+                temp_list.append(round(temp, 1))
+
+        for metric_name, metric_value in metrics.items():
             if re.search(r"Package id \d+", metric_name) and isinstance(metric_value, dict):
-                pkg_temp = metric_value.get('temp1_input')
+                pkg_temp = metric_value.get("temp1_input")
                 if pkg_temp is not None:
-                    package_temp_list.append(round(pkg_temp, 1))
-    # AMD has Tctl only (no "Package id"), Intel has "Package id" only
-    # Use temp_list as fallback when package_temp_list is empty
+                    package_temp_list.append(round(float(pkg_temp), 1))
+
     effective_temp_list = package_temp_list if package_temp_list else temp_list
-    cpusinfo = [temp_list, effective_temp_list]
-    # print("cpusinfo", effective_temp_list)
-    return cpusinfo
+    return [temp_list, effective_temp_list]
 
-def get_CPU_telemetry(sensors=None, sensors_output=None):
-    if sensors_output is not None:
-        if isinstance(sensors_output, str):
-            sensors_data = json.loads(sensors_output)
-        elif isinstance(sensors_output, dict):
-            sensors_data = sensors_output
-        else:
-            raise TypeError("sensors_output must be a JSON string or dict")
-    else:
-        if sensors is None:
-            raise ValueError("sensors process handle is required when sensors_output is not provided")
-        output, errors = sensors.communicate()
-        sensors_data = json.loads(output)
 
-    cpusinfo = parse_cpu_telemetry(sensors_data)
-    if cpusinfo[1]:
-        return cpusinfo
-
-    # Fallback: sensors -j exposed no CPU temperature → try ipmitool (BMC).
-    try:
-        proc = get_ipmi_temp_output()
-        out, _ = proc.communicate(timeout=3)
-        temps = parse_cpu_temp_from_ipmi(out or "")
-        if temps:
-            return [temps, temps]
-    except Exception:
-        pass
-    return cpusinfo
+def get_cpu_telemetry(sensors_data):
+    return parse_cpu_telemetry(sensors_data)
 
 
 def get_ipmi_power_output():
-    """
-    Launch ipmitool process to read CPU power sensors (POWER_CPU1, POWER_CPU2).
-    Returns a subprocess.Popen handle.
-    """
-    return subprocess.Popen(
+    return subprocess.run(
         ["ipmitool", "sensor", "reading", "POWER_CPU1", "POWER_CPU2"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True
+        text=True,
+        timeout=5,
+        check=False,
     )
 
-# IPMI CPU temperature sensor names — BMC-specific. Verify on your host with
-# `ipmitool sdr type Temperature` or `ipmitool sensor list | grep -i cpu` and
-# adjust these names to match (parsing keys off this list).
-IPMI_CPU_TEMP_SENSORS = ["TEMP_CPU1", "TEMP_CPU2"]
-
-
-def get_ipmi_temp_output():
-    """Launch ipmitool to read CPU temperature sensors. Returns a Popen handle.
-
-    Used only as a fallback when `sensors -j` exposes no CPU temperature.
-    """
-    return subprocess.Popen(
-        ["ipmitool", "sensor", "reading", *IPMI_CPU_TEMP_SENSORS],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
 
 def parse_cpu_power_telemetry(ipmi_text: str):
-    """
-    Parse ipmitool text output and extract POWER_CPU1/POWER_CPU2 readings as float Watts.
-
-    Supported formats:
-      A) Two-column output (your current output):
-         POWER_CPU1 | 82
-         POWER_CPU2 | 86
-
-      B) Typical `sensor reading` with unit:
-         POWER_CPU1 | 82.000 | Watts | ok
-
-      C) Typical `sdr elist` style:
-         POWER_CPU1 | ... | 82 Watts
-
-    Returns:
-      {"cpu1_watts": float|None, "cpu2_watts": float|None}
-    """
     result = {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
 
     for line in ipmi_text.splitlines():
@@ -235,7 +170,6 @@ def parse_cpu_power_telemetry(ipmi_text: str):
         if not line:
             continue
 
-        # Match lines starting with POWER_CPU1 or POWER_CPU2 and capture the rest
         m = re.match(r"^(POWER_CPU[12])\s*\|\s*(.+)$", line)
         if not m:
             continue
@@ -245,22 +179,18 @@ def parse_cpu_power_telemetry(ipmi_text: str):
 
         watts = None
 
-        # Case 1: Two-column output where `rest` is a plain number (e.g., "82")
         mn = re.match(r"^([0-9]+(?:\.[0-9]+)?)$", rest)
         if mn:
             watts = float(mn.group(1))
         else:
-            # Case 2: "82 Watts" appears somewhere in the remainder
             mw = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*Watts\b", rest, re.IGNORECASE)
             if mw:
                 watts = float(mw.group(1))
             else:
-                # Case 3: Multi-column format: "82.000 | Watts | ok"
                 parts = [p.strip() for p in rest.split("|")]
                 if parts and re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", parts[0]):
                     watts = float(parts[0])
 
-        # Assign parsed value to the proper output field
         if watts is not None:
             if sensor_name.endswith("1"):
                 result["cpu_curr_pwr_0"] = watts
@@ -269,131 +199,65 @@ def parse_cpu_power_telemetry(ipmi_text: str):
 
     return result
 
-def parse_cpu_power_from_sensors(sensors_data):
-    """
-    Fallback: parse CPU power from sensors -j output when ipmitool is unavailable.
-    Looks for power1_input / power2_input under k10temp or coretemp entries.
-    Returns same format as parse_cpu_power_telemetry:
-      {"cpu_curr_pwr_0": float|None, "cpu_curr_pwr_1": float|None}
-    """
-    result = {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
-    if isinstance(sensors_data, str):
-        sensors_data = json.loads(sensors_data)
 
+def parse_cpu_power_from_sensors(sensors_data):
+    result = {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
     pattern = r"(k10temp-pci-[a-f0-9]+|coretemp-isa-[0-9]+|amd_hsmp_hwmon-isa-[0-9]+)"
+
     cpu_idx = 0
-    for key in sensors_data.keys():
+
+    for key, metrics in sensors_data.items():
         if not re.search(pattern, key):
             continue
-        metrics = sensors_data[key]
-        for metric_name, metric_value in metrics.items():
+        if not isinstance(metrics, dict):
+            continue
+
+        for metric_value in metrics.values():
             if not isinstance(metric_value, dict):
                 continue
+
             for field, val in metric_value.items():
                 if "power" in field and "input" in field and val is not None:
                     result[f"cpu_curr_pwr_{cpu_idx}"] = round(float(val), 1)
                     cpu_idx += 1
+                    if cpu_idx >= 2:
+                        return result
+
     return result
 
 
-def parse_cpu_temp_from_ipmi(ipmi_text):
-    """Parse `ipmitool sensor reading <TEMP_CPU*>` output → [cpu0_temp, cpu1_temp, ...] (°C).
-
-    Keys off IPMI_CPU_TEMP_SENSORS, so changing that list updates parsing too.
-    Takes the first numeric token of each matching line; non-numeric (na/disabled) is skipped.
-    Handles 'TEMP_CPU1 | 55', 'TEMP_CPU1 | 55.000 | degrees C | ok', etc.
-    """
-    idx_of = {name: i for i, name in enumerate(IPMI_CPU_TEMP_SENSORS)}
-    by_idx = {}
-    for line in ipmi_text.splitlines():
-        line = line.strip()
-        if "|" not in line:
-            continue
-        name, _, rest = line.partition("|")
-        i = idx_of.get(name.strip())
-        if i is None:
-            continue
-        m = re.search(r"[-+]?[0-9]+(?:\.[0-9]+)?", rest)
-        if m:
-            by_idx[i] = round(float(m.group(0)), 1)
-    return [by_idx[k] for k in sorted(by_idx)]
-
-
-def get_CPU_power_telemetry(ipmi_proc=None, ipmi_output=None, sensors_data=None):
-    """
-    Fetch and parse CPU power telemetry.
-
-    Usage patterns:
-      - If ipmi_output is provided (string), parse it directly.
-      - Otherwise, ipmi_proc must be a subprocess.Popen handle and we read stdout/stderr.
-      - If ipmitool fails, fall back to sensors_data (sensors -j output).
-      - If both fail, return empty result (skip).
-
-    Returns:
-      {"cpu_curr_pwr_0": float|None, "cpu_curr_pwr_1": float|None}
-    """
-    # Try ipmitool first
+def get_cpu_power_telemetry(sensors_data):
     try:
-        if ipmi_output is not None:
-            if not isinstance(ipmi_output, str):
-                raise TypeError("ipmi_output must be a string")
-            text = ipmi_output
-        elif ipmi_proc is not None:
-            out, err = ipmi_proc.communicate()
-            if ipmi_proc.returncode not in (0, None) and not out:
-                raise RuntimeError(f"ipmitool failed: {err.strip()}")
-            text = out
-        else:
-            raise RuntimeError("no ipmi source available")
-
-        result = parse_cpu_power_telemetry(text)
-        if any(v is not None for v in result.values()):
-            return result
-        raise RuntimeError("ipmitool returned no valid readings")
-    except Exception as e:
-        # print(f"[WARN] ipmitool failed, trying sensors fallback: {e}")
+        ipmi = get_ipmi_power_output()
+        if ipmi.stdout:
+            result = parse_cpu_power_telemetry(ipmi.stdout)
+            if any(v is not None for v in result.values()):
+                return result
+    except Exception:
         pass
 
-    # Fallback to sensors -j
     try:
-        if sensors_data is not None:
-            return parse_cpu_power_from_sensors(sensors_data)
-    except Exception as e:
-        # print(f"[WARN] sensors fallback also failed: {e}")
-        pass
+        return parse_cpu_power_from_sensors(sensors_data)
+    except Exception:
+        return {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
 
-    # Both failed — skip
-    # print("[WARN] CPU power telemetry unavailable, skipping")
-    return {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
-
-
-# Example:
-# ipmi = get_ipmi_power_output()
-# power = get_CPU_power_telemetry(ipmi_proc=ipmi)
-# print(power)  # {"cpu1_watts": 82.0, "cpu2_watts": 86.0}
 
 def get_nic_link_status() -> List[Dict[str, int]]:
-    """
-    Return NIC link status using only `ip link show` output.
+    p = subprocess.run(
+        ["ip", "-o", "link", "show"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=5,
+        check=False,
+    )
 
-    - Excludes loopback interface "lo"
-    - Uses LOWER_UP flag as physical link indicator
-    - Returns 1 for link up, 0 for link down
+    if p.returncode != 0:
+        return []
 
-    Return format:
-        [
-          {"ens102f1": 1},
-          {"enp1s0": 0},
-          ...
-        ]
-    """
-    res = subprocess.run(["ip", "-o", "link", "show"], capture_output=True, text=True, check=False)
-    if res.returncode != 0:
-        raise RuntimeError(f"ip link show failed (rc={res.returncode}): {(res.stderr or res.stdout).strip()}")
+    out = []
 
-    out: List[Dict[str, int]] = []
-
-    for line in (res.stdout or "").splitlines():
+    for line in p.stdout.splitlines():
         parts = line.split(":", 2)
         if len(parts) < 3:
             continue
@@ -403,7 +267,7 @@ def get_nic_link_status() -> List[Dict[str, int]]:
             continue
 
         rest = parts[2]
-        flags = rest[rest.find("<") + 1 : rest.find(">")] if "<" in rest and ">" in rest else ""
+        flags = rest[rest.find("<") + 1:rest.find(">")] if "<" in rest and ">" in rest else ""
         flags_list = [f.strip() for f in flags.split(",") if f.strip()]
 
         link_up = 1 if "LOWER_UP" in flags_list else 0
@@ -412,12 +276,7 @@ def get_nic_link_status() -> List[Dict[str, int]]:
     return out
 
 
-def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0") -> int:
-    """
-    Returns Mellanox/NVIDIA IB NIC ASIC temperature (°C) by running:
-      sudo mget_temp -d <mst_dev>
-    Example output: "42"
-    """
+def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0"):
     p = subprocess.run(
         ["sudo", "mget_temp", "-d", mst_dev],
         stdout=subprocess.PIPE,
@@ -426,120 +285,135 @@ def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0") -> int:
         timeout=3,
         check=False,
     )
+
     if p.returncode != 0:
-        raise RuntimeError(f"mget_temp failed (rc={p.returncode}): {p.stderr.strip()}")
+        return None
 
     out = p.stdout.strip()
-    try:
-        return str(out)
-    except ValueError as e:
-        raise RuntimeError(f"unexpected mget_temp output: {out!r}") from e
+    return out if out else None
 
-def get_nvme_temps(sensors) -> dict:
+
+def get_nvme_temps_from_text(text: str) -> dict:
     """
-    Parse NVMe temperatures from sensors -j output with full PCI device names.
-    Returns: {
-        "nvme_0_temp": float, "nvme_0_name": "nvme-pci-3e00",
-        "nvme_1_temp": float, "nvme_1_name": "nvme-pci-6400",
-        ...
-    }
-    Pattern: nvme-pci-XXXX → Composite.temp1_input
+    NVMe는 plain `sensors` 출력 기준 Composite 줄만 읽는다.
+
+    예:
+      nvme-pci-6d00
+      Adapter: PCI adapter
+      Composite:    +39.9°C
     """
     result = {}
-    if isinstance(sensors, str):
-        try:
-            sensors_data = json.loads(sensors)
-        except json.JSONDecodeError:
-            return result
-    elif isinstance(sensors, dict):
-        sensors_data = sensors
-    else:
-        return result
-
     nvme_list = []
-    for device, metrics in sensors_data.items():
-        if device.startswith("nvme-pci-"):
-            composite = metrics.get("Composite", {})
-            temp_input = composite.get("temp1_input")
-            if temp_input is not None:
-                nvme_list.append((device, float(temp_input)))
+    current_device = None
+
+    for raw_line in (text or "").splitlines():
+        line = raw_line.strip()
+
+        if not line:
+            continue
+
+        if line.startswith("nvme-pci-"):
+            current_device = line.split()[0]
+            continue
+
+        if current_device and line.startswith("Composite:"):
+            m = re.search(r"Composite:\s*\+?([-+]?[0-9]+(?:\.[0-9]+)?)\s*°?C", line)
+            if m:
+                nvme_list.append((current_device, round(float(m.group(1)), 1)))
+            current_device = None
 
     nvme_list.sort(key=lambda x: x[0])
 
-    for idx, (full_name, temp) in enumerate(nvme_list):
-        result[f"nvme_{idx}_temp"] = round(temp, 1)
-        result[f"nvme_{idx}_name"] = full_name
+    for idx, (name, temp) in enumerate(nvme_list):
+        result[f"nvme_{idx}_name"] = name
+        result[f"nvme_{idx}_temp"] = temp
 
     return result
 
+
+def clear_stale_nvme_keys(pipe, current_count):
+    old_indexes = set()
+
+    for raw_key in client.keys("nvme_*_temp"):
+        key_s = raw_key.decode() if isinstance(raw_key, bytes) else str(raw_key)
+        m = re.fullmatch(r"nvme_(\d+)_temp", key_s)
+        if m:
+            old_indexes.add(int(m.group(1)))
+
+    for old_idx in sorted(i for i in old_indexes if i >= current_count):
+        pipe.delete(f"nvme_{old_idx}_temp", f"nvme_{old_idx}_name")
+
+
+def write_metrics_once():
+    sensors_data = get_sensors_json()
+    sensors_text = get_sensors_text()
+
+    curr_chipsinfo = get_nvidia_gpu_telemetry()
+    curr_cpusinfo = get_cpu_telemetry(sensors_data)
+    curr_meminfo = get_memory_usage_mb()
+    curr_ipmi_telemetry = get_cpu_power_telemetry(sensors_data)
+    curr_link_status = get_nic_link_status()
+    curr_nvme_temps = get_nvme_temps_from_text(sensors_text)
+
+    pipe = client.pipeline(transaction=False)
+
+    # CPU temperature
+    for idx, cpu in enumerate(curr_cpusinfo[1]):
+        pipe.set(f"cpu_temp_{idx}", str(cpu))
+
+    # CPU power
+    for key, value in curr_ipmi_telemetry.items():
+        if value is not None:
+            pipe.set(str(key), str(value))
+
+    # NIC link
+    for nic in curr_link_status:
+        key, val = next(iter(nic.items()))
+        pipe.set(f"nic_{key}_stat", str(val))
+
+    # GPU
+    for idx, gpu in enumerate(curr_chipsinfo):
+        pipe.set(f"gpu_name_{idx}", str(gpu[0]))
+        pipe.set(f"gpu_temp_{idx}", str(gpu[1]))
+        pipe.set(f"gpu_curr_pwr_{idx}", str(gpu[2]))
+        pipe.set(f"gpu_max_pwr_{idx}", str(gpu[3]))
+        pipe.set(f"gpu_curr_mem_{idx}", str(gpu[4]))
+        pipe.set(f"gpu_max_mem_{idx}", str(gpu[5]))
+
+    # Memory / CPU usage
+    pipe.set("mem_total", curr_meminfo[0])
+    pipe.set("mem_usage", curr_meminfo[1])
+    pipe.set("mem_available", curr_meminfo[2])
+    pipe.set("cpu_usage", get_cpu_usage_percent())
+
+    # IB NIC
+    ib_temp = get_ib_nic_asic_temp()
+    if ib_temp is not None:
+        pipe.set("ib_nic_temp", ib_temp)
+
+    # NVMe
+    nvme_count = 0
+
+    for key, value in curr_nvme_temps.items():
+        pipe.set(str(key), str(value), ex=NVME_KEY_TTL_SEC)
+        if str(key).endswith("_temp"):
+            nvme_count += 1
+
+    pipe.set("nvme_count", str(nvme_count), ex=NVME_KEY_TTL_SEC)
+    clear_stale_nvme_keys(pipe, nvme_count)
+
+    # Host heartbeat
+    pipe.set("host_ttl", int(time.time() * 1000))
+    pipe.expire("host_ttl", 7)
+
+    pipe.execute()
+
+
 if __name__ == "__main__":
     while True:
-        sensors  = get_sensors_output()
-        ipmi = get_ipmi_power_output()
-        #curr_chipsinfo = get_amd_gpu_telemetry(sensors)
-        curr_chipsinfo = get_nvidia_gpu_telemetry()
-        sensors_out, _ = sensors.communicate()
-        sensors_dict = json.loads(sensors_out)
-        curr_cpusinfo = get_CPU_telemetry(sensors_output=sensors_dict)
-        curr_meminfo = get_memory_usage_mb()
-        curr_ipmi_telemetry = get_CPU_power_telemetry(ipmi_proc=ipmi, sensors_data=sensors_dict)
-        curr_link_status = get_nic_link_status()
-        curr_nvme_temps = get_nvme_temps(sensors_dict)
-        pipe = client.pipeline(transaction=False)
-        # lpush for multi socket cpu, multi gpu 
-        for idx, cpu in enumerate(curr_cpusinfo[1]):
-            # print("cpu_temp_" + str(idx), str(cpu))
-            pipe.set("cpu_temp_" + str(idx), str(cpu))
-        # ipmi cpu power
-        for idx, key in enumerate(curr_ipmi_telemetry):
-            if curr_ipmi_telemetry[key] is not None:
-                pipe.set(str(key), str(curr_ipmi_telemetry[key]))
-                # print(curr_ipmi_telemetry)
-                # print(key)
-                # print(curr_ipmi_telemetry[key])
-		# nic link status
-        for nic in curr_link_status:
-            key ,val = next(iter(nic.items()))
-            pipe.set("nic_"+str(key)+"_stat", str(val))
-            # print(key)
-            # print(val)
-        for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_name_" + str(idx), str(gpu[0]))
-        
-        # temperature
-        for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_temp_" + str(idx), str(gpu[1]))
-
-        # current_pwr_usage
-        for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_curr_pwr_" + str(idx), str(gpu[2]))
-
-        # max_pwr
-        for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_max_pwr_" + str(idx), str(gpu[3]))
-
-        # current_memory_usage
-        for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_curr_mem_" + str(idx), str(gpu[4]))
-
-        # max_memory
-        for idx, gpu in enumerate(curr_chipsinfo):
-            pipe.set("gpu_max_mem_" + str(idx), str(gpu[5]))
-
-        pipe.set("mem_total", curr_meminfo[0])
-        pipe.set("mem_usage", curr_meminfo[1])
-        pipe.set("mem_available", curr_meminfo[2])
-        pipe.set("cpu_usage", get_cpu_usage_percent())
         try:
-            pipe.set("ib_nic_temp", get_ib_nic_asic_temp())
-        except Exception:
-            pass
-        # NVMe temperatures
-        for key in curr_nvme_temps:
-            if curr_nvme_temps[key] is not None:
-                pipe.set(str(key), str(curr_nvme_temps[key]))
+            write_metrics_once()
+        except Exception as e:
+            print(f"[ERROR] data_crawler_host failed: {e}", flush=True)
 
-        pipe.set("host_ttl", int(time.time() * 1000))
-        pipe.expire("host_ttl", 7)
-        pipe.execute()
         time.sleep(1)

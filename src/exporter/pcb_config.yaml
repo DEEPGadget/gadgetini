@@ -34,7 +34,7 @@ initial_pwm_duty:
 initial_dout_bitmask: 0
 fan_curve:
   min_temp: 30
-  max_temp: 50
+  max_temp: 86.8
   min_duty: 80
   max_duty: 1000
 comm:
