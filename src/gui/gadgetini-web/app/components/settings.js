@@ -269,7 +269,7 @@ export default function Settings() {
     setPendingMode(cbStatus.mode);
   }, [cbStatus.mode]);
 
-  // PWM duty readback: 2s cadence — pump CH1~4 + fan CH5~12 (fixed 8 slots).
+  // PWM duty readback: 1s cadence — pump CH1~4 + fan CH5~12 (fixed 8 slots).
   // The API reads the wiring.pwm mapping and remaps to physical channel positions.
   // Fan RPM and estimated pump flow are refreshed on the same cadence.
   useEffect(() => {
@@ -291,7 +291,7 @@ export default function Settings() {
         })
         .catch(() => {});
     fetchPwm();
-    const id = setInterval(fetchPwm, 2000);
+    const id = setInterval(fetchPwm, 1000);
     return () => clearInterval(id);
   }, []);
 
