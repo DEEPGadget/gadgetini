@@ -65,24 +65,51 @@ class FanCurveController:
         return int(round(self.min_duty + frac * (self.max_duty - self.min_duty)))
 
     def update(self, pcb, rd):
-        """Read outlet1 -> compute duty -> write to all configured fan channels.
+        """Read outlet1 + NVMe max temp -> compute duty -> write to all configured fan channels.
 
         The Web UI reads duty back via PCBDriver.poll (register readback), so this
         only writes the channels; it does not publish to Redis itself.
         """
         if not self.fan_chs:
             return
+
+        # Read coolant outlet temperature
         v = rd.get(K.COOLANT_TEMP_OUTLET1)
-        temp_c = None
+        coolant_temp = None
         if v is not None:
             try:
-                temp_c = float(v)
+                coolant_temp = float(v)
             except (TypeError, ValueError):
-                temp_c = None
+                coolant_temp = None
+
+        # Read NVMe temperatures and find max
+        nvme_max_temp = None
+        for i in range(16):
+            nv = rd.get(f'nvme_{i}_temp')
+            if nv is not None:
+                try:
+                    nvme_temp = float(nv)
+                    if nvme_max_temp is None or nvme_temp > nvme_max_temp:
+                        nvme_max_temp = nvme_temp
+                except (TypeError, ValueError):
+                    pass
+
+        # Use maximum of coolant and NVMe temperature (NVMe: 0-50°C safe, 50-60°C warn, 60°C+ critical)
+        control_temp = None
+        if coolant_temp is not None and nvme_max_temp is not None:
+            control_temp = max(coolant_temp, nvme_max_temp)
+        elif coolant_temp is not None:
+            control_temp = coolant_temp
+        elif nvme_max_temp is not None:
+            # If only NVMe available, scale it up by +10°C to match coolant logic
+            # (NVMe 50°C ~ coolant 60°C in terms of heat concern)
+            control_temp = nvme_max_temp + 10
+
+        temp_c = control_temp
         if temp_c is None:
-            # No outlet temp (NTC unwired / read failed) — fall back to idle (min_duty).
+            # No temperature available — fall back to idle (min_duty).
             # Never leave duty at 0 because 0 PWM = fan runs at 100% (no control signal).
-            log.warning("no %s — fan duty -> min_duty (idle baseline %d)", K.COOLANT_TEMP_OUTLET1, self.min_duty)
+            log.warning("no coolant or NVMe temp — fan duty -> min_duty (idle baseline %d)", self.min_duty)
             duty = self.min_duty
         else:
             duty = self._compute_duty(temp_c)
