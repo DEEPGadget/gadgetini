@@ -435,24 +435,15 @@ def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0") -> int:
     except ValueError as e:
         raise RuntimeError(f"unexpected mget_temp output: {out!r}") from e
 
-def get_nvme_model_name(nvme_index: int) -> str:
-    """Get NVMe model name from /sys/block/nvme*n1/device/model"""
-    try:
-        model_path = f"/sys/block/nvme{nvme_index}n1/device/model"
-        with open(model_path, "r") as f:
-            return f.read().strip()
-    except Exception:
-        return f"nvme{nvme_index}"
-
 def get_nvme_temps(sensors) -> dict:
     """
-    Parse NVMe temperatures from sensors -j output with device model names.
+    Parse NVMe temperatures from sensors -j output with full PCI device names.
     Returns: {
-        "nvme_0_temp": float, "nvme_0_name": "Samsung 990 PRO 2TB",
-        "nvme_1_temp": float, "nvme_1_name": "WDC PC SN840 2TB",
+        "nvme_0_temp": float, "nvme_0_name": "nvme-pci-3e00",
+        "nvme_1_temp": float, "nvme_1_name": "nvme-pci-6400",
         ...
     }
-    Pattern: nvme-pci-XXXX → Composite.temp1_input + /sys/block/nvme*n1/device/model
+    Pattern: nvme-pci-XXXX → Composite.temp1_input
     """
     result = {}
     if isinstance(sensors, str):
@@ -471,15 +462,13 @@ def get_nvme_temps(sensors) -> dict:
             composite = metrics.get("Composite", {})
             temp_input = composite.get("temp1_input")
             if temp_input is not None:
-                pci_id = device.replace("nvme-pci-", "")
-                nvme_list.append((pci_id, float(temp_input)))
+                nvme_list.append((device, float(temp_input)))
 
     nvme_list.sort(key=lambda x: x[0])
 
-    for idx, (pci_id, temp) in enumerate(nvme_list):
+    for idx, (full_name, temp) in enumerate(nvme_list):
         result[f"nvme_{idx}_temp"] = round(temp, 1)
-        model_name = get_nvme_model_name(idx)
-        result[f"nvme_{idx}_name"] = model_name
+        result[f"nvme_{idx}_name"] = full_name
 
     return result
 
