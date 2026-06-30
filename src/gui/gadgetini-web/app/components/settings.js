@@ -394,8 +394,9 @@ export default function Settings() {
 
     setManualPwmSaving(true);
     try {
-      const pumpPayload = [...cbPwm.pump];
-      const fanPayload = [...cbPwm.fan];
+      // Initialize payloads with default values (500 = 50%) for null entries
+      const pumpPayload = cbPwm.pump.map(v => v !== null ? v : 500);
+      const fanPayload = cbPwm.fan.map(v => v !== null ? v : 500);
 
       selectedChannels.forEach((chId) => {
         if (chId.startsWith("pump-")) {
