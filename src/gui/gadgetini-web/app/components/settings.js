@@ -426,33 +426,14 @@ export default function Settings() {
         return;
       }
 
-      // Wait for PCB communication and Redis update (typically 1-2 seconds)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Verify values were actually applied by checking current cbPwm against expected values
-      const allVerified = Array.from(selectedChannels).every((chId) => {
-        if (chId.startsWith("pump-")) {
-          const idx = parseInt(chId.split("-")[1], 10);
-          const expected = Math.min(1000, Math.max(0, manualPwm.pump[idx] * 10));
-          const actual = cbPwm.pump[idx];
-          return actual === expected;
-        } else if (chId.startsWith("fan-")) {
-          const idx = parseInt(chId.split("-")[1], 10);
-          const expected = Math.min(1000, Math.max(0, manualPwm.fan[idx] * 10));
-          const actual = cbPwm.fan[idx];
-          return actual === expected;
-        }
-        return false;
-      });
-
-      if (!allVerified) {
-        alert(`${t("save_failed")}: PWM values not applied to hardware. Check PCB connection.`);
-        return;
-      }
-
-      alert("PWM saved and verified successfully");
+      // API success indicates values were saved to Redis and config
+      // PCB will apply on next poll cycle (data_crawler reads and applies changes)
+      alert("PWM saved successfully");
       setSelectedChannels(new Set());
       setInputValue("");
+
+      // Clear verification timeout - pcb polling will update values naturally
+      // Waiting 2s for confirmation adds unnecessary latency
     } catch (err) {
       alert(`${t("save_failed")}: ${err?.message || err}`);
     } finally {

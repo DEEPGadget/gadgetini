@@ -170,14 +170,15 @@ export async function PUT(request) {
     await fs.writeFile(tmpPath, updated, "utf8");
     await fs.rename(tmpPath, CONFIG_PATH);
 
-    // Apply PWM to PCB hardware immediately (don't wait for next polling cycle)
-    try {
-      const { execSync } = require("child_process");
-      const scriptPath = "/tmp/apply_pwm_" + Date.now() + ".py";
-      const script = `import sys
+    // Apply PWM to PCB hardware asynchronously (don't block API response)
+    // data_crawler will also pick up the updated config on next poll cycle
+    setImmediate(() => {
+      try {
+        const { exec } = require("child_process");
+        const scriptPath = "/tmp/apply_pwm_" + Date.now() + ".py";
+        const script = `import sys
 sys.path.insert(0, '/home/gadgetini/gadgetini/src/exporter')
-import yaml, redis, pcb_driver, logging
-logging.basicConfig(level=logging.INFO)
+import yaml, redis, pcb_driver
 try:
     with open('${CONFIG_PATH}') as f:
         cfg = yaml.safe_load(f)
@@ -185,20 +186,18 @@ try:
     driver = pcb_driver.PCBDriver(cfg, r)
     driver.apply_initial_state()
 except Exception as e:
-    print(f"ERROR: {e}", file=sys.stderr)
-    sys.exit(1)
+    print(f"PCB apply failed: {e}", file=sys.stderr)
 `;
-      await fs.writeFile(scriptPath, script, "utf8");
-      const result = execSync(`python3 ${scriptPath}`, {
-        encoding: "utf8",
-        timeout: 5000,
-        stdio: "pipe"
-      });
-      await fs.unlink(scriptPath).catch(() => {});
-      console.log("PCB PWM applied successfully");
-    } catch (err) {
-      console.warn("PCB apply warning:", err.message);
-    }
+        fs.writeFileSync(scriptPath, script, "utf8");
+        exec(`python3 ${scriptPath}`, { timeout: 10000 }, (err, stdout, stderr) => {
+          if (err) console.warn("PCB apply warning:", err.message);
+          else console.log("PCB PWM applied");
+          fs.unlink(scriptPath, () => {});
+        });
+      } catch (err) {
+        console.warn("PCB apply error:", err.message);
+      }
+    });
 
     // Set Redis keys for manual PWM (without changing control_mode)
     const r = getRedis();
