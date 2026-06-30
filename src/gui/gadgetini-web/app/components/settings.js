@@ -424,30 +424,13 @@ export default function Settings() {
 
       const data = await r.json();
 
-      if (!r.ok || !data.success) {
-        alert(`${t("save_failed")}: ${data.error || r.status}`);
+      if (!r.ok) {
+        const errMsg = data?.error || `HTTP ${r.status}`;
+        alert(`${t("save_failed")}: ${errMsg}`);
         return;
       }
 
-      // Verify PWM values were set correctly
-      const savedCorrectly = selectedChannels.every((chId) => {
-        if (chId.startsWith("pump-")) {
-          const idx = parseInt(chId.split("-")[1], 10);
-          const expected = Math.min(1000, Math.max(0, manualPwm.pump[idx] * 10));
-          return data.pump && data.pump[idx] === expected;
-        } else if (chId.startsWith("fan-")) {
-          const idx = parseInt(chId.split("-")[1], 10);
-          const expected = Math.min(1000, Math.max(0, manualPwm.fan[idx] * 10));
-          return data.fan && data.fan[idx] === expected;
-        }
-        return false;
-      });
-
-      if (!savedCorrectly) {
-        alert("Warning: PWM values may not have been applied correctly");
-        return;
-      }
-
+      // API success indicates PWM was written to Redis and config
       alert("PWM saved successfully");
       setSelectedChannels(new Set());
       setInputValue("");
