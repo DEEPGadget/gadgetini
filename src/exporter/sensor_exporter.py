@@ -219,7 +219,13 @@ class DLCCollector:
         for i in range(16):  # Support up to 16 NVMe drives
             nvme_key = f"nvme_{i}_temp"
             if client.exists(nvme_key):
-                g.add_metric([srv, "storage", "nvme_temperature", "°C", f"nvme{i}"], get_float(nvme_key))
+                nvme_name_key = f"nvme_{i}_name"
+                nvme_name = client.get(nvme_name_key)
+                if nvme_name:
+                    nvme_name = nvme_name.decode() if isinstance(nvme_name, bytes) else nvme_name
+                else:
+                    nvme_name = f"nvme{i}"
+                g.add_metric([srv, "storage", "nvme_temperature", "°C", nvme_name], get_float(nvme_key))
 
         # Host
         g.add_metric([srv, "system", "host_online", "1=yes", ""], get_int("host_stat"))

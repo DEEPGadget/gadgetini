@@ -146,6 +146,18 @@ export default function Settings() {
   const [selectedChannels, setSelectedChannels] = useState(new Set());
   const [inputValue, setInputValue] = useState("");
 
+  // Sync manual PWM with current readback when switching to manual mode or on mount
+  useEffect(() => {
+    if (cbStatus.mode === "manual") {
+      if (cbPwm.pump.some(v => v !== null) || cbPwm.fan.some(v => v !== null)) {
+        setManualPwm({
+          pump: cbPwm.pump.map(v => (v !== null ? Math.round(v / 10) : 500)),
+          fan: cbPwm.fan.map(v => (v !== null ? Math.round(v / 10) : 500))
+        });
+      }
+    }
+  }, [cbStatus.mode, cbPwm.pump, cbPwm.fan]);
+
   useEffect(() => {
     getDisplayConfig().then(setDisplayMode);
 
@@ -375,11 +387,33 @@ export default function Settings() {
   };
 
   const handleManualPwmSave = async () => {
+    if (selectedChannels.size === 0) {
+      alert("Please select at least one channel");
+      return;
+    }
+
     setManualPwmSaving(true);
     try {
+      const pumpPayload = [...cbPwm.pump];
+      const fanPayload = [...cbPwm.fan];
+
+      selectedChannels.forEach((chId) => {
+        if (chId.startsWith("pump-")) {
+          const idx = parseInt(chId.split("-")[1], 10);
+          if (idx >= 0 && idx < 4) {
+            pumpPayload[idx] = Math.min(1000, Math.max(0, manualPwm.pump[idx] * 10));
+          }
+        } else if (chId.startsWith("fan-")) {
+          const idx = parseInt(chId.split("-")[1], 10);
+          if (idx >= 0 && idx < 8) {
+            fanPayload[idx] = Math.min(1000, Math.max(0, manualPwm.fan[idx] * 10));
+          }
+        }
+      });
+
       const payload = {
-        pump: manualPwm.pump.map((v) => Math.min(1000, Math.max(0, v * 10))),
-        fan: manualPwm.fan.map((v) => Math.min(1000, Math.max(0, v * 10))),
+        pump: pumpPayload,
+        fan: fanPayload,
       };
       const r = await fetch("/api/control/pwm", {
         method: "PUT",
@@ -389,7 +423,11 @@ export default function Settings() {
       if (!r.ok) {
         const e = await r.json().catch(() => ({}));
         alert(`${t("save_failed")}: ${e.error || r.status}`);
+        return;
       }
+      alert("PWM saved successfully");
+      setSelectedChannels(new Set());
+      setInputValue("");
     } catch (err) {
       alert(`${t("save_failed")}: ${err?.message || err}`);
     } finally {
@@ -1009,17 +1047,21 @@ export default function Settings() {
                         // Apply to selected channels in real-time
                         if (selectedChannels.size > 0 && value !== "") {
                           const numValue = Math.max(0, Math.min(100, parseInt(value, 10) || 0));
-                          setManualPwm((p) => {
-                            const newPump = [...p.pump];
-                            const newFan = [...p.fan];
+                          setManualPwm((prevState) => {
+                            const newPump = [...prevState.pump];
+                            const newFan = [...prevState.fan];
 
                             selectedChannels.forEach((chId) => {
                               if (chId.startsWith("pump-")) {
                                 const idx = parseInt(chId.split("-")[1], 10);
-                                newPump[idx] = numValue;
+                                if (idx >= 0 && idx < 4) {
+                                  newPump[idx] = numValue;
+                                }
                               } else if (chId.startsWith("fan-")) {
                                 const idx = parseInt(chId.split("-")[1], 10);
-                                newFan[idx] = numValue;
+                                if (idx >= 0 && idx < 8) {
+                                  newFan[idx] = numValue;
+                                }
                               }
                             });
 
