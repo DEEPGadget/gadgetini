@@ -435,6 +435,33 @@ def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0") -> int:
     except ValueError as e:
         raise RuntimeError(f"unexpected mget_temp output: {out!r}") from e
 
+def get_nvme_temps(sensors) -> dict:
+    """
+    Parse NVMe temperatures from sensors -j output.
+    Returns: {"nvme_0_temp": float, "nvme_1_temp": float, ...}
+    Pattern: nvme-pci-XXXX → Composite.temp1_input
+    """
+    result = {}
+    if isinstance(sensors, str):
+        try:
+            sensors_data = json.loads(sensors)
+        except json.JSONDecodeError:
+            return result
+    elif isinstance(sensors, dict):
+        sensors_data = sensors
+    else:
+        return result
+
+    nvme_idx = 0
+    for device, metrics in sensors_data.items():
+        if device.startswith("nvme-pci-"):
+            composite = metrics.get("Composite", {})
+            temp_input = composite.get("temp1_input")
+            if temp_input is not None:
+                result[f"nvme_{nvme_idx}_temp"] = round(float(temp_input), 1)
+                nvme_idx += 1
+    return result
+
 if __name__ == "__main__":
     while True:
         sensors  = get_sensors_output()
@@ -447,6 +474,7 @@ if __name__ == "__main__":
         curr_meminfo = get_memory_usage_mb()
         curr_ipmi_telemetry = get_CPU_power_telemetry(ipmi_proc=ipmi, sensors_data=sensors_dict)
         curr_link_status = get_nic_link_status()
+        curr_nvme_temps = get_nvme_temps(sensors_dict)
         pipe = client.pipeline(transaction=False)
         # lpush for multi socket cpu, multi gpu 
         for idx, cpu in enumerate(curr_cpusinfo[1]):
@@ -496,6 +524,11 @@ if __name__ == "__main__":
             pipe.set("ib_nic_temp", get_ib_nic_asic_temp())
         except Exception:
             pass
+        # NVMe temperatures
+        for key in curr_nvme_temps:
+            if curr_nvme_temps[key] is not None:
+                pipe.set(str(key), str(curr_nvme_temps[key]))
+
         pipe.set("host_ttl", int(time.time() * 1000))
         pipe.expire("host_ttl", 7)
         pipe.execute()
