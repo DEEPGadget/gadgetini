@@ -142,6 +142,8 @@ export default function Settings() {
     fan: [500, 500, 500, 500, 500, 500, 500, 500],
   });
   const [manualPwmSaving, setManualPwmSaving] = useState(false);
+  const [selectedChannels, setSelectedChannels] = useState(new Set());
+  const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
     getDisplayConfig().then(setDisplayMode);
@@ -313,9 +315,8 @@ export default function Settings() {
       // as manual_pwm so the board continues at the same duty instead of jumping
       // to stale config. The pwm PUT also flips control_mode to 'manual'.
       if (newMode === "manual") {
-        const pwmData = await fetch("/api/control/pwm").then((r) => r.json());
-        const curPump = Array.isArray(pwmData?.pump) ? pwmData.pump : [];
-        const curFan = Array.isArray(pwmData?.fan) ? pwmData.fan : [];
+        const curPump = Array.isArray(cbPwm?.pump) ? cbPwm.pump : [];
+        const curFan = Array.isArray(cbPwm?.fan) ? cbPwm.fan : [];
         const pumpDuty = Array.from({ length: 4 }, (_, i) =>
           curPump[i] != null ? curPump[i] : 500
         );
@@ -889,75 +890,135 @@ export default function Settings() {
               <SectionHeader label={t("manual_pwm_title") || "Manual PWM Control"} colorClass="bg-emerald-600" />
               <div className="bg-white p-4">
                 <p className="text-xs text-gray-500 mb-4">
-                  {t("manual_pwm_desc") || "Set pump and fan PWM duty (0-100%)"}
+                  {t("manual_pwm_desc") || "Select channels and set PWM duty (0-100%)"}
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  {/* Pumps */}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                  {/* Pump Channel Selection */}
                   <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                    <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
                       {t("pumps_label")}
                     </h5>
                     <div className="space-y-2">
-                      {manualPwm.pump.map((duty, i) => (
-                        <div key={`pump-manual-${i}`} className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600 font-mono min-w-10">CH{i + 1}</span>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={duty}
-                            onChange={(e) =>
-                              setManualPwm((p) => ({
-                                ...p,
-                                pump: p.pump.map((v, idx) =>
-                                  idx === i ? parseInt(e.target.value, 10) : v
-                                ),
-                              }))
-                            }
-                            disabled={!cbStatus.pcb_connected}
-                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                          />
-                          <span className="text-xs font-mono min-w-12 text-right text-gray-700">
-                            {duty}%
-                          </span>
-                        </div>
-                      ))}
+                      {manualPwm.pump.map((duty, i) => {
+                        const chId = `pump-${i}`;
+                        const isSelected = selectedChannels.has(chId);
+                        return (
+                          <label key={chId} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                            isSelected ? "bg-emerald-100 border border-emerald-300" : "hover:bg-gray-100"
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                const newSelected = new Set(selectedChannels);
+                                if (e.target.checked) {
+                                  newSelected.add(chId);
+                                } else {
+                                  newSelected.delete(chId);
+                                }
+                                setSelectedChannels(newSelected);
+                              }}
+                              disabled={!cbStatus.pcb_connected}
+                              className="w-4 h-4"
+                            />
+                            <span className="flex-1 text-xs text-gray-600 font-mono">CH{i + 1}</span>
+                            <span className="text-xs text-gray-500">Current:</span>
+                            <span className="text-xs font-mono text-gray-700 min-w-12 text-right">
+                              {duty}%
+                            </span>
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Fans */}
+                  {/* Fan Channel Selection */}
                   <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                    <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
                       {t("fans_label")}
                     </h5>
                     <div className="space-y-2">
-                      {manualPwm.fan.map((duty, i) => (
-                        <div key={`fan-manual-${i}`} className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600 font-mono min-w-10">CH{i + 5}</span>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={duty}
-                            onChange={(e) =>
-                              setManualPwm((p) => ({
-                                ...p,
-                                fan: p.fan.map((v, idx) =>
-                                  idx === i ? parseInt(e.target.value, 10) : v
-                                ),
-                              }))
-                            }
-                            disabled={!cbStatus.pcb_connected}
-                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                          />
-                          <span className="text-xs font-mono min-w-12 text-right text-gray-700">
-                            {duty}%
-                          </span>
-                        </div>
-                      ))}
+                      {manualPwm.fan.map((duty, i) => {
+                        const chId = `fan-${i}`;
+                        const isSelected = selectedChannels.has(chId);
+                        return (
+                          <label key={chId} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                            isSelected ? "bg-emerald-100 border border-emerald-300" : "hover:bg-gray-100"
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                const newSelected = new Set(selectedChannels);
+                                if (e.target.checked) {
+                                  newSelected.add(chId);
+                                } else {
+                                  newSelected.delete(chId);
+                                }
+                                setSelectedChannels(newSelected);
+                              }}
+                              disabled={!cbStatus.pcb_connected}
+                              className="w-4 h-4"
+                            />
+                            <span className="flex-1 text-xs text-gray-600 font-mono">CH{i + 5}</span>
+                            <span className="text-xs text-gray-500">Current:</span>
+                            <span className="text-xs font-mono text-gray-700 min-w-12 text-right">
+                              {duty}%
+                            </span>
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
+
+                {/* Value Input Section */}
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-4">
+                  <p className="text-xs text-gray-600 mb-3">
+                    <span className="font-semibold">
+                      {selectedChannels.size === 0 ? "Select channels to modify" : `${selectedChannels.size} channel(s) selected`}
+                    </span>
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={inputValue}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setInputValue(value);
+
+                        // Apply to selected channels in real-time
+                        if (selectedChannels.size > 0 && value !== "") {
+                          const numValue = Math.max(0, Math.min(100, parseInt(value, 10) || 0));
+                          setManualPwm((p) => {
+                            const newPump = [...p.pump];
+                            const newFan = [...p.fan];
+
+                            selectedChannels.forEach((chId) => {
+                              if (chId.startsWith("pump-")) {
+                                const idx = parseInt(chId.split("-")[1], 10);
+                                newPump[idx] = numValue;
+                              } else if (chId.startsWith("fan-")) {
+                                const idx = parseInt(chId.split("-")[1], 10);
+                                newFan[idx] = numValue;
+                              }
+                            });
+
+                            return { pump: newPump, fan: newFan };
+                          });
+                        }
+                      }}
+                      disabled={!cbStatus.pcb_connected || selectedChannels.size === 0}
+                      className="flex-1 border border-emerald-300 rounded-lg px-3 py-2 text-sm font-mono bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-100 disabled:text-gray-400"
+                      placeholder="0-100"
+                    />
+                    <span className="text-sm font-semibold text-emerald-700">%</span>
+                  </div>
+                </div>
+
                 <div className="flex justify-end items-center pt-1">
                   <button
                     disabled={!cbStatus.pcb_connected || manualPwmSaving}
