@@ -90,12 +90,16 @@
 # ===============================================================================
 
 import time
+import os
 from prometheus_client import start_http_server, CollectorRegistry
 from prometheus_client.core import GaugeMetricFamily
 import redis
 from machine_config import MACHINE, MACHINE_LABEL, COOLANT_CHANNELS, GPU_COUNT, CPU_COUNT
 
-client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
+REDIS_HOST = os.environ.get("GADGETINI_REDIS_HOST", "localhost")
+REDIS_PORT = int(os.environ.get("GADGETINI_REDIS_PORT", "6379"))
+REDIS_DB = int(os.environ.get("GADGETINI_REDIS_DB", "0"))
+client = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
 
 CHANNELS = COOLANT_CHANNELS.get(MACHINE, {})
 
@@ -216,19 +220,22 @@ class DLCCollector:
             g.add_metric([srv, "ib", "temperature", "°C", ""], get_float("ib_nic_temp"))
 
         # NVMe storage
-        for i in range(16):  # Support up to 16 NVMe drives
-            nvme_key = f"nvme_{i}_temp"
-            if client.exists(nvme_key):
-                nvme_name_key = f"nvme_{i}_name"
-                nvme_name = client.get(nvme_name_key)
-                if nvme_name:
-                    nvme_name = nvme_name.decode() if isinstance(nvme_name, bytes) else nvme_name
-                else:
-                    nvme_name = f"nvme{i}"
-                g.add_metric([srv, "storage", "nvme_temperature", "°C", nvme_name], get_float(nvme_key))
+        # Export whatever current nvme_*_temp keys exist. Do not gate on host_ttl:
+        # on this deployment host_stat/host_ttl can be absent or unsynced while
+        # host metrics are still present. Staleness is handled by TTL on nvme_* keys.
+        nvme_temp_keys = []
+        for nvme_key in client.keys("nvme_*_temp"):
+            parts = nvme_key.split("_")
+            if len(parts) == 3 and parts[0] == "nvme" and parts[1].isdigit() and parts[2] == "temp":
+                nvme_temp_keys.append((int(parts[1]), nvme_key))
+
+        for i, nvme_key in sorted(nvme_temp_keys):
+            nvme_name = client.get(f"nvme_{i}_name") or f"nvme{i}"
+            g.add_metric([srv, "storage", "nvme_temperature", "°C", nvme_name], get_float(nvme_key))
 
         # Host
-        g.add_metric([srv, "system", "host_online", "1=yes", ""], get_int("host_stat"))
+        host_online = 1 if client.exists("host_ttl") else get_int("host_stat")
+        g.add_metric([srv, "system", "host_online", "1=yes", ""], host_online)
 
         yield g
 
@@ -241,3 +248,4 @@ if __name__ == "__main__":
     print(f"DLC sensor exporter listening on :{port}")
     while True:
         time.sleep(2.5)
+
