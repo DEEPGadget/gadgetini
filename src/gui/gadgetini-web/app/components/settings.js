@@ -90,7 +90,6 @@ export default function Settings() {
     rotationTime: 7,
     gpuCount: 8,
     cpuCount: 2,
-    fanCount: 2,
     nvmeCount: 2,
   });
   const [IPMode, setIPMode] = useState("dhcp");
@@ -149,6 +148,20 @@ export default function Settings() {
 
   useEffect(() => {
     getDisplayConfig().then(setDisplayMode);
+
+    fetch("/api/hardware-count")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setDisplayMode((p) => ({
+          ...p,
+          ...(d.gpuCount > 0 ? { gpuCount: d.gpuCount } : {}),
+          ...(d.cpuCount > 0 ? { cpuCount: d.cpuCount } : {}),
+          ...(d.nvmeCount >= 0 ? { nvmeCount: d.nvmeCount } : {}),
+        }));
+      })
+      .catch(() => {});
+
     fetch("/api/ip/self")
       .then((r) => r.json())
       .then((d) => {
@@ -586,18 +599,17 @@ export default function Settings() {
           {/* === Hardware Count === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_hardware_count")} colorClass="bg-gray-600" />
-            <div className="bg-white p-4 grid grid-cols-4 gap-4">
+            <div className="bg-white p-4 grid grid-cols-3 gap-4">
               {[
                 { label: t("gpu_count"), key: "gpuCount", min: 0, max: 10 },
                 { label: t("cpu_count"), key: "cpuCount", min: 1, max: 4 },
-                { label: t("fan_count"), key: "fanCount", min: 0, max: 8 },
                 { label: "NVMe", key: "nvmeCount", min: 0, max: 32 },
               ].map(({ label, key, min, max }) => (
                 <div key={key} className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                   <div>
                     <p className="text-sm font-semibold text-gray-800">{label}</p>
                     <p className="text-xs text-gray-400">
-                      config.ini {key === "gpuCount" ? "gpu_count" : key === "cpuCount" ? "cpu_count" : key === "fanCount" ? "fan_count" : "nvme_count"}
+                      config.ini {key === "gpuCount" ? "gpu_count" : key === "cpuCount" ? "cpu_count" : "nvme_count"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 shadow-sm border border-gray-100">
