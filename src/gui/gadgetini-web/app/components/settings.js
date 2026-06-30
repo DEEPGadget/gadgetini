@@ -394,9 +394,9 @@ export default function Settings() {
 
     setManualPwmSaving(true);
     try {
-      // Initialize payloads with default values (500 = 50%) for null entries
-      const pumpPayload = cbPwm.pump.map(v => v !== null ? v : 500);
-      const fanPayload = cbPwm.fan.map(v => v !== null ? v : 500);
+      // Copy current PWM values, only update selected channels
+      const pumpPayload = [...cbPwm.pump];
+      const fanPayload = [...cbPwm.fan];
 
       selectedChannels.forEach((chId) => {
         if (chId.startsWith("pump-")) {
@@ -421,11 +421,33 @@ export default function Settings() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!r.ok) {
-        const e = await r.json().catch(() => ({}));
-        alert(`${t("save_failed")}: ${e.error || r.status}`);
+
+      const data = await r.json();
+
+      if (!r.ok || !data.success) {
+        alert(`${t("save_failed")}: ${data.error || r.status}`);
         return;
       }
+
+      // Verify PWM values were set correctly
+      const savedCorrectly = selectedChannels.every((chId) => {
+        if (chId.startsWith("pump-")) {
+          const idx = parseInt(chId.split("-")[1], 10);
+          const expected = Math.min(1000, Math.max(0, manualPwm.pump[idx] * 10));
+          return data.pump && data.pump[idx] === expected;
+        } else if (chId.startsWith("fan-")) {
+          const idx = parseInt(chId.split("-")[1], 10);
+          const expected = Math.min(1000, Math.max(0, manualPwm.fan[idx] * 10));
+          return data.fan && data.fan[idx] === expected;
+        }
+        return false;
+      });
+
+      if (!savedCorrectly) {
+        alert("Warning: PWM values may not have been applied correctly");
+        return;
+      }
+
       alert("PWM saved successfully");
       setSelectedChannels(new Set());
       setInputValue("");
