@@ -51,6 +51,7 @@ export async function GET() {
       rotationTime: parseInt(getConfigValue("rotation_sec") || "5", 10),
       gpuCount: parseInt(getConfigValue("gpu_count") || "8", 10),
       cpuCount: parseInt(getConfigValue("cpu_count") || "2", 10),
+      fanCount: parseInt(getConfigValue("fan_count") || "2", 10),
       nvmeCount: parseInt(getConfigValue("nvme_count") || "2", 10),
     };
 
@@ -94,6 +95,7 @@ export async function POST(request) {
         .replace(/^rotation_sec\s*=\s*.*/m, `rotation_sec=${displayMode.rotationTime}`)
         .replace(/^gpu_count\s*=\s*.*/m, `gpu_count=${displayMode.gpuCount}`)
         .replace(/^cpu_count\s*=\s*.*/m, `cpu_count=${displayMode.cpuCount}`)
+        .replace(/^fan_count\s*=\s*.*/m, `fan_count=${displayMode.fanCount}`)
         .replace(/^nvme_count\s*=\s*.*/m, `nvme_count=${displayMode.nvmeCount}`);
 
       await fs.promises.writeFile(configPath, config, "utf-8");
