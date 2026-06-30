@@ -170,6 +170,36 @@ export async function PUT(request) {
     await fs.writeFile(tmpPath, updated, "utf8");
     await fs.rename(tmpPath, CONFIG_PATH);
 
+    // Apply PWM to PCB hardware immediately (don't wait for next polling cycle)
+    try {
+      const { execSync } = require("child_process");
+      const scriptPath = "/tmp/apply_pwm_" + Date.now() + ".py";
+      const script = `import sys
+sys.path.insert(0, '/home/gadgetini/gadgetini/src/exporter')
+import yaml, redis, pcb_driver, logging
+logging.basicConfig(level=logging.INFO)
+try:
+    with open('${CONFIG_PATH}') as f:
+        cfg = yaml.safe_load(f)
+    r = redis.Redis(host='127.0.0.1', port=6379, db=0)
+    driver = pcb_driver.PCBDriver(cfg, r)
+    driver.apply_initial_state()
+except Exception as e:
+    print(f"ERROR: {e}", file=sys.stderr)
+    sys.exit(1)
+`;
+      await fs.writeFile(scriptPath, script, "utf8");
+      const result = execSync(`python3 ${scriptPath}`, {
+        encoding: "utf8",
+        timeout: 5000,
+        stdio: "pipe"
+      });
+      await fs.unlink(scriptPath).catch(() => {});
+      console.log("PCB PWM applied successfully");
+    } catch (err) {
+      console.warn("PCB apply warning:", err.message);
+    }
+
     // Set Redis keys for manual PWM (without changing control_mode)
     const r = getRedis();
     const pipe = r.pipeline();
