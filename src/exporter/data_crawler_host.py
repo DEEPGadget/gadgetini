@@ -437,8 +437,12 @@ def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0") -> int:
 
 def get_nvme_temps(sensors) -> dict:
     """
-    Parse NVMe temperatures from sensors -j output.
-    Returns: {"nvme_0_temp": float, "nvme_1_temp": float, ...}
+    Parse NVMe temperatures from sensors -j output with device identification.
+    Returns: {
+        "nvme_0_temp": float, "nvme_0_name": "pci_id",
+        "nvme_1_temp": float, "nvme_1_name": "pci_id",
+        ...
+    }
     Pattern: nvme-pci-XXXX → Composite.temp1_input
     """
     result = {}
@@ -452,14 +456,21 @@ def get_nvme_temps(sensors) -> dict:
     else:
         return result
 
-    nvme_idx = 0
+    nvme_list = []
     for device, metrics in sensors_data.items():
         if device.startswith("nvme-pci-"):
             composite = metrics.get("Composite", {})
             temp_input = composite.get("temp1_input")
             if temp_input is not None:
-                result[f"nvme_{nvme_idx}_temp"] = round(float(temp_input), 1)
-                nvme_idx += 1
+                pci_id = device.replace("nvme-pci-", "")
+                nvme_list.append((pci_id, float(temp_input)))
+
+    nvme_list.sort(key=lambda x: x[0])
+
+    for idx, (pci_id, temp) in enumerate(nvme_list):
+        result[f"nvme_{idx}_temp"] = round(temp, 1)
+        result[f"nvme_{idx}_name"] = pci_id
+
     return result
 
 if __name__ == "__main__":
