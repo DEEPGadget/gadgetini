@@ -84,12 +84,14 @@ export default function Settings() {
     coolant_daily: true,
     gpu_daily: true,
     cpu_daily: true,
+    nvme: true,
     psu: false,
     leak: true,
     rotationTime: 7,
     gpuCount: 8,
     cpuCount: 2,
     fanCount: 2,
+    nvmeCount: 2,
   });
   const [IPMode, setIPMode] = useState("dhcp");
   const IPRefs = useRef({
@@ -584,11 +586,12 @@ export default function Settings() {
           {/* === Hardware Count === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_hardware_count")} colorClass="bg-gray-600" />
-            <div className="bg-white p-4 grid grid-cols-3 gap-4">
+            <div className="bg-white p-4 grid grid-cols-4 gap-4">
               {[
                 { label: t("gpu_count"), key: "gpuCount", min: 0, max: 10 },
                 { label: t("cpu_count"), key: "cpuCount", min: 1, max: 4 },
                 { label: t("fan_count"), key: "fanCount", min: 0, max: 8 },
+                { label: "NVMe", key: "nvmeCount", min: 0, max: 32 },
               ].map(({ label, key, min, max }) => (
                 <div key={key} className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                   <div>
@@ -651,6 +654,7 @@ export default function Settings() {
                   { label: t("coolant_detail"), key: "coolant_detail" },
                   { label: t("coolant_flow"), key: "coolant_flow" },
                   { label: t("fan_rpm"), key: "fan_rpm" },
+                  { label: "NVMe", key: "nvme" },
                   { label: t("leak"), key: "leak" },
                 ].map(({ label, key }) => (
                   <GridCard
