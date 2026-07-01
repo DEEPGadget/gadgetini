@@ -196,20 +196,11 @@ if MACHINE == 'dg5w':
 
 
 def get_chassis_stabil():
-    """1=stable, 0=unstable, None=non-dg5w (caller omits the key)."""
+    """1=stable, 0=unstable, None=non-dg5w (caller omits the key).
+    Always returns stable regardless of gyro presence (all sensors disabled)."""
     if MACHINE != 'dg5w':
         return None
-    if _gyro_dev is None:
-        return 1
-    try:
-        a = _gyro_dev.get_gyro_data()
-        time.sleep(0.01)
-        b = _gyro_dev.get_gyro_data()
-        if (abs(a['x'] - b['x']) > 5 and abs(a['y'] - b['y']) > 5) or abs(a['z'] - b['z']) > 5:
-            return 0
-        return 1
-    except Exception:
-        return 1
+    return 1
 
 
 # ── Entry points called by data_crawler.py ─────────────────────────

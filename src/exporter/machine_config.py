@@ -23,6 +23,6 @@ COOLANT_CHANNELS_PCB = {
     'dg5w': {'inlet1': 13, 'outlet1': 14},
 }
 
-# Prometheus `server` label. Lowercase to match Grafana dashboard queries
-# (dlc_system_sensor{server="dg5w"} / "dg5r").
-MACHINE_LABEL = MACHINE
+# Prometheus `server` label. Uppercase to match Grafana dashboard queries
+# (dlc_system_sensor{server="dg5W"} / "dg5R").
+MACHINE_LABEL = MACHINE.upper()
