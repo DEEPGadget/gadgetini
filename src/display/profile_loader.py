@@ -9,6 +9,7 @@ from daily_viewer import DailyViewer
 from coolant_detail_viewer import CoolantDetailViewer
 from dual_sensor_viewer import DualSensorViewer
 from temp_util_viewer import TempUtilViewer
+from nvme_viewer import NvmeViewer
 
 
 VIEWER_CLASSES = {
@@ -18,11 +19,12 @@ VIEWER_CLASSES = {
     "DualSensorViewer": DualSensorViewer,
     "CoolantDetailViewer": CoolantDetailViewer,
     "TempUtilViewer": TempUtilViewer,
+    "NvmeViewer": NvmeViewer,
 }
 
 
 def _parse_icon(hex_str):
-    """'0xf0510' -> chr(0xf0510) unicode character."""
+    """'0xf0510' → chr(0xf0510) unicode character."""
     if not hex_str:
         return None
     return chr(int(hex_str, 16))
@@ -35,15 +37,20 @@ def _make_formula(expr_str):
 
 
 def _expand_templates(templates, config):
-    """Expand sensor_templates using count from config. {i} -> 0,1,...,N-1."""
+    """Expand sensor_templates. {i} iterates explicit `indices` if given, else 0..count-1
+    where count is read from config (PRODUCT/<count key>). `indices` lets a template map
+    to fixed physical channels (e.g. fan_rpm at physical slots [2,3,4] = CH7~9)."""
     result = []
     for tmpl in templates:
-        count_key = tmpl['count']
-        count = config.getint('PRODUCT', count_key, fallback=0) if config else 0
-        for i in range(count):
+        if 'indices' in tmpl:
+            idxs = tmpl['indices']
+        else:
+            count = config.getint('PRODUCT', tmpl['count'], fallback=0) if config else 0
+            idxs = range(count)
+        for i in idxs:
             sensor = {}
             for k, v in tmpl.items():
-                if k == 'count':
+                if k in ('count', 'indices'):
                     continue
                 sensor[k] = v.replace('{i}', str(i)) if isinstance(v, str) else v
             result.append(sensor)
@@ -103,7 +110,7 @@ def _expand_viewer_params(params, count, palettes):
             if all(isinstance(item, dict) for item in v):
                 expanded[k] = [_expand_viewer_params(item, count, palettes) for item in v]
             elif all(isinstance(c, list) for c in v):
-                # Color lists: [[r,g,b], ...] -> [(r,g,b), ...]
+                # Color lists: [[r,g,b], ...] → [(r,g,b), ...]
                 expanded[k] = [tuple(c) for c in v]
             else:
                 expanded[k] = v
@@ -146,7 +153,10 @@ def _create_viewer(entry, config, palettes):
     else:
         params = _resolve_colors(params, palettes)
 
-    return cls(**params)
+    viewer = cls(**params)
+    if entry.get('hide_if_absent'):
+        viewer.hide_if_absent = True
+    return viewer
 
 
 def load_viewers(json_path, config=None):

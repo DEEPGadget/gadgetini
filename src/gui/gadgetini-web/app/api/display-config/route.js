@@ -6,7 +6,7 @@ import os from "os";
 let homeDir;
 if (os.platform() === "win32") {
   // at windows => TODO erase at final code
-  homeDir = "C:\\Users\\yjeon\\OneDrive\\바탕 화면\\gadgetini\\src\\display\\";
+  homeDir = "C:\\Users\\yjeon\\OneDrive\\Desktop\\gadgetini\\src\\display\\";
 } else {
   // at Linux
   homeDir = "/home/gadgetini/gadgetini/src/display";
@@ -45,12 +45,13 @@ export async function GET() {
       coolant_daily: getConfigValue("coolant_daily") === "on",
       gpu_daily: getConfigValue("gpu_daily") === "on",
       cpu_daily: getConfigValue("cpu_daily") === "on",
+      nvme: getConfigValue("nvme") === "on",
       psu: getConfigValue("psu") === "on",
       leak: getConfigValue("leak") === "on",
       rotationTime: parseInt(getConfigValue("rotation_sec") || "5", 10),
       gpuCount: parseInt(getConfigValue("gpu_count") || "8", 10),
       cpuCount: parseInt(getConfigValue("cpu_count") || "2", 10),
-      fanCount: parseInt(getConfigValue("fan_count") || "2", 10),
+      nvmeCount: parseInt(getConfigValue("nvme_count") || "2", 10),
     };
 
     return NextResponse.json(configData);
@@ -87,12 +88,13 @@ export async function POST(request) {
         .replace(/^coolant_daily\s*=\s*.*/m, `coolant_daily=${onOff(displayMode.coolant_daily)}`)
         .replace(/^gpu_daily\s*=\s*.*/m, `gpu_daily=${onOff(displayMode.gpu_daily)}`)
         .replace(/^cpu_daily\s*=\s*.*/m, `cpu_daily=${onOff(displayMode.cpu_daily)}`)
+        .replace(/^nvme\s*=\s*.*/m, `nvme=${onOff(displayMode.nvme)}`)
         .replace(/^psu\s*=\s*.*/m, `psu=${onOff(displayMode.psu)}`)
         .replace(/^leak\s*=\s*.*/m, `leak=${onOff(displayMode.leak)}`)
         .replace(/^rotation_sec\s*=\s*.*/m, `rotation_sec=${displayMode.rotationTime}`)
         .replace(/^gpu_count\s*=\s*.*/m, `gpu_count=${displayMode.gpuCount}`)
         .replace(/^cpu_count\s*=\s*.*/m, `cpu_count=${displayMode.cpuCount}`)
-        .replace(/^fan_count\s*=\s*.*/m, `fan_count=${displayMode.fanCount}`);
+        .replace(/^nvme_count\s*=\s*.*/m, `nvme_count=${displayMode.nvmeCount}`);
 
       await fs.promises.writeFile(configPath, config, "utf-8");
     };

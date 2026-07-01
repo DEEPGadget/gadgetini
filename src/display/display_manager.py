@@ -202,6 +202,30 @@ class DisplayManager:
             self.leak_alert_active = False
             pass
 
+    def _viewer_keys_all_absent(self, viewer):
+        """Skip viewers that opted into hide_if_absent when none of their
+        redis keys are currently SET (e.g. control_board offline so fan/pump
+        keys were never written)."""
+        if not getattr(viewer, 'hide_if_absent', False):
+            return False
+        if hasattr(viewer, 'sensor_keys'):
+            keys = viewer.sensor_keys
+        elif hasattr(viewer, 'sensor_key'):
+            keys = [viewer.sensor_key]
+        else:
+            return False
+        redis_keys = []
+        for k in keys:
+            s = self.sensors.get(k)
+            if s is not None and getattr(s, 'redis_key', None):
+                redis_keys.append(s.redis_key)
+        if not redis_keys:
+            return False
+        try:
+            return all(not self.redis.exists(rk) for rk in redis_keys)
+        except Exception:
+            return False
+
     def _check_host_status(self):
         if not USE_REAL_DATA:
             self.host_status = True
@@ -228,7 +252,8 @@ class DisplayManager:
         elif len(self.viewers) > 0:
             cur_viewer = self.get_cur_viewer()
             attempts = 0
-            while cur_viewer.host_data == 1 and not self.host_status:
+            while (cur_viewer.host_data == 1 and not self.host_status) \
+                    or self._viewer_keys_all_absent(cur_viewer):
                 self.set_next_viewer()
                 cur_viewer = self.get_cur_viewer()
                 attempts += 1

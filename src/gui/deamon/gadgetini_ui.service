@@ -1,8 +1,8 @@
 [Unit]
 Description=Run npm start for gadgetini web ui service:3001
-# pcb_bootstrap이 먼저 끝나야 control_board.service / data_crawler.service 분기가
-# 결정된 상태에서 UI가 PCB 연결 상태를 정확히 표시할 수 있다.
-After=network.target pcb_bootstrap.service redis.service
+# data_crawler.service가 백엔드(PCB/legacy)를 자동 감지하므로 그 뒤에 기동하면
+# UI가 PCB 연결 상태를 정확히 표시할 수 있다.
+After=network.target data_crawler.service redis.service
 
 [Service]
 Type=simple

@@ -2,7 +2,7 @@
 // PUT  /api/control/fan-curve  → writes new fan_curve into config.yaml (atomic rename)
 //
 // Schema: linear interpolation between (min_temp, min_duty) and (max_temp, max_duty).
-// duty 단위는 0.1% (0~1000). control_board 는 mtime polling 으로 다음 cycle (~1s) 안에 반영.
+// duty unit is 0.1% (0~1000). control_board picks up the change via mtime polling within the next cycle (~1s).
 import { NextResponse } from "next/server";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -10,7 +10,7 @@ import yaml from "js-yaml";
 
 const CONFIG_PATH =
   process.env.CONTROL_BOARD_CONFIG ||
-  "/home/gadgetini/gadgetini/src/control_board/config.yaml";
+  "/home/gadgetini/gadgetini/src/exporter/pcb_config.yaml";
 
 const DEFAULTS = { min_temp: 25, max_temp: 60, min_duty: 100, max_duty: 1000 };
 

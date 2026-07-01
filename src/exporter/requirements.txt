@@ -18,7 +18,8 @@ numpy
 adafruit-blinka
 
 # Optional environmental sensors (try/except graceful — missing package is OK)
-adafruit-circuitpython-hdc302x      # HDC302x temp/humidity (preferred, deterministic I2C)
+adafruit-circuitpython-hdc302x      # HDC302x temp/humidity (deterministic I2C 0x44)
+adafruit-circuitpython-ahtx0        # AHT20 temp/humidity (Adafruit #4566, I2C 0x38; HDC302x 대체)
 adafruit-circuitpython-dht          # DHT11 temp/humidity (fallback)
 mpu6050-raspberrypi                 # MPU6050 gyro (dg5w only)
 

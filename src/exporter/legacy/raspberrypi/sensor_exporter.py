@@ -34,18 +34,23 @@ class DLC_sensor_Collector(object):
 
     def collect(self):
         ADC_Value = ADC.ADS1256_GetAll()
-        gauge_metric = GaugeMetricFamily("DLC_sensors_gauge", "deepgadget DLC sensors telemetry", labels=['server_name','metric','description'])
-        #7 = leak detection leak = < 4.2
-        gauge_metric.add_metric(["sg-tt00","LEAK detection","if leak: value < 4.1"], self.coolant_leak_detection())
-        #6 = water level LOW > 1
-        gauge_metric.add_metric(["sg-tt00","Coolant level", "if empty: value > 1"], self.coolant_level_detection())
-        #4 = water temp 34.3 = 1.386 35 = 1.360 35.6 = 1.346 37.6 = 1.282 35.7 = 1.348
-        gauge_metric.add_metric(["sg-tt00","Coolant temperature", "degree celcious"], self.coolant_temp_calc())
+        gauge_metric = GaugeMetricFamily(
+            "dlc_system_sensor",
+            "DeepGadget DLC server sensors & telemetry",
+            labels=["server", "component", "metric", "unit", "extra"],
+        )
+        srv = "dg5w"
+        # Cooling — leak (1=leak) / level (1=OK) / inlet temp (NTC on ADC ch4)
+        gauge_metric.add_metric([srv, "cooling", "leak_detected", "bool", ""], self.coolant_leak_detection())
+        gauge_metric.add_metric([srv, "cooling", "level_full",    "bool", ""], self.coolant_level_detection())
+        gauge_metric.add_metric([srv, "cooling", "inlet1_temp",   "°C",   ""], self.coolant_temp_calc())
+        # Environment (DHT11)
         chassis_temp = dhtDevice.temperature
         chassis_humit = dhtDevice.humidity
-        gauge_metric.add_metric(["sg-tt00","Chassis temperature", "degree celcious"], chassis_temp)
-        gauge_metric.add_metric(["sg-tt00","Chassis humidity", "%"], chassis_humit)
-        gauge_metric.add_metric(["sg-tt00","Chassis stability", "1 is stable, 0 is unstable, may server in oscillatting"], self.chassis_stabil_calc())
+        gauge_metric.add_metric([srv, "environment", "air_temp",     "°C",  ""], chassis_temp)
+        gauge_metric.add_metric([srv, "environment", "air_humidity", "%RH", ""], chassis_humit)
+        # Chassis stability (MPU6050)
+        gauge_metric.add_metric([srv, "chassis", "stability", "bool", ""], self.chassis_stabil_calc())
         yield gauge_metric
 
     # Coolant temperature fomula generate by several measured data using linear regression. 
@@ -108,7 +113,7 @@ class DLC_sensor_Collector(object):
             self.leak_alert_count = self.leak_alert_count - 1
             leak_detection_beep_off()
             if self.leak_alert_count < 0:  self.leak_alert_count = 0
-        return curr_leak
+        return 1 if curr_leak < 4.0 else 0
 
     def coolant_level_detection(self):
         ADC_Value = ADC.ADS1256_GetAll()
@@ -122,7 +127,7 @@ class DLC_sensor_Collector(object):
         else:
             self.level_alert_count = self.level_alert_count - 1
             if self.level_alert_count < 0: self.level_alert_count = 0
-        return curr_level
+        return 0 if curr_level > 2.2 else 1
 
 
 if __name__ == "__main__":

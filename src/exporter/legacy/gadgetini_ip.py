@@ -82,7 +82,7 @@ class ChangeIPDaemon:
                     if current_ip_val and self.is_valid_ipv4(current_ip_val):
                         nic_ip = self.get_current_ip()
                         if nic_ip != current_ip_val:
-                            print(f"[INFO] Detected Redis IP change -> {current_ip_val}")
+                            print(f"[INFO] Detected Redis IP change → {current_ip_val}")
                             self.change_ip(current_ip_val)
                         else:
                             print(f"[INFO] NIC already has IP {current_ip_val}, skipping changes.")

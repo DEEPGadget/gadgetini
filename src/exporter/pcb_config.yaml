@@ -23,19 +23,19 @@ initial_pwm_duty:
     ch3: 600
     ch4: 600
   fan:
-    ch5: 200
-    ch6: 200
-    ch7: 200
-    ch8: 200
-    ch9: 200
-    ch10: 200
-    ch11: 200
-    ch12: 200
+    ch5: 0
+    ch6: 0
+    ch7: 0
+    ch8: 0
+    ch9: 0
+    ch10: 1000
+    ch11: 0
+    ch12: 0
 initial_dout_bitmask: 0
 fan_curve:
   min_temp: 25
   max_temp: 60
-  min_duty: 100
+  min_duty: 80
   max_duty: 1000
 comm:
   timeout_after_failures: 3
@@ -43,6 +43,8 @@ comm:
 pump:
   max_flow_lpm: 16
   flow_multiplier: 1.47
+  min_duty: 500
+  max_duty: 1000
 wiring:
   ntc:
     inlet1: 13
@@ -50,14 +52,20 @@ wiring:
     outlet2: 15
     inlet2: 16
   din:
-    level_bit: 1
+    level_bit: 0
   ain:
     leak_ch: 8
     leak_threshold_v: 2
   pulse:
     fan_tach_chs:
+      - 5
+      - 6
+      - 7
       - 8
       - 9
+      - 10
+      - 11
+      - 12
   pwm:
     pump_ch:
       - 1
@@ -65,5 +73,26 @@ wiring:
       - 3
       - 4
     fan_ch:
+      - 5
+      - 6
+      - 7
       - 8
       - 9
+      - 10
+      - 11
+      - 12
+manual_pwm:
+  pump:
+    - 600
+    - 600
+    - 600
+    - 600
+  fan:
+    - 80
+    - 80
+    - 80
+    - 80
+    - 80
+    - 80
+    - 80
+    - 80

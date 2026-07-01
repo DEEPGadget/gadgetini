@@ -56,8 +56,8 @@ class LeakAlertViewer:
                 align="center", halign="center",
                 font_path=BOLD_FONT_PATH, autoscale=True)
 
-        # Footer: IP (left) + version (right) — 다른 viewer와 동일 패턴
-        # 다만 누수 화면 가독성 위해 색상은 text_color (flash와 동기화)
+        # Footer: IP (left) + version (right) — same pattern as other viewers
+        # For leak screen readability, color uses text_color (synced with flash)
         footer_y = h - footer_h - 2
         draw_aligned_text(draw=draw, text=disp_manager.ip_addr,
                           font_size=7, fill=text_color,

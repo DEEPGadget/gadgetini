@@ -1,10 +1,14 @@
 [Unit]
-Desctiption=Activate gadgetini monitoring system network start up
+Description=Activate gadgetini monitoring system network start up
 Requires=NetworkManager.service
 After=network-online.target
 
 [Service]
-ExecStart=/usr/bin/nmcli connection up gadgetini ifname enxfef11ad36eb7
+# Bring up the profile created by usb-gadget-host.sh (name was mismatched as
+# "gadgetini" before, which never existed → unit failed while autoconnect still
+# worked). The profile is bound to its ifname, and `|| true` tolerates it already
+# being active via connection.autoconnect.
+ExecStart=/bin/sh -c '/usr/bin/nmcli connection up usb-gadget-host || true'
 Type=oneshot
 RemainAfterExit=yes
 User=root

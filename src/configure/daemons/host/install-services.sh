@@ -16,7 +16,7 @@ echo ""
 
 echo "=== Installing Python venv and dependencies ==="
 sudo mkdir -p /opt/gadgetini
-sudo apt install -y python3.12-venv
+sudo apt install -y python3-venv python3-pip
 sudo python3 -m venv /opt/gadgetini/venv
 sudo /opt/gadgetini/venv/bin/python -m pip install --upgrade pip
 sudo /opt/gadgetini/venv/bin/python -m pip install redis jsons rich

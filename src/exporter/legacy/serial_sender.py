@@ -19,7 +19,7 @@ class InputChunkProtocol(asyncio.Protocol):
         self.transport = transport
         self.send("SYN")            # Send SYN Sender[Host] to Receiver[gadgetini]
         print("Serial Connenction start...") 
-        self.state = "SYN_SENT"     # Switch state INIT -> SYN_SENT after send SYN to Receiver[gadgetini]
+        self.state = "SYN_SENT"     # Switch state INIT → SYN_SENT after send SYN to Receiver[gadgetini]
 
     # Send data to gadgetini
     def send(self, data):
@@ -44,7 +44,7 @@ class InputChunkProtocol(asyncio.Protocol):
         if self.state == "SYN_SENT" and data == "SYN-ACK":  # When received SYN-ACK from Receiver[gadgetini]
             print("Succesfully Received SYN-ACK by reciever, send ACK")
             self.send("ACK")                        # Send ACK Sender[Host] to Receiver[gadgetini]
-            self.state = "CONNECTION_ESTABLISHED"   # Switch state SYN_SENT -> CONNECTION_ESTABLISHED after send ACK to Receiver[gadgetini]
+            self.state = "CONNECTION_ESTABLISHED"   # Switch state SYN_SENT → CONNECTION_ESTABLISHED after send ACK to Receiver[gadgetini]
             asyncio.create_task(self.send_data_loop())
    
     # Print when connection lost

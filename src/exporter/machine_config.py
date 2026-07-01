@@ -7,6 +7,7 @@ MACHINE = _cfg.get('PRODUCT', 'name', fallback='unknown').lower()
 GPU_COUNT = _cfg.getint('PRODUCT', 'gpu_count', fallback=8)
 CPU_COUNT = _cfg.getint('PRODUCT', 'cpu_count', fallback=2)
 
+# Legacy ADS1256 channel map (Gen1~2, ADS1256 direct).
 # dg5r: inlet1=ad2, outlet1=ad3, outlet2=ad4, inlet2=ad5
 # dg5w: inlet1=ad4, outlet1=ad5 (older units may not have outlet1 wired;
 #       disconnected NTC is auto-detected at the sensor layer and the key is omitted)
@@ -15,7 +16,13 @@ COOLANT_CHANNELS = {
     'dg5w': {'inlet1': 4, 'outlet1': 5},
 }
 
-# Display form used as the Prometheus `server` label and dashboard folder name.
-# Internal MACHINE stays lowercase so dict lookups / `if MACHINE == 'dg5w'` keep working.
-_MACHINE_LABELS = {'dg5r': 'dg5R', 'dg5w': 'dg5W'}
-MACHINE_LABEL = _MACHINE_LABELS.get(MACHINE, MACHINE)
+# PCB Modbus NTC channel map (Gen3 control board). NTC inputs are CH13~16 (IR 28~31).
+# config.ini machine type is the source of truth; this dict is the wiring spec.
+COOLANT_CHANNELS_PCB = {
+    'dg5r': {'inlet1': 13, 'outlet1': 14, 'outlet2': 15, 'inlet2': 16},
+    'dg5w': {'inlet1': 13, 'outlet1': 14},
+}
+
+# Prometheus `server` label. Lowercase to match Grafana dashboard queries
+# (dlc_system_sensor{server="dg5w"} / "dg5r").
+MACHINE_LABEL = MACHINE

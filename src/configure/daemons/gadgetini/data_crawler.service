@@ -1,5 +1,5 @@
 [Unit]
-Description=DLC system sensor data crawler.
+Description=Gadgetini sensor collector (auto-detects PCB Modbus or legacy ADS1256).
 After=redis.service
 [Service]
 Type=simple
@@ -8,5 +8,6 @@ Restart=always
 RestartSec=5
 User=gadgetini
 Group=gadgetini
+SupplementaryGroups=dialout
 [Install]
 WantedBy=multi-user.target

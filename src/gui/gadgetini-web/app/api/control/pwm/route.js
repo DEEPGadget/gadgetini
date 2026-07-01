@@ -1,13 +1,18 @@
 // GET /api/control/pwm
-// 펌프 CH1~4 / 팬 CH5~12 를 **물리 채널 순서**로 반환 (고정 길이 4 / 8).
-// 팬 RPM (`fan_rpm_*`)과 펌프 유량 추정 (`coolant_flow_lpm`)도 함께 반환.
+// Returns pump CH1~4 / fan CH5~12 in **physical channel order** (fixed length 4 / 8).
+// Also returns fan RPM (`fan_rpm_*`) and estimated pump flow (`coolant_flow_lpm`).
 //
-// Redis 키 `pwm_duty_{pump,fan}_{i}`, `fan_rpm_{i}` 는 wiring.pwm.{pump_ch,fan_ch}의
-// 논리 슬롯 인덱스(0-based)라 그대로 보면 "CH9의 duty가 fan[0]에 들어와 CH5로 표기"되는
-// 문제가 생긴다. 여기서 wiring을 읽어 물리 채널 위치로 재배치 — fan[ch-5] = 그 CH의 값.
+// PWM duty Redis keys are PHYSICAL-channel indexed (pump CH1~4 -> pwm_duty_pump_0~3,
+// fan CH5~12 -> pwm_duty_fan_0~7), written by PCBDriver.poll register readback — read
+// directly, no remap. fan_rpm is ALSO physical (fan_rpm_0~7 = CH5~12), so RPM lines up
+// with the per-channel duty; tach is measured per-channel, independent of PWM wiring.
 //
-// comm_status가 'ok'가 아니면 (PCB 통신 끊긴 상태) Redis에 남은 stale 값을 보지 말고
-// 모두 null 반환 — UI에 잘못된 정보 표시 회피.
+// If comm_status is not 'ok' (PCB communication is down), do not show stale Redis
+// values — return all null to avoid displaying incorrect info in the UI.
+//
+// PUT /api/control/pwm
+// Sets manual PWM values: { pump: [ch1, ch2, ch3, ch4], fan: [ch5~ch12] }
+// Stores in config.yaml under manual_pwm and Redis, switches control_mode to 'manual'.
 import { NextResponse } from "next/server";
 import { promises as fs } from "node:fs";
 import yaml from "js-yaml";
@@ -15,9 +20,9 @@ import { getRedis } from "../../../../lib/redis";
 
 const CONFIG_PATH =
   process.env.CONTROL_BOARD_CONFIG ||
-  "/home/gadgetini/gadgetini/src/control_board/config.yaml";
+  "/home/gadgetini/gadgetini/src/exporter/pcb_config.yaml";
 
-// 물리 채널 슬롯 (PCB 하드웨어 고정: TIM1=pump CH1~4, TIM2=fan CH5~8, TIM8=fan CH9~12)
+// Physical channel slots (fixed by PCB hardware: TIM1=pump CH1~4, TIM2=fan CH5~8, TIM8=fan CH9~12)
 const PUMP_CHANNELS = [1, 2, 3, 4];
 const FAN_CHANNELS = [5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -74,41 +79,27 @@ export async function GET() {
       });
     }
 
-    // 한 번의 mget으로 duty + RPM + flow 동시 fetch
-    // (Redis는 wiring 순서의 논리 인덱스로 SET됨 — polling.py 참조)
-    const pumpDutyKeys = wiredPump.map((_, i) => `pwm_duty_pump_${i}`);
-    const fanDutyKeys = wiredFan.map((_, i) => `pwm_duty_fan_${i}`);
-    const fanRpmKeys = wiredFan.map((_, i) => `fan_rpm_${i}`);
+    // PWM duty is PHYSICAL-channel indexed (pump CH1~4 -> _0~3, fan CH5~12 -> _0~7);
+    // read directly. fan_rpm is ALSO physical (fan_rpm_0~7 = CH5~12) — read directly too.
+    const pumpDutyKeys = PUMP_CHANNELS.map((_, i) => `pwm_duty_pump_${i}`);
+    const fanDutyKeys = FAN_CHANNELS.map((_, i) => `pwm_duty_fan_${i}`);
+    const fanRpmKeys = FAN_CHANNELS.map((_, i) => `fan_rpm_${i}`);
     const allKeys = [
       ...pumpDutyKeys,
       ...fanDutyKeys,
       ...fanRpmKeys,
       "coolant_flow_lpm",
     ];
-    const values = allKeys.length > 0 ? await r.mget(...allKeys) : [];
+    const values = await r.mget(...allKeys);
 
     let off = 0;
-    const pumpDutyLogical = values.slice(off, off + pumpDutyKeys.length).map(toIntOrNull);
+    const pump = values.slice(off, off + pumpDutyKeys.length).map(toIntOrNull);
     off += pumpDutyKeys.length;
-    const fanDutyLogical = values.slice(off, off + fanDutyKeys.length).map(toIntOrNull);
+    const fan = values.slice(off, off + fanDutyKeys.length).map(toIntOrNull);
     off += fanDutyKeys.length;
-    const fanRpmLogical = values.slice(off, off + fanRpmKeys.length).map(toIntOrNull);
+    const fanRpm = values.slice(off, off + fanRpmKeys.length).map(toIntOrNull);
     off += fanRpmKeys.length;
     const coolantFlowLpm = toFloatOrNull(values[off]);
-
-    // 물리 채널 위치로 재배치 — wiring에 매핑된 채널만 값, 나머지 슬롯은 null.
-    const pump = PUMP_CHANNELS.map((ch) => {
-      const i = wiredPump.indexOf(ch);
-      return i >= 0 ? pumpDutyLogical[i] : null;
-    });
-    const fan = FAN_CHANNELS.map((ch) => {
-      const i = wiredFan.indexOf(ch);
-      return i >= 0 ? fanDutyLogical[i] : null;
-    });
-    const fanRpm = FAN_CHANNELS.map((ch) => {
-      const i = wiredFan.indexOf(ch);
-      return i >= 0 ? fanRpmLogical[i] : null;
-    });
 
     return NextResponse.json({
       pump,
@@ -117,6 +108,8 @@ export async function GET() {
       coolantFlowLpm,
       pumpChannels: PUMP_CHANNELS,
       fanChannels: FAN_CHANNELS,
+      // Channels the fan curve / manual sliders actually control; the rest are fixed
+      // (e.g. CH10 RPi fan @100%) and shown read-only with a "fixed" tag.
       wiredPumpChannels: wiredPump,
       wiredFanChannels: wiredFan,
       comm_status: "ok",
@@ -124,6 +117,118 @@ export async function GET() {
   } catch (err) {
     return NextResponse.json(
       { error: err?.message || "Redis read failed" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const body = await request.json();
+    const { pump, fan } = body;
+
+    if (!Array.isArray(pump) || !Array.isArray(fan)) {
+      return NextResponse.json(
+        { error: "pump and fan must be arrays" },
+        { status: 400 }
+      );
+    }
+
+    if (pump.length !== 4 || fan.length !== 8) {
+      return NextResponse.json(
+        { error: "pump must have 4 values, fan must have 8 values" },
+        { status: 400 }
+      );
+    }
+
+    // Validate ranges: 0-1000 (0-100%)
+    const validatePwm = (val) => {
+      const n = parseInt(val, 10);
+      return Number.isInteger(n) && n >= 0 && n <= 1000 ? n : null;
+    };
+
+    const pumpPwm = pump.map(validatePwm);
+    const fanPwm = fan.map(validatePwm);
+
+    if (pumpPwm.includes(null) || fanPwm.includes(null)) {
+      return NextResponse.json(
+        { error: "PWM values must be integers 0-1000" },
+        { status: 400 }
+      );
+    }
+
+    // Load config, update manual_pwm, write back
+    const raw = await fs.readFile(CONFIG_PATH, "utf8");
+    const doc = yaml.load(raw) || {};
+    doc.manual_pwm = {
+      pump: pumpPwm,
+      fan: fanPwm,
+    };
+
+    const updated = yaml.dump(doc);
+    const tmpPath = CONFIG_PATH + ".tmp";
+    await fs.writeFile(tmpPath, updated, "utf8");
+    await fs.rename(tmpPath, CONFIG_PATH);
+
+    // Apply PWM to PCB hardware asynchronously (don't block API response)
+    // data_crawler will also pick up the updated config on next poll cycle
+    setImmediate(() => {
+      try {
+        const { exec } = require("child_process");
+        const scriptPath = "/tmp/apply_pwm_" + Date.now() + ".py";
+        const script = `import sys
+sys.path.insert(0, '/home/gadgetini/gadgetini/src/exporter')
+import yaml, redis, pcb_driver
+try:
+    with open('${CONFIG_PATH}') as f:
+        cfg = yaml.safe_load(f)
+    r = redis.Redis(host='127.0.0.1', port=6379, db=0)
+    driver = pcb_driver.PCBDriver(cfg, r)
+    driver.apply_initial_state()
+except Exception as e:
+    print(f"PCB apply failed: {e}", file=sys.stderr)
+`;
+        fs.writeFileSync(scriptPath, script, "utf8");
+        exec(`python3 ${scriptPath}`, { timeout: 10000 }, (err, stdout, stderr) => {
+          if (err) console.warn("PCB apply warning:", err.message);
+          else console.log("PCB PWM applied");
+          fs.unlink(scriptPath, () => {});
+        });
+      } catch (err) {
+        console.warn("PCB apply error:", err.message);
+      }
+    });
+
+    // Set Redis keys for manual PWM (without changing control_mode)
+    const r = getRedis();
+    const pipe = r.pipeline();
+
+    // Store manual PWM in Redis (physical channel indices, matching poll readback)
+    // Instant feedback for the controllable channels (poll re-publishes readback for
+    // all channels next cycle). Keys are PHYSICAL-indexed: pump CH-1, fan CH-5.
+    const { wiredPump, wiredFan } = await loadWiring();
+    wiredPump.forEach((ch) => {
+      pipe.set(`pwm_duty_pump_${ch - 1}`, pumpPwm[ch - 1]);
+    });
+    wiredFan.forEach((ch) => {
+      pipe.set(`pwm_duty_fan_${ch - 5}`, fanPwm[ch - 5]);
+    });
+
+    // Do NOT change control_mode here — let user explicitly switch via mode button
+    await pipe.exec();
+
+    // Get current mode to return in response
+    const currentMode = await r.get("control_mode") || "auto";
+
+    return NextResponse.json({
+      success: true,
+      pump: pumpPwm,
+      fan: fanPwm,
+      mode: currentMode,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err?.message || "Failed to set manual PWM" },
       { status: 500 }
     );
   }

@@ -55,7 +55,7 @@ class BaseViewer:
         dot_r = 3
         dot_cy = y + h // 2
 
-        # --- Status indicators (LEAK + LEVEL) ---
+        # === Status indicators (LEAK + LEVEL) ===
         if mode in ('both', 'left'):
             status_w = int(w * 0.45) if mode == 'both' else w
             half_status = status_w // 2
@@ -89,7 +89,7 @@ class BaseViewer:
                               box=(lv_x + dot_r * 2 + 5, y, half_status - dot_r * 2 - 5, h),
                               align="left", halign="center", font_path=LIGHT_FONT_PATH)
 
-        # --- IP + version ---
+        # === IP + version ===
         if mode in ('both', 'right'):
             if mode == 'both':
                 info_x = x + int(w * 0.45)

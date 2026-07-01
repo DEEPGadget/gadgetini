@@ -35,6 +35,10 @@ class TempUtilViewer(BaseViewer):
         title_h = 15
         footer_h = 12
 
+        # 9~10 GPU: legend needs more room. Vertical compresses the graph;
+        # horizontal keeps the graph and bumps cols below.
+        many = num > 8
+
         if disp_manager.horizontal == 1:
             lx = offset[0]
             rx = offset[0] + GRAPH_SIZE + 5
@@ -48,7 +52,7 @@ class TempUtilViewer(BaseViewer):
             l_base_y = offset[1]
             r_base_y = offset[1] + GRAPH_SIZE + 5
             full_w = GRAPH_SIZE
-            graph_h = 80
+            graph_h = 65 if many else 80
 
         legend_h = GRAPH_SIZE - title_h - graph_h - footer_h
 
@@ -90,7 +94,7 @@ class TempUtilViewer(BaseViewer):
         legend_y = r_base_y + title_h + graph_h
 
         if disp_manager.horizontal == 1:
-            cols = min(num, 4)
+            cols = min(num, 5 if many else 4)
         else:
             cols = min(num, 2)
         rows = (num + cols - 1) // cols

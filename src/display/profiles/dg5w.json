@@ -8,13 +8,25 @@
       [  0, 200, 255],
       [ 60, 100, 255],
       [160,  80, 255],
-      [255,  80, 200]
+      [255,  80, 200],
+      [180, 230,  50],
+      [255, 120, 100]
     ],
     "CPU_COLORS": [
       [  0, 200, 255],
       [255, 140,   0],
       [  0, 220, 100],
       [255,  60,  60]
+    ],
+    "NVME_COLORS": [
+      [  0, 200, 255], [255, 140,   0], [  0, 220, 100], [255,  60,  60],
+      [100, 100, 255], [200, 100, 255], [255, 200, 100], [ 60, 220, 180],
+      [255, 100, 100], [100, 255, 100], [100, 100, 255], [255, 255, 100],
+      [200, 200, 200], [255, 150,  50], [ 50, 255, 200], [150,  50, 255],
+      [255,  50, 150], [ 50, 150, 255], [255, 200,  50], [ 50, 200, 150],
+      [200,  50, 255], [255, 100, 200], [100, 200, 255], [200, 255, 100],
+      [255,  50, 100], [100, 255, 200], [200, 100, 100], [100, 200, 100],
+      [100, 100, 200], [200, 200, 100], [200, 100, 200], [100, 200, 200]
     ]
   },
   "sensors": [
@@ -186,7 +198,7 @@
     },
     {
       "key": "fan_rpm_{i}",
-      "count": "fan_count",
+      "indices": [0, 1, 2, 3, 4, 5, 6, 7],
       "title": "Fan{i} RPM",
       "unit": "RPM",
       "min": 0,
@@ -196,6 +208,18 @@
       "host_data": "0",
       "icon": "0xf0510",
       "label": "F{i}"
+    },
+    {
+      "key": "nvme_temp_{i}",
+      "count": "nvme_count",
+      "title": "NVMe{i} Temp",
+      "unit": "°C",
+      "min": 20,
+      "max": 90,
+      "read_rate": 1,
+      "redis_key": "nvme_{i}_temp",
+      "host_data": "1",
+      "label": "NVM{i}"
     }
   ],
   "viewers": [
@@ -338,6 +362,7 @@
     {
       "key": "coolant_flow",
       "type": "SensorViewer",
+      "hide_if_absent": true,
       "params": {
         "title": "Coolant Flow",
         "sensor_key": "coolant_flow"
@@ -346,11 +371,24 @@
     {
       "key": "fan_rpm",
       "type": "MultiSensorViewer",
+      "hide_if_absent": true,
       "params": {
         "title": "Fan RPM",
-        "sensor_keys": ["fan_rpm_0", "fan_rpm_1"],
-        "colors": [[0, 200, 255], [255, 140, 0]],
-        "labels": ["F1", "F2"]
+        "sensor_keys": ["fan_rpm_0", "fan_rpm_1", "fan_rpm_2", "fan_rpm_3", "fan_rpm_4", "fan_rpm_5", "fan_rpm_6", "fan_rpm_7"],
+        "colors": [[0, 200, 255], [255, 140, 0], [0, 220, 120], [60, 220, 100], [255, 60, 60], [100, 100, 255], [200, 100, 255], [255, 200, 100]],
+        "labels": ["CH5", "CH6", "CH7", "CH8", "CH9", "CH10", "CH11", "CH12"]
+      }
+    },
+    {
+      "key": "nvme",
+      "type": "NvmeViewer",
+      "hide_if_absent": true,
+      "expand": "nvme_count",
+      "params": {
+        "title": "NVMe Temp",
+        "sensor_keys": "nvme_temp_{i}",
+        "colors": "$NVME_COLORS",
+        "labels": "NVM{i}"
       }
     }
   ]

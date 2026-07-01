@@ -84,12 +84,13 @@ export default function Settings() {
     coolant_daily: true,
     gpu_daily: true,
     cpu_daily: true,
+    nvme: true,
     psu: false,
     leak: true,
     rotationTime: 7,
     gpuCount: 8,
     cpuCount: 2,
-    fanCount: 2,
+    nvmeCount: 2,
   });
   const [IPMode, setIPMode] = useState("dhcp");
   const IPRefs = useRef({
@@ -109,21 +110,25 @@ export default function Settings() {
     applyDisplayConfig: false,
   });
 
-  // ── Control Board state ──
-  // status: { active, service_active, pcb_connected, comm_status, mode }
-  // active = service_active && pcb_connected (UI 활성/비활성 단일 게이트)
+  // === Control Board state ===
+  // status: { pcb_connected, comm_status, mode }
+  // active = pcb_connected (single gate for UI enabled/disabled)
   const [cbStatus, setCbStatus] = useState({
     active: false,
-    service_active: false,
     pcb_connected: false,
     comm_status: "unknown",
     mode: "auto",
   });
+  // Pending (unsaved) mode selection — applied only when the user clicks Save.
+  const [pendingMode, setPendingMode] = useState("auto");
+  const [modeSaving, setModeSaving] = useState(false);
   const [cbPwm, setCbPwm] = useState({
     pump: [null, null, null, null],
     fan: [null, null, null, null, null, null, null, null],
     fanRpm: [null, null, null, null, null, null, null, null],
     coolantFlowLpm: null,
+    curvePump: [], // pump channels the controller/manual drives (rest are fixed)
+    curveFan: [], // fan channels the curve/manual drives (rest are fixed, e.g. CH10)
   });
   const [fanCurve, setFanCurve] = useState({
     min_temp: 25,
@@ -133,9 +138,41 @@ export default function Settings() {
   });
   const [fanCurveLoading, setFanCurveLoading] = useState(true);
   const [fanCurveSaving, setFanCurveSaving] = useState(false);
+  const [manualPwm, setManualPwm] = useState({
+    pump: [500, 500, 500, 500],
+    fan: [500, 500, 500, 500, 500, 500, 500, 500],
+  });
+  const [manualPwmSaving, setManualPwmSaving] = useState(false);
+  const [selectedChannels, setSelectedChannels] = useState(new Set());
+  const [inputValue, setInputValue] = useState("");
+
+  // Always sync manualPwm with current Redis values (cbPwm)
+  // This ensures UI displays actual hardware state, not stale placeholders
+  useEffect(() => {
+    if (cbPwm.pump.some(v => v !== null) || cbPwm.fan.some(v => v !== null)) {
+      setManualPwm({
+        pump: cbPwm.pump.map(v => (v !== null ? Math.round(v / 10) : 500)),
+        fan: cbPwm.fan.map(v => (v !== null ? Math.round(v / 10) : 500))
+      });
+    }
+  }, [cbPwm.pump, cbPwm.fan]);
 
   useEffect(() => {
     getDisplayConfig().then(setDisplayMode);
+
+    fetch("/api/hardware-count")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setDisplayMode((p) => ({
+          ...p,
+          ...(d.gpuCount > 0 ? { gpuCount: d.gpuCount } : {}),
+          ...(d.cpuCount > 0 ? { cpuCount: d.cpuCount } : {}),
+          ...(d.nvmeCount >= 0 ? { nvmeCount: d.nvmeCount } : {}),
+        }));
+      })
+      .catch(() => {});
+
     fetch("/api/ip/self")
       .then((r) => r.json())
       .then((d) => {
@@ -212,8 +249,8 @@ export default function Settings() {
     }
   };
 
-  // ── Control Board polls ──
-  // Status: 5s cadence — service active 여부 확인 (systemctl is-active)
+  // === Control Board polls ===
+  // Status: 5s cadence — check whether PCB is connected (comm_status === 'ok')
   useEffect(() => {
     const fetchStatus = () =>
       fetch("/api/control/status")
@@ -225,9 +262,16 @@ export default function Settings() {
     return () => clearInterval(id);
   }, []);
 
-  // PWM duty readback: 2s cadence — pump CH1~4 + fan CH5~12 (8슬롯 고정).
-  // API가 wiring.pwm 매핑을 보고 물리 채널 위치로 재배치해 반환.
-  // fan RPM과 펌프 유량 추정도 같은 cadence로 함께 갱신.
+  // Keep the pending selection in sync with the actual mode — only fires when the actual
+  // mode value changes (e.g. after a save), so an in-progress selection isn't clobbered.
+  useEffect(() => {
+    setPendingMode(cbStatus.mode);
+  }, [cbStatus.mode]);
+
+  // PWM duty readback: 500ms cadence — pump CH1~4 + fan CH5~12 (fixed 8 slots).
+  // The API reads the wiring.pwm mapping and remaps to physical channel positions.
+  // Fan RPM and estimated pump flow are refreshed on the same cadence.
+  // 500ms interval ensures faster feedback when manual PWM is applied by data_crawler.
   useEffect(() => {
     const fetchPwm = () =>
       fetch("/api/control/pwm")
@@ -240,16 +284,18 @@ export default function Settings() {
               fanRpm: Array.isArray(d.fanRpm) ? d.fanRpm : Array(d.fan.length).fill(null),
               coolantFlowLpm:
                 typeof d.coolantFlowLpm === "number" ? d.coolantFlowLpm : null,
+              curvePump: Array.isArray(d.wiredPumpChannels) ? d.wiredPumpChannels : [],
+              curveFan: Array.isArray(d.wiredFanChannels) ? d.wiredFanChannels : [],
             });
           }
         })
         .catch(() => {});
     fetchPwm();
-    const id = setInterval(fetchPwm, 2000);
+    const id = setInterval(fetchPwm, 500);
     return () => clearInterval(id);
   }, []);
 
-  // fan_curve: 최초 1회만 fetch (편집 중 외부 변경 덮어쓰지 않도록)
+  // fan_curve: fetch only once initially (so external changes don't overwrite edits in progress)
   useEffect(() => {
     setFanCurveLoading(true);
     fetch("/api/control/fan-curve")
@@ -269,6 +315,7 @@ export default function Settings() {
       .finally(() => setFanCurveLoading(false));
   }, []);
 
+
   const handleFanCurveSave = async () => {
     setFanCurveSaving(true);
     try {
@@ -285,6 +332,111 @@ export default function Settings() {
       alert(`${t("save_failed")}: ${err?.message || err}`);
     } finally {
       setFanCurveSaving(false);
+    }
+  };
+
+  const handleModeChange = async (newMode) => {
+    setModeSaving(true);
+    try {
+      // Always use /api/control/mode for mode changes to ensure Redis is updated
+      const r = await fetch("/api/control/mode", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: newMode }),
+      });
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        alert(`${t("save_failed")}: ${e.error || r.status}`);
+        return;
+      }
+
+      // When switching to manual, also seed current PWM values
+      if (newMode === "manual") {
+        const curPump = Array.isArray(cbPwm?.pump) ? cbPwm.pump : [];
+        const curFan = Array.isArray(cbPwm?.fan) ? cbPwm.fan : [];
+        const pumpDuty = Array.from({ length: 4 }, (_, i) =>
+          curPump[i] != null ? curPump[i] : 500
+        );
+        const fanDuty = Array.from({ length: 8 }, (_, i) =>
+          curFan[i] != null ? curFan[i] : 500
+        );
+        setManualPwm({
+          pump: pumpDuty.map((v) => Math.round(v / 10)),
+          fan: fanDuty.map((v) => Math.round(v / 10)),
+        });
+        // Save PWM values in config
+        const pwmR = await fetch("/api/control/pwm", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pump: pumpDuty, fan: fanDuty }),
+        });
+        if (!pwmR.ok) {
+          console.warn("PWM seed failed (non-critical)");
+        }
+      }
+
+      setCbStatus((p) => ({ ...p, mode: newMode }));
+    } catch (err) {
+      alert(`${t("save_failed")}: ${err?.message || err}`);
+    } finally {
+      setModeSaving(false);
+    }
+  };
+
+  const handleManualPwmSave = async () => {
+    if (selectedChannels.size === 0) {
+      alert("Please select at least one channel");
+      return;
+    }
+
+    setManualPwmSaving(true);
+    try {
+      // Copy current PWM values, only update selected channels
+      const pumpPayload = [...cbPwm.pump];
+      const fanPayload = [...cbPwm.fan];
+
+      selectedChannels.forEach((chId) => {
+        if (chId.startsWith("pump-")) {
+          const idx = parseInt(chId.split("-")[1], 10);
+          if (idx >= 0 && idx < 4) {
+            pumpPayload[idx] = Math.min(1000, Math.max(0, manualPwm.pump[idx] * 10));
+          }
+        } else if (chId.startsWith("fan-")) {
+          const idx = parseInt(chId.split("-")[1], 10);
+          if (idx >= 0 && idx < 8) {
+            fanPayload[idx] = Math.min(1000, Math.max(0, manualPwm.fan[idx] * 10));
+          }
+        }
+      });
+
+      const payload = {
+        pump: pumpPayload,
+        fan: fanPayload,
+      };
+      const r = await fetch("/api/control/pwm", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await r.json();
+
+      if (!r.ok) {
+        const errMsg = data?.error || `HTTP ${r.status}`;
+        alert(`${t("save_failed")}: ${errMsg}`);
+        return;
+      }
+
+      // API success indicates values were saved to Redis and config.
+      // data_crawler will apply to PCB on next poll cycle (~1 second).
+      // Faster polling interval (500ms) will reflect changes quickly.
+      alert("PWM saved. Applying to PCB...");
+      setSelectedChannels(new Set());
+      setInputValue("");
+    } catch (err) {
+      alert(`${t("save_failed")}: ${err?.message || err}`);
+    } finally {
+      setManualPwmSaving(false);
     }
   };
 
@@ -417,7 +569,7 @@ export default function Settings() {
             {t("section_lcd_control")}
           </p>
 
-          {/* ── General ── */}
+          {/* === General === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_general")} colorClass="bg-slate-700" />
             <div className="bg-white p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -487,20 +639,20 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* ── Hardware Count ── */}
+          {/* === Hardware Count === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_hardware_count")} colorClass="bg-gray-600" />
             <div className="bg-white p-4 grid grid-cols-3 gap-4">
               {[
-                { label: t("gpu_count"), key: "gpuCount", min: 0, max: 8 },
+                { label: t("gpu_count"), key: "gpuCount", min: 0, max: 10 },
                 { label: t("cpu_count"), key: "cpuCount", min: 1, max: 4 },
-                { label: t("fan_count"), key: "fanCount", min: 0, max: 8 },
+                { label: "NVMe", key: "nvmeCount", min: 0, max: 32 },
               ].map(({ label, key, min, max }) => (
                 <div key={key} className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                   <div>
                     <p className="text-sm font-semibold text-gray-800">{label}</p>
                     <p className="text-xs text-gray-400">
-                      config.ini {key === "gpuCount" ? "gpu_count" : key === "cpuCount" ? "cpu_count" : "fan_count"}
+                      config.ini {key === "gpuCount" ? "gpu_count" : key === "cpuCount" ? "cpu_count" : "nvme_count"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 shadow-sm border border-gray-100">
@@ -524,7 +676,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* ── Compute + Cooling side by side ── */}
+          {/* === Compute + Cooling side by side === */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Compute */}
             <div className="rounded-2xl overflow-hidden shadow-sm">
@@ -557,6 +709,7 @@ export default function Settings() {
                   { label: t("coolant_detail"), key: "coolant_detail" },
                   { label: t("coolant_flow"), key: "coolant_flow" },
                   { label: t("fan_rpm"), key: "fan_rpm" },
+                  { label: "NVMe", key: "nvme" },
                   { label: t("leak"), key: "leak" },
                 ].map(({ label, key }) => (
                   <GridCard
@@ -572,7 +725,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* ── Daily Graphs ── */}
+          {/* === Daily Graphs === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_daily_graphs")} colorClass="bg-violet-600" />
             <div className="bg-violet-50/60 p-3 grid grid-cols-3 gap-2">
@@ -618,41 +771,23 @@ export default function Settings() {
             {t("section_control_board")}
           </p>
 
-          {/* ── Status + Mode ── */}
+          {/* === Status + Mode === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_pcb_status")} colorClass="bg-emerald-700" />
             <div className="bg-white p-4 flex flex-wrap items-center gap-x-6 gap-y-3">
-              {/* Service running 여부 */}
+              {/* PCB Modbus communication status */}
               <div className="flex items-center gap-2">
                 <span
                   className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                    cbStatus.service_active ? "bg-green-400" : "bg-red-400"
-                  }`}
-                />
-                <span className="text-sm font-semibold text-gray-800">
-                  {cbStatus.service_active ? t("service_active") : t("service_inactive")}
-                </span>
-                <span className="text-xs text-gray-400">control_board.service</span>
-              </div>
-              {/* PCB Modbus 통신 상태 */}
-              <div className="flex items-center gap-2">
-                <span
-                  className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                    cbStatus.pcb_connected
-                      ? "bg-green-400"
-                      : cbStatus.service_active
-                      ? "bg-amber-400"
-                      : "bg-gray-300"
+                    cbStatus.pcb_connected ? "bg-green-400" : "bg-amber-400"
                   }`}
                 />
                 <span className="text-sm font-semibold text-gray-800">
                   {cbStatus.pcb_connected
                     ? t("pcb_connected")
-                    : cbStatus.service_active
-                    ? cbStatus.comm_status === "timeout"
-                      ? t("pcb_timeout")
-                      : t("pcb_disconnected")
-                    : t("pcb_status_unknown")}
+                    : cbStatus.comm_status === "timeout"
+                    ? t("pcb_timeout")
+                    : t("pcb_disconnected")}
                 </span>
                 <span className="text-xs text-gray-400 font-mono">
                   comm: {cbStatus.comm_status}
@@ -660,29 +795,60 @@ export default function Settings() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-gray-400 uppercase tracking-wider">{t("mode")}</span>
-                <label className="flex items-center gap-1.5 text-sm">
-                  <input type="radio" name="cb-mode" checked readOnly />
+                <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="cb-mode"
+                    checked={pendingMode === "auto"}
+                    onChange={() => setPendingMode("auto")}
+                    disabled={!cbStatus.pcb_connected || modeSaving}
+                  />
                   {t("auto")}
                 </label>
-                <label
-                  className="flex items-center gap-1.5 text-sm text-gray-300 cursor-not-allowed"
-                  title={t("manual_tbd")}
-                >
-                  <input type="radio" name="cb-mode" disabled />
-                  {t("manual")} <span className="text-[10px]">{t("tbd_short")}</span>
+                <label className="flex items-center gap-1.5 text-sm cursor-not-allowed opacity-50">
+                  <input
+                    type="radio"
+                    name="cb-mode"
+                    checked={pendingMode === "manual"}
+                    onChange={() => setPendingMode("manual")}
+                    disabled={true}
+                  />
+                  {t("manual")} (disabled)
                 </label>
+                {(() => {
+                  const dirty = pendingMode !== cbStatus.mode;
+                  const enabled = dirty && cbStatus.pcb_connected && !modeSaving;
+                  return (
+                    <button
+                      onClick={() => handleModeChange(pendingMode)}
+                      disabled={!enabled}
+                      className={`inline-flex items-center justify-center h-8 px-4 text-xs font-semibold rounded-lg transition-all ${
+                        (dirty || modeSaving) && cbStatus.pcb_connected
+                          ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      }`}
+                    >
+                      {modeSaving ? (
+                        <LoadingSpinner color={"white"} />
+                      ) : (
+                        <>
+                          <CheckIcon className="w-3.5 h-3.5 mr-1" />
+                          {t("save")}
+                        </>
+                      )}
+                    </button>
+                  );
+                })()}
               </div>
-              {!cbStatus.active && (
+              {!cbStatus.pcb_connected && (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1">
-                  {!cbStatus.service_active
-                    ? t("service_inactive_warning")
-                    : t("pcb_unreachable_warning")}
+                  {t("pcb_unreachable_warning")}
                 </p>
               )}
             </div>
           </div>
 
-          {/* ── PWM Duty (read-only) ── */}
+          {/* === PWM Duty (read-only) === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_pwm_duty")} colorClass="bg-emerald-600" />
             <div className="bg-emerald-50/60 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -693,7 +859,14 @@ export default function Settings() {
                 <div className="space-y-1">
                   {cbPwm.pump.map((duty, i) => (
                     <div key={`pump-${i}`} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600 font-mono">CH{i + 1}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-gray-600 font-mono">CH{i + 1}</span>
+                        {!cbPwm.curvePump?.includes(i + 1) && (
+                          <span className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-gray-100 text-gray-400 border border-gray-200">
+                            {t("pwm_fixed")}
+                          </span>
+                        )}
+                      </span>
                       <span className="font-mono">
                         {duty === null ? (
                           <span className="text-gray-300">—</span>
@@ -709,7 +882,7 @@ export default function Settings() {
                     </div>
                   ))}
                 </div>
-                {/* 펌프 유량 추정 — duty + 토폴로지 multiplier 기반 (config.yaml § pump). */}
+                {/* Estimated pump flow — based on duty + topology multiplier (config.yaml § pump). */}
                 <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-sm">
                   <span className="text-gray-500 text-xs uppercase tracking-wider">
                     {t("estimated_flow")}
@@ -733,7 +906,14 @@ export default function Settings() {
                 <div className="space-y-1">
                   {cbPwm.fan.map((duty, i) => (
                     <div key={`fan-${i}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-sm">
-                      <span className="text-gray-600 font-mono">CH{i + 5}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-gray-600 font-mono">CH{i + 5}</span>
+                        {!cbPwm.curveFan?.includes(i + 5) && (
+                          <span className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-gray-100 text-gray-400 border border-gray-200">
+                            {t("pwm_fixed")}
+                          </span>
+                        )}
+                      </span>
                       <span className="font-mono text-right">
                         {duty === null ? (
                           <span className="text-gray-300">—</span>
@@ -763,9 +943,169 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* ── Fan Curve editor ── */}
-          <div className="rounded-2xl overflow-hidden shadow-sm">
-            <SectionHeader label={t("fan_curve_title")} colorClass="bg-emerald-500" />
+          {/* === Manual PWM (show only in manual mode) === */}
+          {cbStatus.mode === "manual" && (
+            <div className="rounded-2xl overflow-hidden shadow-sm">
+              <SectionHeader label={t("manual_pwm_title") || "Manual PWM Control"} colorClass="bg-emerald-600" />
+              <div className="bg-white p-4">
+                <p className="text-xs text-gray-500 mb-4">
+                  {t("manual_pwm_desc") || "Select channels and set PWM duty (0-100%)"}
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                  {/* Pump Channel Selection */}
+                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
+                      {t("pumps_label")}
+                    </h5>
+                    <div className="space-y-2">
+                      {manualPwm.pump.map((duty, i) => {
+                        const chId = `pump-${i}`;
+                        const isSelected = selectedChannels.has(chId);
+                        return (
+                          <label key={chId} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                            isSelected ? "bg-emerald-100 border border-emerald-300" : "hover:bg-gray-100"
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                const newSelected = new Set(selectedChannels);
+                                if (e.target.checked) {
+                                  newSelected.add(chId);
+                                } else {
+                                  newSelected.delete(chId);
+                                }
+                                setSelectedChannels(newSelected);
+                              }}
+                              disabled={!cbStatus.pcb_connected}
+                              className="w-4 h-4"
+                            />
+                            <span className="flex-1 text-xs text-gray-600 font-mono">CH{i + 1}</span>
+                            <span className="text-xs text-gray-500">Current:</span>
+                            <span className="text-xs font-mono text-gray-700 min-w-12 text-right">
+                              {duty}%
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Fan Channel Selection */}
+                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
+                      {t("fans_label")}
+                    </h5>
+                    <div className="space-y-2">
+                      {manualPwm.fan.map((duty, i) => {
+                        const chId = `fan-${i}`;
+                        const isSelected = selectedChannels.has(chId);
+                        return (
+                          <label key={chId} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                            isSelected ? "bg-emerald-100 border border-emerald-300" : "hover:bg-gray-100"
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                const newSelected = new Set(selectedChannels);
+                                if (e.target.checked) {
+                                  newSelected.add(chId);
+                                } else {
+                                  newSelected.delete(chId);
+                                }
+                                setSelectedChannels(newSelected);
+                              }}
+                              disabled={!cbStatus.pcb_connected}
+                              className="w-4 h-4"
+                            />
+                            <span className="flex-1 text-xs text-gray-600 font-mono">CH{i + 5}</span>
+                            <span className="text-xs text-gray-500">Current:</span>
+                            <span className="text-xs font-mono text-gray-700 min-w-12 text-right">
+                              {duty}%
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Value Input Section */}
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-4">
+                  <p className="text-xs text-gray-600 mb-3">
+                    <span className="font-semibold">
+                      {selectedChannels.size === 0 ? "Select channels to modify" : `${selectedChannels.size} channel(s) selected`}
+                    </span>
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={inputValue}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setInputValue(value);
+
+                        // Apply to selected channels in real-time
+                        if (selectedChannels.size > 0 && value !== "") {
+                          const numValue = Math.max(0, Math.min(100, parseInt(value, 10) || 0));
+                          setManualPwm((prevState) => {
+                            const newPump = [...prevState.pump];
+                            const newFan = [...prevState.fan];
+
+                            selectedChannels.forEach((chId) => {
+                              if (chId.startsWith("pump-")) {
+                                const idx = parseInt(chId.split("-")[1], 10);
+                                if (idx >= 0 && idx < 4) {
+                                  newPump[idx] = numValue;
+                                }
+                              } else if (chId.startsWith("fan-")) {
+                                const idx = parseInt(chId.split("-")[1], 10);
+                                if (idx >= 0 && idx < 8) {
+                                  newFan[idx] = numValue;
+                                }
+                              }
+                            });
+
+                            return { pump: newPump, fan: newFan };
+                          });
+                        }
+                      }}
+                      disabled={!cbStatus.pcb_connected || selectedChannels.size === 0}
+                      className="flex-1 border border-emerald-300 rounded-lg px-3 py-2 text-sm font-mono bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-100 disabled:text-gray-400"
+                      placeholder="0-100"
+                    />
+                    <span className="text-sm font-semibold text-emerald-700">%</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end items-center pt-1">
+                  <button
+                    disabled={!cbStatus.pcb_connected || manualPwmSaving}
+                    onClick={handleManualPwmSave}
+                    className="inline-flex items-center justify-center h-9 px-5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {manualPwmSaving ? (
+                      <LoadingSpinner color={"white"} />
+                    ) : (
+                      <>
+                        <CheckIcon className="w-4 h-4 mr-2" />
+                        {t("save")}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* === Fan Curve editor (show only in auto mode) === */}
+          {cbStatus.mode === "auto" && (
+            <div className="rounded-2xl overflow-hidden shadow-sm">
+              <SectionHeader label={t("fan_curve_title")} colorClass="bg-emerald-500" />
             <div className="bg-white p-4">
               {fanCurveLoading ? (
                 <p className="text-sm text-gray-400">{t("loading")}</p>
@@ -896,10 +1236,12 @@ export default function Settings() {
                 </>
               )}
             </div>
-          </div>
+            </div>
+          )}
         </div>
 
       </div>
     </div>
   );
 }
+
