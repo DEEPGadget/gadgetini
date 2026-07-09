@@ -42,38 +42,51 @@ def is_host_alive():
         return 0
 
 
-def _apply_manual_pwm(driver, rd):
-    """Apply manual PWM from config (channel write) — no temperature feedback."""
-    try:
-        import yaml
-        cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pcb_config.yaml')
-        with open(cfg_path) as f:
-            cfg = yaml.safe_load(f) or {}
-        manual_cfg = cfg.get('manual_pwm') or {}
-        pump_duties = manual_cfg.get('pump') or []
-        fan_duties = manual_cfg.get('fan') or []
+def _apply_manual_pwm(driver, rd, cfg):
+    """Apply manual PWM targets from Redis (channel write) — no temperature feedback.
 
+    Reads manual_pwm_target_pump_* / manual_pwm_target_fan_* from Redis, applies pump
+    clamping (min_duty/max_duty) to protect hardware, writes to PCB registers.
+    """
+    try:
         wiring = (cfg.get('wiring') or {}).get('pwm') or {}
         pump_chs = wiring.get('pump_ch') or []
         fan_chs = wiring.get('fan_ch') or []
+        pump_cfg = cfg.get('pump', {}) or {}
+        pump_min_duty = int(pump_cfg.get('min_duty', 0))
+        pump_max_duty = int(pump_cfg.get('max_duty', 1000))
 
-        # manual_pwm arrays are in PHYSICAL channel order (pump=CH1~4, fan=CH5~12),
-        # matching the Web UI sliders — index by channel offset, not by wiring slot.
+        # Pump channels: apply clamping (same protection as apply_initial_state)
         for ch in pump_chs:
             idx = ch - 1
-            if 0 <= idx < len(pump_duties) and pump_duties[idx] is not None:
-                duty = int(pump_duties[idx])
-                if 0 <= duty <= 1000:
-                    driver.write_register(pcb_driver.hr_pwm_duty(ch), duty)
+            target_key = K.manual_pwm_target_pump(idx)
+            target_str = rd.get(target_key)
+            if target_str is not None:
+                try:
+                    duty = int(target_str)
+                    # Clamp pump duty to safe voltage range (6-12VDC)
+                    if duty <= 0:
+                        clamped_duty = 0
+                    else:
+                        clamped_duty = max(pump_min_duty, min(pump_max_duty, duty))
+                    driver.write_register(pcb_driver.hr_pwm_duty(ch), clamped_duty)
+                except (ValueError, TypeError):
+                    log.warning("manual_pwm_target_pump_%d invalid: %s", idx, target_str)
 
+        # Fan channels: no clamping (fans safe at any duty)
         for ch in fan_chs:
             idx = ch - 5
-            if 0 <= idx < len(fan_duties) and fan_duties[idx] is not None:
-                duty = int(fan_duties[idx])
-                if 0 <= duty <= 1000:
-                    driver.write_register(pcb_driver.hr_pwm_duty(ch), duty)
+            target_key = K.manual_pwm_target_fan(idx)
+            target_str = rd.get(target_key)
+            if target_str is not None:
+                try:
+                    duty = int(target_str)
+                    if 0 <= duty <= 1000:
+                        driver.write_register(pcb_driver.hr_pwm_duty(ch), duty)
+                except (ValueError, TypeError):
+                    log.warning("manual_pwm_target_fan_%d invalid: %s", idx, target_str)
 
-        log.debug("manual PWM applied: pump=%s fan=%s", pump_duties, fan_duties)
+        log.debug("manual PWM applied from Redis targets")
     except Exception:
         log.exception("manual PWM apply failed")
 
@@ -140,7 +153,7 @@ def main():
                             # Check control_mode: manual or auto (default)
                             control_mode = rd.get('control_mode') or 'auto'
                             if control_mode == 'manual':
-                                _apply_manual_pwm(driver, rd)
+                                _apply_manual_pwm(driver, rd, cfg)
                             else:
                                 controller.update(driver, rd)
                         except Exception:

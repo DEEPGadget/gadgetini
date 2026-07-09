@@ -1,14 +1,8 @@
 // GET /api/control/mode — get current control_mode
 // PUT /api/control/mode — set control_mode ('auto' or 'manual')
-// On manual transition, capture current duty from Redis to avoid PWM jump
+// On manual transition, capture current duty from Redis to manual_pwm_target_* keys
 import { NextResponse } from "next/server";
-import { promises as fs } from "node:fs";
-import yaml from "js-yaml";
 import { getRedis } from "../../../../lib/redis";
-
-const CONFIG_PATH =
-  process.env.CONTROL_BOARD_CONFIG ||
-  "/home/gadgetini/gadgetini/src/exporter/pcb_config.yaml";
 
 export async function GET() {
   try {
@@ -36,27 +30,31 @@ export async function PUT(request) {
       );
     }
 
-    // If switching to manual, capture current duty from Redis and update yaml
+    const r = getRedis();
+    const pipe = r.pipeline();
+
+    // If switching to manual, capture current duty from Redis and store as targets
     if (mode === "manual") {
-      const r = getRedis();
       const pumpKeys = [0, 1, 2, 3].map((i) => `pwm_duty_pump_${i}`);
       const fanKeys = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => `pwm_duty_fan_${i}`);
       const vals = await r.mget(...pumpKeys, ...fanKeys);
 
-      // Parse values; null becomes 0 (comm down or key missing)
-      const pumpPwm = vals.slice(0, 4).map((v) => parseInt(v, 10) || 0);
-      const fanPwm = vals.slice(4, 12).map((v) => parseInt(v, 10) || 0);
+      // Parse values; null becomes 500/80 (safe defaults on comm down)
+      const pumpPwm = vals.slice(0, 4).map((v) => parseInt(v, 10) || 500);
+      const fanPwm = vals.slice(4, 12).map((v) => parseInt(v, 10) || 80);
 
-      // Update yaml manual_pwm section with current duty (atomic rename)
-      const raw = await fs.readFile(CONFIG_PATH, "utf8");
-      const doc = yaml.load(raw) || {};
-      doc.manual_pwm = { pump: pumpPwm, fan: fanPwm };
-      const tmpPath = CONFIG_PATH + ".tmp";
-      await fs.writeFile(tmpPath, yaml.dump(doc), "utf8");
-      await fs.rename(tmpPath, CONFIG_PATH);
+      // Store as manual targets (will be applied by data_crawler._apply_manual_pwm)
+      pumpPwm.forEach((duty, i) => {
+        pipe.set(`manual_pwm_target_pump_${i}`, duty);
+      });
+      fanPwm.forEach((duty, i) => {
+        pipe.set(`manual_pwm_target_fan_${i}`, duty);
+      });
     }
 
-    await getRedis().set("control_mode", mode);
+    pipe.set("control_mode", mode);
+    await pipe.exec();
+
     return NextResponse.json({
       success: true,
       mode: mode,

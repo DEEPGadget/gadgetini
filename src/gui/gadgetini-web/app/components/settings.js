@@ -52,8 +52,8 @@ function GridCard({ label, stateKey, displayMode, setDisplayMode, activeClass })
         isOn ? activeClass : "bg-gray-100 border border-gray-200 text-gray-400"
       }`}
     >
-      <span className="text-sm font-semibold leading-tight">{label}</span>
-      <span className="text-xs font-bold opacity-75">
+      <span className="text-base font-bold leading-tight sm:text-base">{label}</span>
+      <span className="text-sm font-bold opacity-75 sm:text-sm">
         {isOn ? "● ON" : "○ OFF"}
       </span>
     </button>
@@ -138,24 +138,9 @@ export default function Settings() {
   });
   const [fanCurveLoading, setFanCurveLoading] = useState(true);
   const [fanCurveSaving, setFanCurveSaving] = useState(false);
-  const [manualPwm, setManualPwm] = useState({
-    pump: [500, 500, 500, 500],
-    fan: [500, 500, 500, 500, 500, 500, 500, 500],
-  });
   const [manualPwmSaving, setManualPwmSaving] = useState(false);
   const [selectedChannels, setSelectedChannels] = useState(new Set());
   const [inputValue, setInputValue] = useState("");
-
-  // Always sync manualPwm with current Redis values (cbPwm)
-  // This ensures UI displays actual hardware state, not stale placeholders
-  useEffect(() => {
-    if (cbPwm.pump.some(v => v !== null) || cbPwm.fan.some(v => v !== null)) {
-      setManualPwm({
-        pump: cbPwm.pump.map(v => (v !== null ? Math.round(v / 10) : 500)),
-        fan: cbPwm.fan.map(v => (v !== null ? Math.round(v / 10) : 500))
-      });
-    }
-  }, [cbPwm.pump, cbPwm.fan]);
 
   useEffect(() => {
     getDisplayConfig().then(setDisplayMode);
@@ -350,29 +335,11 @@ export default function Settings() {
         return;
       }
 
-      // When switching to manual, also seed current PWM values
+      // When switching to manual, seed current PWM values to Redis targets
+      // (via /api/control/mode PUT handler)
       if (newMode === "manual") {
-        const curPump = Array.isArray(cbPwm?.pump) ? cbPwm.pump : [];
-        const curFan = Array.isArray(cbPwm?.fan) ? cbPwm.fan : [];
-        const pumpDuty = Array.from({ length: 4 }, (_, i) =>
-          curPump[i] != null ? curPump[i] : 500
-        );
-        const fanDuty = Array.from({ length: 8 }, (_, i) =>
-          curFan[i] != null ? curFan[i] : 500
-        );
-        setManualPwm({
-          pump: pumpDuty.map((v) => Math.round(v / 10)),
-          fan: fanDuty.map((v) => Math.round(v / 10)),
-        });
-        // Save PWM values in config
-        const pwmR = await fetch("/api/control/pwm", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pump: pumpDuty, fan: fanDuty }),
-        });
-        if (!pwmR.ok) {
-          console.warn("PWM seed failed (non-critical)");
-        }
+        // mode API handler already captures current duty and sets manual_pwm_target_* keys
+        // no additional action needed here
       }
 
       setCbStatus((p) => ({ ...p, mode: newMode }));
@@ -389,50 +356,97 @@ export default function Settings() {
       return;
     }
 
+    if (inputValue === "") {
+      alert("Please enter a PWM value");
+      return;
+    }
+
     setManualPwmSaving(true);
     try {
-      // Copy current PWM values, only update selected channels
-      const pumpPayload = [...cbPwm.pump];
-      const fanPayload = [...cbPwm.fan];
+      // Copy current PWM values (from Redis readback), update selected channels with input
+      const pumpPayload = cbPwm.pump.map(v => v !== null ? v : 500);
+      const fanPayload = cbPwm.fan.map(v => v !== null ? v : 80);
+      const inputDuty = Math.min(1000, Math.max(0, (parseInt(inputValue, 10) || 0) * 10));
 
+      // Apply input value to selected channels
       selectedChannels.forEach((chId) => {
         if (chId.startsWith("pump-")) {
           const idx = parseInt(chId.split("-")[1], 10);
           if (idx >= 0 && idx < 4) {
-            pumpPayload[idx] = Math.min(1000, Math.max(0, manualPwm.pump[idx] * 10));
+            pumpPayload[idx] = inputDuty;
           }
         } else if (chId.startsWith("fan-")) {
           const idx = parseInt(chId.split("-")[1], 10);
           if (idx >= 0 && idx < 8) {
-            fanPayload[idx] = Math.min(1000, Math.max(0, manualPwm.fan[idx] * 10));
+            fanPayload[idx] = inputDuty;
           }
         }
       });
 
-      const payload = {
-        pump: pumpPayload,
-        fan: fanPayload,
-      };
+      const payload = { pump: pumpPayload, fan: fanPayload };
       const r = await fetch("/api/control/pwm", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const data = await r.json();
-
       if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
         const errMsg = data?.error || `HTTP ${r.status}`;
         alert(`${t("save_failed")}: ${errMsg}`);
+        setManualPwmSaving(false);
         return;
       }
 
-      // API success indicates values were saved to Redis and config.
-      // data_crawler will apply to PCB on next poll cycle (~1 second).
-      // Faster polling interval (500ms) will reflect changes quickly.
-      alert("PWM saved. Applying to PCB...");
-      setSelectedChannels(new Set());
-      setInputValue("");
+      // Poll for verification: wait for data_crawler to apply changes
+      // Check that selected channels' pwm_duty_* keys match target values
+      // Timeout after ~6 seconds (data_crawler cycle is 1s)
+      const maxAttempts = 12;
+      let attempts = 0;
+      let targetConfirmed = false;
+
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        attempts++;
+
+        // Fetch current readback
+        const statusResp = await fetch("/api/control/pwm");
+        if (!statusResp.ok) continue;
+        const status = await statusResp.json();
+
+        // Check if selected channels match target (or are within clamp range)
+        let allMatched = true;
+        selectedChannels.forEach((chId) => {
+          if (chId.startsWith("pump-")) {
+            const idx = parseInt(chId.split("-")[1], 10);
+            const actual = status.pump?.[idx];
+            // Pump may be clamped to [500, 1000], so accept if in range or actual >= target
+            if (actual !== pumpPayload[idx] && actual < pumpPayload[idx]) {
+              allMatched = false;
+            }
+          } else if (chId.startsWith("fan-")) {
+            const idx = parseInt(chId.split("-")[1], 10);
+            const actual = status.fan?.[idx];
+            if (actual !== fanPayload[idx]) {
+              allMatched = false;
+            }
+          }
+        });
+
+        if (allMatched) {
+          targetConfirmed = true;
+          break;
+        }
+      }
+
+      if (targetConfirmed) {
+        alert("PWM saved and applied successfully");
+        setSelectedChannels(new Set());
+        setInputValue("");
+      } else {
+        alert("PWM saved. Please verify the values were applied (may be clamped for pump channels)");
+        // Keep selection/input for user to retry if needed
+      }
     } catch (err) {
       alert(`${t("save_failed")}: ${err?.message || err}`);
     } finally {
@@ -502,13 +516,13 @@ export default function Settings() {
 
               {/* Network Mode */}
               <div>
-                <p className="text-xs text-gray-400 mb-2">{t("network_mode")}</p>
+                <p className="text-sm text-gray-500 mb-2 font-semibold">{t("network_mode")}</p>
                 <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                   {["dhcp", "static"].map((mode) => (
                     <button
                       key={mode}
                       onClick={() => setIPMode(mode)}
-                      className={`flex-1 py-1.5 text-xs rounded-md font-bold uppercase tracking-wider transition-all ${
+                      className={`flex-1 py-1.5 text-sm sm:text-sm rounded-md font-bold uppercase tracking-wider transition-all ${
                         IPMode === mode
                           ? "bg-slate-800 text-white shadow"
                           : "text-gray-500 hover:text-gray-700"
@@ -535,7 +549,7 @@ export default function Settings() {
                       type="text"
                       placeholder={placeholder}
                       ref={(el) => (IPRefs.current[refKey] = el)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-slate-400"
                     />
                   ))}
                 </div>
@@ -552,7 +566,7 @@ export default function Settings() {
               <button
                 onClick={handleIPChange}
                 disabled={loadingState.updateIP}
-                className="flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-xl hover:bg-blue-600 transition-all disabled:opacity-50"
+                className="flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white text-base font-bold rounded-xl hover:bg-blue-600 transition-all disabled:opacity-50"
               >
                 {loadingState.updateIP ? t("updating") : t("update_ip")}
                 <CheckIcon className="w-4 h-4 ml-2" />
@@ -565,7 +579,7 @@ export default function Settings() {
             RIGHT MAIN — LCD Control
         ══════════════════════════════════════ */}
         <div className="flex-1 min-w-0 space-y-3">
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">
+          <p className="text-sm font-bold uppercase tracking-widest text-gray-500 px-1">
             {t("section_lcd_control")}
           </p>
 
@@ -576,8 +590,8 @@ export default function Settings() {
               {/* Display master */}
               <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">{t("display")}</p>
-                  <p className="text-xs text-gray-400">{t("display_master")}</p>
+                  <p className="text-base font-bold text-gray-800 sm:text-base">{t("display")}</p>
+                  <p className="text-sm text-gray-500 sm:text-sm">{t("display_master")}</p>
                 </div>
                 <Toggle
                   value={displayMode.display}
@@ -589,7 +603,7 @@ export default function Settings() {
 
               {/* Orientation */}
               <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
-                <p className="text-sm font-semibold text-gray-800">{t("orientation")}</p>
+                <p className="text-base font-bold text-gray-800 sm:text-base">{t("orientation")}</p>
                 <div className="flex gap-1 bg-white rounded-lg p-1 shadow-sm border border-gray-100">
                   {[
                     { label: t("vertical"), value: "vertical", Icon: ArrowUpIcon },
@@ -600,7 +614,7 @@ export default function Settings() {
                       onClick={() =>
                         setDisplayMode((p) => ({ ...p, orientation: value }))
                       }
-                      className={`flex items-center gap-1 px-3 py-1 text-xs rounded-md font-bold transition-all ${
+                      className={`flex items-center gap-1 px-3 py-1 text-sm sm:text-sm rounded-md font-bold transition-all ${
                         displayMode.orientation === value
                           ? "bg-slate-700 text-white shadow"
                           : "text-gray-500 hover:text-gray-700"
@@ -616,8 +630,8 @@ export default function Settings() {
               {/* Rotation */}
               <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">{t("rotation")}</p>
-                  <p className="text-xs text-gray-400">{t("rotation_desc")}</p>
+                  <p className="text-base font-bold text-gray-800 sm:text-base">{t("rotation")}</p>
+                  <p className="text-sm text-gray-500 sm:text-sm">{t("rotation_desc")}</p>
                 </div>
                 <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 shadow-sm border border-gray-100">
                   <input
@@ -631,9 +645,9 @@ export default function Settings() {
                         rotationTime: value < 1 ? 1 : value,
                       }));
                     }}
-                    className="w-10 text-center text-sm font-bold focus:outline-none bg-transparent text-gray-800"
+                    className="w-10 text-center text-base font-bold focus:outline-none bg-transparent text-gray-800"
                   />
-                  <span className="text-xs text-gray-400">{t("sec_unit")}</span>
+                  <span className="text-sm text-gray-500">{t("sec_unit")}</span>
                 </div>
               </div>
             </div>
@@ -650,8 +664,8 @@ export default function Settings() {
               ].map(({ label, key, min, max }) => (
                 <div key={key} className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                   <div>
-                    <p className="text-sm font-semibold text-gray-800">{label}</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-base font-bold text-gray-800 sm:text-base">{label}</p>
+                    <p className="text-sm text-gray-500 sm:text-sm">
                       config.ini {key === "gpuCount" ? "gpu_count" : key === "cpuCount" ? "cpu_count" : "nvme_count"}
                     </p>
                   </div>
@@ -668,7 +682,7 @@ export default function Settings() {
                           [key]: Math.max(min, Math.min(max, value)),
                         }));
                       }}
-                      className="w-10 text-center text-sm font-bold focus:outline-none bg-transparent text-gray-800"
+                      className="w-10 text-center text-base font-bold focus:outline-none bg-transparent text-gray-800"
                     />
                   </div>
                 </div>
@@ -751,7 +765,7 @@ export default function Settings() {
             <button
               onClick={handleDisplayMode}
               disabled={loadingState.applyDisplayConfig}
-              className="inline-flex items-center justify-center h-10 px-6 bg-slate-800 text-white text-sm font-semibold rounded-xl hover:bg-slate-700 transition-all disabled:opacity-50"
+              className="inline-flex items-center justify-center h-10 px-6 bg-slate-800 text-white text-base font-bold rounded-xl hover:bg-slate-700 transition-all disabled:opacity-50"
             >
               {loadingState.applyDisplayConfig ? (
                 <LoadingSpinner color={"white"} />
@@ -782,20 +796,20 @@ export default function Settings() {
                     cbStatus.pcb_connected ? "bg-green-400" : "bg-amber-400"
                   }`}
                 />
-                <span className="text-sm font-semibold text-gray-800">
+                <span className="text-base font-semibold text-gray-800">
                   {cbStatus.pcb_connected
                     ? t("pcb_connected")
                     : cbStatus.comm_status === "timeout"
                     ? t("pcb_timeout")
                     : t("pcb_disconnected")}
                 </span>
-                <span className="text-xs text-gray-400 font-mono">
+                <span className="text-sm text-gray-400 font-mono">
                   comm: {cbStatus.comm_status}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-400 uppercase tracking-wider">{t("mode")}</span>
-                <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <span className="text-sm text-gray-400 uppercase tracking-wider font-semibold">{t("mode")}</span>
+                <label className="flex items-center gap-1.5 text-base cursor-pointer">
                   <input
                     type="radio"
                     name="cb-mode"
@@ -805,15 +819,15 @@ export default function Settings() {
                   />
                   {t("auto")}
                 </label>
-                <label className="flex items-center gap-1.5 text-sm cursor-not-allowed opacity-50">
+                <label className="flex items-center gap-1.5 text-base cursor-pointer">
                   <input
                     type="radio"
                     name="cb-mode"
                     checked={pendingMode === "manual"}
                     onChange={() => setPendingMode("manual")}
-                    disabled={true}
+                    disabled={!cbStatus.pcb_connected || modeSaving}
                   />
-                  {t("manual")} (disabled)
+                  {t("manual")}
                 </label>
                 {(() => {
                   const dirty = pendingMode !== cbStatus.mode;
@@ -853,27 +867,20 @@ export default function Settings() {
             <SectionHeader label={t("section_pwm_duty")} colorClass="bg-emerald-600" />
             <div className="bg-emerald-50/60 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-white rounded-xl p-3">
-                <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
+                <p className="text-base text-gray-600 mb-3 font-bold uppercase tracking-wider">
                   {t("pumps_label")}
                 </p>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {cbPwm.pump.map((duty, i) => (
-                    <div key={`pump-${i}`} className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-1.5">
-                        <span className="text-gray-600 font-mono">CH{i + 1}</span>
-                        {!cbPwm.curvePump?.includes(i + 1) && (
-                          <span className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-gray-100 text-gray-400 border border-gray-200">
-                            {t("pwm_fixed")}
-                          </span>
-                        )}
-                      </span>
-                      <span className="font-mono">
+                    <div key={`pump-${i}`} className="flex items-center justify-between text-lg">
+                      <span className="text-gray-700 font-mono font-bold">CH{i + 1}</span>
+                      <span className="font-mono text-xl font-bold">
                         {duty === null ? (
                           <span className="text-gray-300">—</span>
                         ) : (
                           <>
                             {duty}{" "}
-                            <span className="text-xs text-gray-400">
+                            <span className="text-sm text-gray-400">
                               ({(duty / 10).toFixed(1)}%)
                             </span>
                           </>
@@ -900,33 +907,26 @@ export default function Settings() {
                 </div>
               </div>
               <div className="bg-white rounded-xl p-3">
-                <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
+                <p className="text-base text-gray-600 mb-3 font-bold uppercase tracking-wider">
                   {t("fans_label")}
                 </p>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {cbPwm.fan.map((duty, i) => (
-                    <div key={`fan-${i}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-sm">
-                      <span className="flex items-center gap-1.5">
-                        <span className="text-gray-600 font-mono">CH{i + 5}</span>
-                        {!cbPwm.curveFan?.includes(i + 5) && (
-                          <span className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-gray-100 text-gray-400 border border-gray-200">
-                            {t("pwm_fixed")}
-                          </span>
-                        )}
-                      </span>
-                      <span className="font-mono text-right">
+                    <div key={`fan-${i}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-lg">
+                      <span className="text-gray-700 font-mono font-bold">CH{i + 5}</span>
+                      <span className="font-mono text-right text-xl font-bold">
                         {duty === null ? (
                           <span className="text-gray-300">—</span>
                         ) : (
                           <>
                             {duty}{" "}
-                            <span className="text-xs text-gray-400">
+                            <span className="text-sm text-gray-400">
                               ({(duty / 10).toFixed(1)}%)
                             </span>
                           </>
                         )}
                       </span>
-                      <span className="font-mono text-right text-gray-600 min-w-[5.5rem]">
+                      <span className="font-mono text-right text-gray-600 font-bold text-lg min-w-[5.5rem]">
                         {cbPwm.fanRpm[i] === null || cbPwm.fanRpm[i] === undefined ? (
                           <span className="text-gray-300">—</span>
                         ) : (
@@ -948,20 +948,22 @@ export default function Settings() {
             <div className="rounded-2xl overflow-hidden shadow-sm">
               <SectionHeader label={t("manual_pwm_title") || "Manual PWM Control"} colorClass="bg-emerald-600" />
               <div className="bg-white p-4">
-                <p className="text-xs text-gray-500 mb-4">
+                <p className="text-sm text-gray-600 mb-4 font-semibold">
                   {t("manual_pwm_desc") || "Select channels and set PWM duty (0-100%)"}
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                   {/* Pump Channel Selection */}
                   <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                    <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
+                    <h5 className="text-lg font-bold text-gray-700 uppercase tracking-wider mb-3">
                       {t("pumps_label")}
                     </h5>
                     <div className="space-y-2">
-                      {manualPwm.pump.map((duty, i) => {
+                      {cbPwm.pump.map((duty, i) => {
                         const chId = `pump-${i}`;
                         const isSelected = selectedChannels.has(chId);
+                        const dutyPct = duty !== null ? Math.round(duty / 10) : "—";
+                        const previewDuty = isSelected && inputValue !== "" ? parseInt(inputValue, 10) : null;
                         return (
                           <label key={chId} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
                             isSelected ? "bg-emerald-100 border border-emerald-300" : "hover:bg-gray-100"
@@ -981,11 +983,19 @@ export default function Settings() {
                               disabled={!cbStatus.pcb_connected}
                               className="w-4 h-4"
                             />
-                            <span className="flex-1 text-xs text-gray-600 font-mono">CH{i + 1}</span>
-                            <span className="text-xs text-gray-500">Current:</span>
-                            <span className="text-xs font-mono text-gray-700 min-w-12 text-right">
-                              {duty}%
+                            <span className="flex-1 text-base text-gray-700 font-mono font-bold">CH{i + 1}</span>
+                            <span className="text-base text-gray-600 font-semibold">Current:</span>
+                            <span className="text-base font-mono text-gray-800 min-w-14 text-right font-bold">
+                              {dutyPct}%
                             </span>
+                            {previewDuty !== null && (
+                              <>
+                                <span className="text-base text-gray-400">→</span>
+                                <span className="text-base font-mono text-emerald-600 min-w-14 text-right font-bold">
+                                  {previewDuty}%
+                                </span>
+                              </>
+                            )}
                           </label>
                         );
                       })}
@@ -994,13 +1004,15 @@ export default function Settings() {
 
                   {/* Fan Channel Selection */}
                   <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                    <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
+                    <h5 className="text-lg font-bold text-gray-700 uppercase tracking-wider mb-3">
                       {t("fans_label")}
                     </h5>
                     <div className="space-y-2">
-                      {manualPwm.fan.map((duty, i) => {
+                      {cbPwm.fan.map((duty, i) => {
                         const chId = `fan-${i}`;
                         const isSelected = selectedChannels.has(chId);
+                        const dutyPct = duty !== null ? Math.round(duty / 10) : "—";
+                        const previewDuty = isSelected && inputValue !== "" ? parseInt(inputValue, 10) : null;
                         return (
                           <label key={chId} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
                             isSelected ? "bg-emerald-100 border border-emerald-300" : "hover:bg-gray-100"
@@ -1020,11 +1032,19 @@ export default function Settings() {
                               disabled={!cbStatus.pcb_connected}
                               className="w-4 h-4"
                             />
-                            <span className="flex-1 text-xs text-gray-600 font-mono">CH{i + 5}</span>
-                            <span className="text-xs text-gray-500">Current:</span>
-                            <span className="text-xs font-mono text-gray-700 min-w-12 text-right">
-                              {duty}%
+                            <span className="flex-1 text-base text-gray-700 font-mono font-bold">CH{i + 5}</span>
+                            <span className="text-base text-gray-600 font-semibold">Current:</span>
+                            <span className="text-base font-mono text-gray-800 min-w-14 text-right font-bold">
+                              {dutyPct}%
                             </span>
+                            {previewDuty !== null && (
+                              <>
+                                <span className="text-base text-gray-400">→</span>
+                                <span className="text-base font-mono text-emerald-600 min-w-14 text-right font-bold">
+                                  {previewDuty}%
+                                </span>
+                              </>
+                            )}
                           </label>
                         );
                       })}
@@ -1034,8 +1054,8 @@ export default function Settings() {
 
                 {/* Value Input Section */}
                 <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-4">
-                  <p className="text-xs text-gray-600 mb-3">
-                    <span className="font-semibold">
+                  <p className="text-sm text-gray-600 mb-3">
+                    <span className="font-bold text-base">
                       {selectedChannels.size === 0 ? "Select channels to modify" : `${selectedChannels.size} channel(s) selected`}
                     </span>
                   </p>
@@ -1046,39 +1066,13 @@ export default function Settings() {
                       max="100"
                       value={inputValue}
                       onChange={(e) => {
-                        const value = e.target.value;
-                        setInputValue(value);
-
-                        // Apply to selected channels in real-time
-                        if (selectedChannels.size > 0 && value !== "") {
-                          const numValue = Math.max(0, Math.min(100, parseInt(value, 10) || 0));
-                          setManualPwm((prevState) => {
-                            const newPump = [...prevState.pump];
-                            const newFan = [...prevState.fan];
-
-                            selectedChannels.forEach((chId) => {
-                              if (chId.startsWith("pump-")) {
-                                const idx = parseInt(chId.split("-")[1], 10);
-                                if (idx >= 0 && idx < 4) {
-                                  newPump[idx] = numValue;
-                                }
-                              } else if (chId.startsWith("fan-")) {
-                                const idx = parseInt(chId.split("-")[1], 10);
-                                if (idx >= 0 && idx < 8) {
-                                  newFan[idx] = numValue;
-                                }
-                              }
-                            });
-
-                            return { pump: newPump, fan: newFan };
-                          });
-                        }
+                        setInputValue(e.target.value);
                       }}
                       disabled={!cbStatus.pcb_connected || selectedChannels.size === 0}
-                      className="flex-1 border border-emerald-300 rounded-lg px-3 py-2 text-sm font-mono bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-100 disabled:text-gray-400"
+                      className="flex-1 border border-emerald-300 rounded-lg px-3 py-2 text-base font-mono font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-100 disabled:text-gray-400"
                       placeholder="0-100"
                     />
-                    <span className="text-sm font-semibold text-emerald-700">%</span>
+                    <span className="text-base font-bold text-emerald-700">%</span>
                   </div>
                 </div>
 
@@ -1086,7 +1080,7 @@ export default function Settings() {
                   <button
                     disabled={!cbStatus.pcb_connected || manualPwmSaving}
                     onClick={handleManualPwmSave}
-                    className="inline-flex items-center justify-center h-9 px-5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center h-10 px-6 bg-emerald-700 text-white text-base font-bold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {manualPwmSaving ? (
                       <LoadingSpinner color={"white"} />
@@ -1111,19 +1105,19 @@ export default function Settings() {
                 <p className="text-sm text-gray-400">{t("loading")}</p>
               ) : (
                 <>
-                  <p className="text-xs text-gray-500 mb-4">{t("fan_curve_desc")}</p>
+                  <p className="text-sm text-gray-600 mb-4 font-semibold">{t("fan_curve_desc")}</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     {/* Idle pair */}
                     <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
-                        <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        <h5 className="text-sm font-bold text-gray-700 uppercase tracking-wider">
                           {t("idle_group")}
                         </h5>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <label className="flex flex-col gap-1">
-                          <span className="text-[10px] text-gray-500 font-semibold uppercase">
+                          <span className="text-sm text-gray-600 font-bold uppercase">
                             {t("idle_temp")}
                           </span>
                           <input
@@ -1139,11 +1133,11 @@ export default function Settings() {
                                 min_temp: Number(e.target.value),
                               }))
                             }
-                            className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
                           />
                         </label>
                         <label className="flex flex-col gap-1">
-                          <span className="text-[10px] text-gray-500 font-semibold uppercase">
+                          <span className="text-sm text-gray-600 font-bold uppercase">
                             {t("idle_pwm")}
                           </span>
                           <input
@@ -1159,7 +1153,7 @@ export default function Settings() {
                                 min_duty: Math.max(0, Math.min(1000, Number(e.target.value) * 10)),
                               }))
                             }
-                            className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
                           />
                         </label>
                       </div>
@@ -1168,13 +1162,13 @@ export default function Settings() {
                     <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="inline-block w-2 h-2 rounded-full bg-rose-400" />
-                        <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        <h5 className="text-sm font-bold text-gray-700 uppercase tracking-wider">
                           {t("warning_group")}
                         </h5>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <label className="flex flex-col gap-1">
-                          <span className="text-[10px] text-gray-500 font-semibold uppercase">
+                          <span className="text-sm text-gray-600 font-bold uppercase">
                             {t("warning_temp")}
                           </span>
                           <input
@@ -1190,11 +1184,11 @@ export default function Settings() {
                                 max_temp: Number(e.target.value),
                               }))
                             }
-                            className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
                           />
                         </label>
                         <label className="flex flex-col gap-1">
-                          <span className="text-[10px] text-gray-500 font-semibold uppercase">
+                          <span className="text-sm text-gray-600 font-bold uppercase">
                             {t("max_pwm")}
                           </span>
                           <input
@@ -1210,7 +1204,7 @@ export default function Settings() {
                                 max_duty: Math.max(0, Math.min(1000, Number(e.target.value) * 10)),
                               }))
                             }
-                            className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
                           />
                         </label>
                       </div>
@@ -1221,7 +1215,7 @@ export default function Settings() {
                       disabled={!cbStatus.active || fanCurveSaving}
                       onClick={handleFanCurveSave}
                       title={!cbStatus.active ? t("service_inactive_tooltip") : ""}
-                      className="inline-flex items-center justify-center h-9 px-5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center justify-center h-10 px-6 bg-emerald-700 text-white text-base font-bold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {fanCurveSaving ? (
                         <LoadingSpinner color={"white"} />

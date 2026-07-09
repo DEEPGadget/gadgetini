@@ -41,6 +41,15 @@ def pwm_duty_pump(idx):
 def pwm_duty_fan(idx):
     return f'pwm_duty_fan_{idx}'
 
+# Manual PWM target (intended duty per channel, user-controlled in manual mode)
+# 0-based index; same physical-channel convention as pwm_duty_*.
+# Written by web UI (manual mode) or mode switch, read by data_crawler._apply_manual_pwm.
+def manual_pwm_target_pump(idx):
+    return f'manual_pwm_target_pump_{idx}'
+
+def manual_pwm_target_fan(idx):
+    return f'manual_pwm_target_fan_{idx}'
+
 # Comm status (PCB path only — from health check / poll results).
 COMM_STATUS               = 'comm_status'
 COMM_CONSECUTIVE_FAILURES = 'comm_consecutive_failures'
