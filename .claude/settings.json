@@ -155,7 +155,9 @@
       "Bash(sudo systemctl status data_crawler.service --no-pager)",
       "Bash(git check-ignore *)",
       "Bash(sudo systemctl status gadgetini_ui.service --no-pager)",
-      "Bash(sudo journalctl -u data_crawler.service -n 30 --no-pager)"
+      "Bash(sudo journalctl -u data_crawler.service -n 30 --no-pager)",
+      "Bash(sudo systemctl restart sensor_exporter.service)",
+      "Bash(curl -s http://localhost:9003/metrics)"
     ]
   }
 }
