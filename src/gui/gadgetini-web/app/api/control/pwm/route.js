@@ -11,16 +11,10 @@
 // values — return all null to avoid displaying incorrect info in the UI.
 //
 // PUT /api/control/pwm
-// Sets manual PWM values: { pump: [ch1, ch2, ch3, ch4], fan: [ch5~ch12] }
-// Stores in config.yaml under manual_pwm and Redis, switches control_mode to 'manual'.
+// Sets manual PWM target values: { pump: [ch1, ch2, ch3, ch4], fan: [ch5~ch12] }
+// Stores in Redis manual_pwm_target_* keys (applied by data_crawler._apply_manual_pwm).
 import { NextResponse } from "next/server";
-import { promises as fs } from "node:fs";
-import yaml from "js-yaml";
 import { getRedis } from "../../../../lib/redis";
-
-const CONFIG_PATH =
-  process.env.CONTROL_BOARD_CONFIG ||
-  "/home/gadgetini/gadgetini/src/exporter/pcb_config.yaml";
 
 // Physical channel slots (fixed by PCB hardware: TIM1=pump CH1~4, TIM2=fan CH5~8, TIM8=fan CH9~12)
 const PUMP_CHANNELS = [1, 2, 3, 4];
@@ -157,64 +151,19 @@ export async function PUT(request) {
       );
     }
 
-    // Load config, update manual_pwm, write back
-    const raw = await fs.readFile(CONFIG_PATH, "utf8");
-    const doc = yaml.load(raw) || {};
-    doc.manual_pwm = {
-      pump: pumpPwm,
-      fan: fanPwm,
-    };
-
-    const updated = yaml.dump(doc);
-    const tmpPath = CONFIG_PATH + ".tmp";
-    await fs.writeFile(tmpPath, updated, "utf8");
-    await fs.rename(tmpPath, CONFIG_PATH);
-
-    // Apply PWM to PCB hardware asynchronously (don't block API response)
-    // data_crawler will also pick up the updated config on next poll cycle
-    setImmediate(() => {
-      try {
-        const { exec } = require("child_process");
-        const scriptPath = "/tmp/apply_pwm_" + Date.now() + ".py";
-        const script = `import sys
-sys.path.insert(0, '/home/gadgetini/gadgetini/src/exporter')
-import yaml, redis, pcb_driver
-try:
-    with open('${CONFIG_PATH}') as f:
-        cfg = yaml.safe_load(f)
-    r = redis.Redis(host='127.0.0.1', port=6379, db=0)
-    driver = pcb_driver.PCBDriver(cfg, r)
-    driver.apply_initial_state()
-except Exception as e:
-    print(f"PCB apply failed: {e}", file=sys.stderr)
-`;
-        fs.writeFileSync(scriptPath, script, "utf8");
-        exec(`python3 ${scriptPath}`, { timeout: 10000 }, (err, stdout, stderr) => {
-          if (err) console.warn("PCB apply warning:", err.message);
-          else console.log("PCB PWM applied");
-          fs.unlink(scriptPath, () => {});
-        });
-      } catch (err) {
-        console.warn("PCB apply error:", err.message);
-      }
-    });
-
-    // Set Redis keys for manual PWM (without changing control_mode)
+    // Store manual PWM targets in Redis (will be applied by data_crawler._apply_manual_pwm)
+    // No longer write to pcb_config.yaml (config file only for static/boot values)
     const r = getRedis();
     const pipe = r.pipeline();
 
-    // Store manual PWM in Redis (physical channel indices, matching poll readback)
-    // Instant feedback for the controllable channels (poll re-publishes readback for
-    // all channels next cycle). Keys are PHYSICAL-indexed: pump CH-1, fan CH-5.
-    const { wiredPump, wiredFan } = await loadWiring();
-    wiredPump.forEach((ch) => {
-      pipe.set(`pwm_duty_pump_${ch - 1}`, pumpPwm[ch - 1]);
-    });
-    wiredFan.forEach((ch) => {
-      pipe.set(`pwm_duty_fan_${ch - 5}`, fanPwm[ch - 5]);
-    });
+    // Store as manual_pwm_target_* (physical-channel indexed, same convention as pwm_duty_*)
+    for (let i = 0; i < 4; i++) {
+      pipe.set(`manual_pwm_target_pump_${i}`, pumpPwm[i]);
+    }
+    for (let i = 0; i < 8; i++) {
+      pipe.set(`manual_pwm_target_fan_${i}`, fanPwm[i]);
+    }
 
-    // Do NOT change control_mode here — let user explicitly switch via mode button
     await pipe.exec();
 
     // Get current mode to return in response

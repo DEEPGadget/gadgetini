@@ -147,7 +147,17 @@
       "Bash(redis-cli GET coolant_temp_inlet1)",
       "Bash(redis-cli GET coolant_temp_outlet1)",
       "Bash(kill %1)",
-      "Bash(pkill -f \"modbus_client\")"
+      "Bash(pkill -f \"modbus_client\")",
+      "Bash(xargs -I{} echo {})",
+      "Bash(sudo systemctl status gadgetini-web.service)",
+      "Bash(sudo systemctl status gadgetini_ui.service)",
+      "Bash(sudo systemctl restart gadgetini_ui.service)",
+      "Bash(sudo systemctl status data_crawler.service --no-pager)",
+      "Bash(git check-ignore *)",
+      "Bash(sudo systemctl status gadgetini_ui.service --no-pager)",
+      "Bash(sudo journalctl -u data_crawler.service -n 30 --no-pager)",
+      "Bash(sudo systemctl restart sensor_exporter.service)",
+      "Bash(curl -s http://localhost:9003/metrics)"
     ]
   }
 }

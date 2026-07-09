@@ -102,10 +102,12 @@ sudo bash src/configure/usb-gadget-gadgetini.sh
 - `coolant_level`, `coolant_leak`, `coolant_flow_lpm` (flow estimate)
 
 **Fan/Pump Control:**
-- `pwm_duty_pump_0..3` (pump CH1~4, 0~1000 = 0~100%, controlled by initial_pwm_duty)
-- `pwm_duty_fan_0..7` (fan CH5~12, 0~1000, controlled by FanCurveController or manual mode)
+- `pwm_duty_pump_0..3` (pump CH1~4, 0~1000 = 0~100%, readback from PCB registers via poll)
+- `pwm_duty_fan_0..7` (fan CH5~12, 0~1000, readback from PCB registers via poll)
 - `fan_rpm_0..7` (fan tachometer readings, RPM, sticky: only set if tach ever >0)
-- `control_mode` ('auto' = FanCurveController, 'manual' = fixed duty from pcb_config.yaml)
+- `manual_pwm_target_pump_0..3` (pump CH1~4 manual mode targets, 0~1000, clamped to [min_duty, max_duty] on apply)
+- `manual_pwm_target_fan_0..7` (fan CH5~12 manual mode targets, 0~1000)
+- `control_mode` ('auto' = FanCurveController applies duty from temp curve, 'manual' = applies duty from manual_pwm_target_* keys)
 
 **Host Metrics (from data_crawler_host.py):**
 - `cpu_temp_0`, `gpu_temp_0..3`, `gpu_curr_pwr_*`, `mem_usage`, `mem_total`
