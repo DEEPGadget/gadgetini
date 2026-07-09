@@ -1,8 +1,14 @@
 // GET /api/control/mode — get current control_mode
 // PUT /api/control/mode — set control_mode ('auto' or 'manual')
 // On manual transition, capture current duty from Redis to manual_pwm_target_* keys
+// On auto transition, touch config file mtime so data_crawler reloads controller immediately
 import { NextResponse } from "next/server";
+import { promises as fs } from "node:fs";
 import { getRedis } from "../../../../lib/redis";
+
+const CONFIG_PATH =
+  process.env.CONTROL_BOARD_CONFIG ||
+  "/home/gadgetini/gadgetini/src/exporter/pcb_config.yaml";
 
 export async function GET() {
   try {
@@ -50,6 +56,14 @@ export async function PUT(request) {
       fanPwm.forEach((duty, i) => {
         pipe.set(`manual_pwm_target_fan_${i}`, duty);
       });
+    } else if (mode === "auto") {
+      // If switching to auto, touch config file so data_crawler reloads controller immediately
+      try {
+        const now = new Date();
+        await fs.utimes(CONFIG_PATH, now, now);
+      } catch (e) {
+        // Touch failed (file may not exist), but proceed anyway — controller is already loaded
+      }
     }
 
     pipe.set("control_mode", mode);

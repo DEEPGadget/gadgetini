@@ -865,22 +865,22 @@ export default function Settings() {
           {/* === PWM Duty (read-only) === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_pwm_duty")} colorClass="bg-emerald-600" />
-            <div className="bg-emerald-50/60 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl p-3">
-                <p className="text-base text-gray-600 mb-3 font-bold uppercase tracking-wider">
+            <div className="bg-emerald-50/60 p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="bg-white rounded-xl p-2 sm:p-3">
+                <p className="text-xs sm:text-base text-gray-600 mb-3 font-bold uppercase tracking-wider">
                   {t("pumps_label")}
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {cbPwm.pump.map((duty, i) => (
-                    <div key={`pump-${i}`} className="flex items-center justify-between text-lg">
+                    <div key={`pump-${i}`} className="flex items-center justify-between text-xs sm:text-base gap-2">
                       <span className="text-gray-700 font-mono font-bold">CH{i + 1}</span>
-                      <span className="font-mono text-xl font-bold">
+                      <span className="font-mono text-sm sm:text-base font-bold">
                         {duty === null ? (
                           <span className="text-gray-300">—</span>
                         ) : (
                           <>
                             {duty}{" "}
-                            <span className="text-sm text-gray-400">
+                            <span className="text-xs text-gray-400">
                               ({(duty / 10).toFixed(1)}%)
                             </span>
                           </>
@@ -890,11 +890,11 @@ export default function Settings() {
                   ))}
                 </div>
                 {/* Estimated pump flow — based on duty + topology multiplier (config.yaml § pump). */}
-                <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-sm">
+                <div className="mt-2 sm:mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-xs sm:text-sm">
                   <span className="text-gray-500 text-xs uppercase tracking-wider">
                     {t("estimated_flow")}
                   </span>
-                  <span className="font-mono">
+                  <span className="font-mono text-xs sm:text-sm">
                     {cbPwm.coolantFlowLpm === null ? (
                       <span className="text-gray-300">—</span>
                     ) : (
@@ -906,27 +906,27 @@ export default function Settings() {
                   </span>
                 </div>
               </div>
-              <div className="bg-white rounded-xl p-3">
-                <p className="text-base text-gray-600 mb-3 font-bold uppercase tracking-wider">
+              <div className="bg-white rounded-xl p-2 sm:p-3">
+                <p className="text-xs sm:text-base text-gray-600 mb-3 font-bold uppercase tracking-wider">
                   {t("fans_label")}
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {cbPwm.fan.map((duty, i) => (
-                    <div key={`fan-${i}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-lg">
+                    <div key={`fan-${i}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-3 text-xs sm:text-base">
                       <span className="text-gray-700 font-mono font-bold">CH{i + 5}</span>
-                      <span className="font-mono text-right text-xl font-bold">
+                      <span className="font-mono text-right text-sm sm:text-base font-bold">
                         {duty === null ? (
                           <span className="text-gray-300">—</span>
                         ) : (
                           <>
                             {duty}{" "}
-                            <span className="text-sm text-gray-400">
+                            <span className="text-xs text-gray-400">
                               ({(duty / 10).toFixed(1)}%)
                             </span>
                           </>
                         )}
                       </span>
-                      <span className="font-mono text-right text-gray-600 font-bold text-lg min-w-[5.5rem]">
+                      <span className="font-mono text-right text-gray-600 font-bold text-xs sm:text-base min-w-[4rem] sm:min-w-[5.5rem]">
                         {cbPwm.fanRpm[i] === null || cbPwm.fanRpm[i] === undefined ? (
                           <span className="text-gray-300">—</span>
                         ) : (
@@ -947,25 +947,25 @@ export default function Settings() {
           {cbStatus.mode === "manual" && (
             <div className="rounded-2xl overflow-hidden shadow-sm">
               <SectionHeader label={t("manual_pwm_title") || "Manual PWM Control"} colorClass="bg-emerald-600" />
-              <div className="bg-white p-4">
-                <p className="text-sm text-gray-600 mb-4 font-semibold">
+              <div className="bg-white p-3 sm:p-4">
+                <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 font-semibold">
                   {t("manual_pwm_desc") || "Select channels and set PWM duty (0-100%)"}
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-3 sm:mb-4">
                   {/* Pump Channel Selection */}
-                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                    <h5 className="text-lg font-bold text-gray-700 uppercase tracking-wider mb-3">
+                  <div className="border border-gray-200 rounded-lg p-2 sm:p-3 bg-gray-50">
+                    <h5 className="text-xs sm:text-lg font-bold text-gray-700 uppercase tracking-wider mb-2 sm:mb-3">
                       {t("pumps_label")}
                     </h5>
-                    <div className="space-y-2">
+                    <div className="space-y-1 sm:space-y-2">
                       {cbPwm.pump.map((duty, i) => {
                         const chId = `pump-${i}`;
                         const isSelected = selectedChannels.has(chId);
                         const dutyPct = duty !== null ? Math.round(duty / 10) : "—";
                         const previewDuty = isSelected && inputValue !== "" ? parseInt(inputValue, 10) : null;
                         return (
-                          <label key={chId} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                          <label key={chId} className={`flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg cursor-pointer transition-colors text-xs sm:text-base ${
                             isSelected ? "bg-emerald-100 border border-emerald-300" : "hover:bg-gray-100"
                           }`}>
                             <input
@@ -981,17 +981,17 @@ export default function Settings() {
                                 setSelectedChannels(newSelected);
                               }}
                               disabled={!cbStatus.pcb_connected}
-                              className="w-4 h-4"
+                              className="w-3.5 h-3.5 sm:w-4 sm:h-4"
                             />
-                            <span className="flex-1 text-base text-gray-700 font-mono font-bold">CH{i + 1}</span>
-                            <span className="text-base text-gray-600 font-semibold">Current:</span>
-                            <span className="text-base font-mono text-gray-800 min-w-14 text-right font-bold">
+                            <span className="flex-1 text-gray-700 font-mono font-bold">CH{i + 1}</span>
+                            <span className="text-gray-600 font-semibold hidden sm:inline">Current:</span>
+                            <span className="font-mono text-gray-800 min-w-10 sm:min-w-14 text-right font-bold">
                               {dutyPct}%
                             </span>
                             {previewDuty !== null && (
                               <>
-                                <span className="text-base text-gray-400">→</span>
-                                <span className="text-base font-mono text-emerald-600 min-w-14 text-right font-bold">
+                                <span className="text-gray-400">→</span>
+                                <span className="font-mono text-emerald-600 min-w-10 sm:min-w-14 text-right font-bold">
                                   {previewDuty}%
                                 </span>
                               </>
@@ -1003,18 +1003,18 @@ export default function Settings() {
                   </div>
 
                   {/* Fan Channel Selection */}
-                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                    <h5 className="text-lg font-bold text-gray-700 uppercase tracking-wider mb-3">
+                  <div className="border border-gray-200 rounded-lg p-2 sm:p-3 bg-gray-50">
+                    <h5 className="text-xs sm:text-lg font-bold text-gray-700 uppercase tracking-wider mb-2 sm:mb-3">
                       {t("fans_label")}
                     </h5>
-                    <div className="space-y-2">
+                    <div className="space-y-1 sm:space-y-2">
                       {cbPwm.fan.map((duty, i) => {
                         const chId = `fan-${i}`;
                         const isSelected = selectedChannels.has(chId);
                         const dutyPct = duty !== null ? Math.round(duty / 10) : "—";
                         const previewDuty = isSelected && inputValue !== "" ? parseInt(inputValue, 10) : null;
                         return (
-                          <label key={chId} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                          <label key={chId} className={`flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg cursor-pointer transition-colors text-xs sm:text-base ${
                             isSelected ? "bg-emerald-100 border border-emerald-300" : "hover:bg-gray-100"
                           }`}>
                             <input
@@ -1030,17 +1030,17 @@ export default function Settings() {
                                 setSelectedChannels(newSelected);
                               }}
                               disabled={!cbStatus.pcb_connected}
-                              className="w-4 h-4"
+                              className="w-3.5 h-3.5 sm:w-4 sm:h-4"
                             />
-                            <span className="flex-1 text-base text-gray-700 font-mono font-bold">CH{i + 5}</span>
-                            <span className="text-base text-gray-600 font-semibold">Current:</span>
-                            <span className="text-base font-mono text-gray-800 min-w-14 text-right font-bold">
+                            <span className="flex-1 text-gray-700 font-mono font-bold">CH{i + 5}</span>
+                            <span className="text-gray-600 font-semibold hidden sm:inline">Current:</span>
+                            <span className="font-mono text-gray-800 min-w-10 sm:min-w-14 text-right font-bold">
                               {dutyPct}%
                             </span>
                             {previewDuty !== null && (
                               <>
-                                <span className="text-base text-gray-400">→</span>
-                                <span className="text-base font-mono text-emerald-600 min-w-14 text-right font-bold">
+                                <span className="text-gray-400">→</span>
+                                <span className="font-mono text-emerald-600 min-w-10 sm:min-w-14 text-right font-bold">
                                   {previewDuty}%
                                 </span>
                               </>
@@ -1053,13 +1053,13 @@ export default function Settings() {
                 </div>
 
                 {/* Value Input Section */}
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-gray-600 mb-3">
-                    <span className="font-bold text-base">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 sm:p-4 mb-3 sm:mb-4">
+                  <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
+                    <span className="font-bold text-xs sm:text-base">
                       {selectedChannels.size === 0 ? "Select channels to modify" : `${selectedChannels.size} channel(s) selected`}
                     </span>
                   </p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <input
                       type="number"
                       min="0"
@@ -1069,10 +1069,10 @@ export default function Settings() {
                         setInputValue(e.target.value);
                       }}
                       disabled={!cbStatus.pcb_connected || selectedChannels.size === 0}
-                      className="flex-1 border border-emerald-300 rounded-lg px-3 py-2 text-base font-mono font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-100 disabled:text-gray-400"
+                      className="flex-1 border border-emerald-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-base font-mono font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-100 disabled:text-gray-400"
                       placeholder="0-100"
                     />
-                    <span className="text-base font-bold text-emerald-700">%</span>
+                    <span className="text-xs sm:text-base font-bold text-emerald-700">%</span>
                   </div>
                 </div>
 
@@ -1080,13 +1080,13 @@ export default function Settings() {
                   <button
                     disabled={!cbStatus.pcb_connected || manualPwmSaving}
                     onClick={handleManualPwmSave}
-                    className="inline-flex items-center justify-center h-10 px-6 bg-emerald-700 text-white text-base font-bold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center h-8 sm:h-10 px-4 sm:px-6 bg-emerald-700 text-white text-xs sm:text-base font-bold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {manualPwmSaving ? (
                       <LoadingSpinner color={"white"} />
                     ) : (
                       <>
-                        <CheckIcon className="w-4 h-4 mr-2" />
+                        <CheckIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1.5 sm:mr-2" />
                         {t("save")}
                       </>
                     )}
@@ -1100,24 +1100,24 @@ export default function Settings() {
           {cbStatus.mode === "auto" && (
             <div className="rounded-2xl overflow-hidden shadow-sm">
               <SectionHeader label={t("fan_curve_title")} colorClass="bg-emerald-500" />
-            <div className="bg-white p-4">
+            <div className="bg-white p-3 sm:p-4">
               {fanCurveLoading ? (
-                <p className="text-sm text-gray-400">{t("loading")}</p>
+                <p className="text-xs sm:text-sm text-gray-400">{t("loading")}</p>
               ) : (
                 <>
-                  <p className="text-sm text-gray-600 mb-4 font-semibold">{t("fan_curve_desc")}</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 font-semibold">{t("fan_curve_desc")}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
                     {/* Idle pair */}
-                    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="border border-gray-200 rounded-lg p-2 sm:p-3 bg-gray-50">
+                      <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
                         <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
-                        <h5 className="text-sm font-bold text-gray-700 uppercase tracking-wider">
+                        <h5 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
                           {t("idle_group")}
                         </h5>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <label className="flex flex-col gap-1">
-                          <span className="text-sm text-gray-600 font-bold uppercase">
+                      <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                        <label className="flex flex-col gap-0.5 sm:gap-1">
+                          <span className="text-xs sm:text-sm text-gray-600 font-bold uppercase">
                             {t("idle_temp")}
                           </span>
                           <input
@@ -1133,11 +1133,11 @@ export default function Settings() {
                                 min_temp: Number(e.target.value),
                               }))
                             }
-                            className="border border-gray-200 rounded-lg px-2 py-1 text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-xs sm:text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
                           />
                         </label>
-                        <label className="flex flex-col gap-1">
-                          <span className="text-sm text-gray-600 font-bold uppercase">
+                        <label className="flex flex-col gap-0.5 sm:gap-1">
+                          <span className="text-xs sm:text-sm text-gray-600 font-bold uppercase">
                             {t("idle_pwm")}
                           </span>
                           <input
@@ -1153,22 +1153,22 @@ export default function Settings() {
                                 min_duty: Math.max(0, Math.min(1000, Number(e.target.value) * 10)),
                               }))
                             }
-                            className="border border-gray-200 rounded-lg px-2 py-1 text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-xs sm:text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
                           />
                         </label>
                       </div>
                     </div>
                     {/* Warning pair */}
-                    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="border border-gray-200 rounded-lg p-2 sm:p-3 bg-gray-50">
+                      <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
                         <span className="inline-block w-2 h-2 rounded-full bg-rose-400" />
-                        <h5 className="text-sm font-bold text-gray-700 uppercase tracking-wider">
+                        <h5 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
                           {t("warning_group")}
                         </h5>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <label className="flex flex-col gap-1">
-                          <span className="text-sm text-gray-600 font-bold uppercase">
+                      <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                        <label className="flex flex-col gap-0.5 sm:gap-1">
+                          <span className="text-xs sm:text-sm text-gray-600 font-bold uppercase">
                             {t("warning_temp")}
                           </span>
                           <input
@@ -1184,11 +1184,11 @@ export default function Settings() {
                                 max_temp: Number(e.target.value),
                               }))
                             }
-                            className="border border-gray-200 rounded-lg px-2 py-1 text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-xs sm:text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
                           />
                         </label>
-                        <label className="flex flex-col gap-1">
-                          <span className="text-sm text-gray-600 font-bold uppercase">
+                        <label className="flex flex-col gap-0.5 sm:gap-1">
+                          <span className="text-xs sm:text-sm text-gray-600 font-bold uppercase">
                             {t("max_pwm")}
                           </span>
                           <input
@@ -1204,7 +1204,7 @@ export default function Settings() {
                                 max_duty: Math.max(0, Math.min(1000, Number(e.target.value) * 10)),
                               }))
                             }
-                            className="border border-gray-200 rounded-lg px-2 py-1 text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-xs sm:text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
                           />
                         </label>
                       </div>
@@ -1215,13 +1215,13 @@ export default function Settings() {
                       disabled={!cbStatus.active || fanCurveSaving}
                       onClick={handleFanCurveSave}
                       title={!cbStatus.active ? t("service_inactive_tooltip") : ""}
-                      className="inline-flex items-center justify-center h-10 px-6 bg-emerald-700 text-white text-base font-bold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center justify-center h-8 sm:h-10 px-4 sm:px-6 bg-emerald-700 text-white text-xs sm:text-base font-bold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {fanCurveSaving ? (
                         <LoadingSpinner color={"white"} />
                       ) : (
                         <>
-                          <CheckIcon className="w-4 h-4 mr-2" />
+                          <CheckIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1.5 sm:mr-2" />
                           {t("save")}
                         </>
                       )}
