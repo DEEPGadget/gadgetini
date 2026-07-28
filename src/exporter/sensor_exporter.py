@@ -128,6 +128,8 @@ class DLCCollector:
             labels=["server", "component", "metric", "unit", "extra"]
         )
         srv = MACHINE_LABEL
+        if (MACHINE_LABEL== "dg5r"):
+            srv = "dg5R"
 
         # Cooling - leak & level
         g.add_metric([srv, "cooling", "leak_detected", "bool", ""], get_int("coolant_leak"))
