@@ -11,7 +11,11 @@ SERVICES=(
 )
 
 echo "=== Configuring USB Gadget Network ==="
-sudo bash "${SCRIPT_DIR}/../../../configure/usb_net/usb-gadget-host.sh"
+if command -v nmcli >/dev/null 2>&1 && systemctl is-active --quiet NetworkManager; then
+    sudo bash "${SCRIPT_DIR}/../../../configure/usb_net/usb-gadget-host.sh"
+else
+    echo "  Skipping usb-gadget-host.sh (no NetworkManager); gadgetini_net_up.service will handle the link"
+fi
 echo ""
 
 echo "=== Installing Python venv and dependencies ==="
