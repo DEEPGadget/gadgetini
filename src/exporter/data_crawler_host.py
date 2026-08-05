@@ -153,7 +153,10 @@ def get_cpu_telemetry(sensors_data):
 
 def get_ipmi_power_output():
     return subprocess.run(
-        ["ipmitool", "sensor", "reading", "POWER_CPU1", "POWER_CPU2"],
+        # Single-socket boards expose POWER_CPU, dual-socket ones POWER_CPU1/2.
+        # ipmitool resolves each name independently: missing ones only produce a
+        # "not found!" line on stderr, the rest still print to stdout.
+        ["ipmitool", "sensor", "reading", "POWER_CPU", "POWER_CPU1", "POWER_CPU2"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -170,7 +173,7 @@ def parse_cpu_power_telemetry(ipmi_text: str):
         if not line:
             continue
 
-        m = re.match(r"^(POWER_CPU[12])\s*\|\s*(.+)$", line)
+        m = re.match(r"^(POWER_CPU[12]?)\s*\|\s*(.+)$", line)
         if not m:
             continue
 
@@ -192,10 +195,10 @@ def parse_cpu_power_telemetry(ipmi_text: str):
                     watts = float(parts[0])
 
         if watts is not None:
-            if sensor_name.endswith("1"):
-                result["cpu_curr_pwr_0"] = watts
-            else:
+            if sensor_name == "POWER_CPU2":
                 result["cpu_curr_pwr_1"] = watts
+            else:
+                result["cpu_curr_pwr_0"] = watts
 
     return result
 
@@ -226,20 +229,42 @@ def parse_cpu_power_from_sensors(sensors_data):
     return result
 
 
+# Latched so the "no CPU power source" warning is logged on state change only:
+# this runs ~1x/sec and both probes fail silently by design.
+_cpu_power_unavailable = False
+
+
 def get_cpu_power_telemetry(sensors_data):
+    global _cpu_power_unavailable
+
+    result = {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
+
     try:
         ipmi = get_ipmi_power_output()
         if ipmi.stdout:
             result = parse_cpu_power_telemetry(ipmi.stdout)
-            if any(v is not None for v in result.values()):
-                return result
     except Exception:
         pass
 
-    try:
-        return parse_cpu_power_from_sensors(sensors_data)
-    except Exception:
-        return {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
+    if all(v is None for v in result.values()):
+        try:
+            result = parse_cpu_power_from_sensors(sensors_data)
+        except Exception:
+            result = {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
+
+    unavailable = all(v is None for v in result.values())
+    if unavailable != _cpu_power_unavailable:
+        if unavailable:
+            print(
+                "[WARN] CPU power unavailable: no POWER_CPU/POWER_CPU1/POWER_CPU2 "
+                "IPMI sensor and no hwmon power*_input reading",
+                flush=True,
+            )
+        else:
+            print("[INFO] CPU power reading recovered", flush=True)
+        _cpu_power_unavailable = unavailable
+
+    return result
 
 
 def get_nic_link_status() -> List[Dict[str, int]]:
