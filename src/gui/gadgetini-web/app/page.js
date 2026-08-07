@@ -60,24 +60,25 @@ function HomeInner() {
 
   return (
     <div className="h-screen flex flex-col">
-      <header className="flex items-center justify-between p-4 bg-gray-200">
-        <h1 className="text-gray-800 font-bold text-lg">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-gray-200 gap-3 sm:gap-4">
+        <h1 className="text-gray-800 font-bold text-lg pl-4">
           Gadgetini{" "}
-          <span className="text-gray-500 font-semibold text-base">v0.3</span>
+          <span className="text-gray-500 font-semibold text-sm sm:text-base">v0.3</span>
         </h1>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto pl-4">
           <LocaleToggle />
           <button
             onClick={handleReboot}
             disabled={rebooting}
-            className={`inline-flex items-center gap-2 px-3 py-1 rounded-md
+            className={`inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-1 rounded-md text-xs sm:text-sm
               ${rebooting ? "bg-gray-400" : "bg-red-500 hover:bg-red-600"}
-              text-white transition disabled:opacity-70`}
+              text-white transition disabled:opacity-70 flex-1 sm:flex-none justify-center sm:justify-start`}
             title="Reboot the system"
           >
-            <PowerIcon className="w-5 h-5" />
-            {rebooting ? t("rebooting") : t("reboot")}
+            <PowerIcon className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" />
+            <span className="sm:hidden">{rebooting ? "..." : t("reboot")}</span>
+            <span className="hidden sm:inline">{rebooting ? t("rebooting") : t("reboot")}</span>
           </button>
         </div>
       </header>
