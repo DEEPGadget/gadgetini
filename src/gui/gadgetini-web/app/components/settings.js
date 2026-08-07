@@ -656,20 +656,20 @@ export default function Settings() {
           {/* === Hardware Count === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_hardware_count")} colorClass="bg-gray-600" />
-            <div className="bg-white p-4 grid grid-cols-3 gap-4">
+            <div className="bg-white p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
               {[
                 { label: t("gpu_count"), key: "gpuCount", min: 0, max: 10 },
                 { label: t("cpu_count"), key: "cpuCount", min: 1, max: 4 },
                 { label: "NVMe", key: "nvmeCount", min: 0, max: 32 },
               ].map(({ label, key, min, max }) => (
-                <div key={key} className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
-                  <div>
-                    <p className="text-base font-bold text-gray-800 sm:text-base">{label}</p>
-                    <p className="text-sm text-gray-500 sm:text-sm">
+                <div key={key} className="flex flex-col sm:flex-col items-start gap-2 bg-gray-50 rounded-xl p-2 sm:p-3">
+                  <div className="w-full">
+                    <p className="text-sm sm:text-base font-bold text-gray-800">{label}</p>
+                    <p className="text-xs sm:text-sm text-gray-500">
                       config.ini {key === "gpuCount" ? "gpu_count" : key === "cpuCount" ? "cpu_count" : "nvme_count"}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-2 bg-white rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 shadow-sm border border-gray-100 w-full sm:w-auto">
                     <input
                       type="number"
                       min={min}
@@ -682,7 +682,7 @@ export default function Settings() {
                           [key]: Math.max(min, Math.min(max, value)),
                         }));
                       }}
-                      className="w-10 text-center text-base font-bold focus:outline-none bg-transparent text-gray-800"
+                      className="flex-1 sm:w-12 text-center text-sm sm:text-base font-bold focus:outline-none bg-transparent text-gray-800"
                     />
                   </div>
                 </div>
