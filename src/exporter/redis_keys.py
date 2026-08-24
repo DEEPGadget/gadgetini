@@ -50,6 +50,12 @@ def manual_pwm_target_pump(idx):
 def manual_pwm_target_fan(idx):
     return f'manual_pwm_target_fan_{idx}'
 
+# Fan curve multi-source (per-source duty and winning source key)
+def pwm_curve_source_duty(key):
+    return f'pwm_curve_duty_{key}'
+
+PWM_CURVE_SELECTED_SOURCE = 'pwm_curve_selected_source'
+
 # Comm status (PCB path only — from health check / poll results).
 COMM_STATUS               = 'comm_status'
 COMM_CONSECUTIVE_FAILURES = 'comm_consecutive_failures'

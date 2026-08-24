@@ -14,7 +14,14 @@
 // Sets manual PWM target values: { pump: [ch1, ch2, ch3, ch4], fan: [ch5~ch12] }
 // Stores in Redis manual_pwm_target_* keys (applied by data_crawler._apply_manual_pwm).
 import { NextResponse } from "next/server";
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import yaml from "js-yaml";
 import { getRedis } from "../../../../lib/redis";
+
+const CONFIG_PATH =
+  process.env.CONTROL_BOARD_CONFIG ||
+  "/home/gadgetini/gadgetini/src/exporter/pcb_config.yaml";
 
 // Physical channel slots (fixed by PCB hardware: TIM1=pump CH1~4, TIM2=fan CH5~8, TIM8=fan CH9~12)
 const PUMP_CHANNELS = [1, 2, 3, 4];
@@ -39,23 +46,29 @@ function sanitizeChannels(arr, lo, hi) {
     .filter((n) => Number.isInteger(n) && n >= lo && n <= hi);
 }
 
-async function loadWiring() {
+async function loadConfig() {
   try {
     const raw = await fs.readFile(CONFIG_PATH, "utf8");
-    const doc = yaml.load(raw) || {};
-    const pwm = ((doc.wiring || {}).pwm) || {};
-    return {
-      wiredPump: sanitizeChannels(pwm.pump_ch, 1, 4),
-      wiredFan: sanitizeChannels(pwm.fan_ch, 5, 12),
-    };
+    return yaml.load(raw) || {};
   } catch {
-    return { wiredPump: [], wiredFan: [] };
+    return {};
   }
+}
+
+function extractCurveSources(doc) {
+  const fc = doc.fan_curve || {};
+  const sources = Array.isArray(fc.sources) ? fc.sources : [];
+  return sources.map(s => ({ key: s.key, label: s.label || s.key }));
 }
 
 export async function GET() {
   try {
-    const { wiredPump, wiredFan } = await loadWiring();
+    const doc = await loadConfig();
+    const pwm = ((doc.wiring || {}).pwm) || {};
+    const wiredPump = sanitizeChannels(pwm.pump_ch, 1, 4);
+    const wiredFan = sanitizeChannels(pwm.fan_ch, 5, 12);
+    const curveSources = extractCurveSources(doc);
+
     const r = getRedis();
     const commStatus = await r.get("comm_status");
 
@@ -69,6 +82,10 @@ export async function GET() {
         fanChannels: FAN_CHANNELS,
         wiredPumpChannels: wiredPump,
         wiredFanChannels: wiredFan,
+        curve: {
+          sources: curveSources.map(s => ({ ...s, duty: null })),
+          selected: null,
+        },
         comm_status: commStatus || "unknown",
       });
     }
@@ -78,11 +95,14 @@ export async function GET() {
     const pumpDutyKeys = PUMP_CHANNELS.map((_, i) => `pwm_duty_pump_${i}`);
     const fanDutyKeys = FAN_CHANNELS.map((_, i) => `pwm_duty_fan_${i}`);
     const fanRpmKeys = FAN_CHANNELS.map((_, i) => `fan_rpm_${i}`);
+    const curveSourceDutyKeys = curveSources.map(s => `pwm_curve_duty_${s.key}`);
     const allKeys = [
       ...pumpDutyKeys,
       ...fanDutyKeys,
       ...fanRpmKeys,
       "coolant_flow_lpm",
+      ...curveSourceDutyKeys,
+      "pwm_curve_selected_source",
     ];
     const values = await r.mget(...allKeys);
 
@@ -94,6 +114,15 @@ export async function GET() {
     const fanRpm = values.slice(off, off + fanRpmKeys.length).map(toIntOrNull);
     off += fanRpmKeys.length;
     const coolantFlowLpm = toFloatOrNull(values[off]);
+    off += 1;
+    const curveSourceDuties = values.slice(off, off + curveSourceDutyKeys.length).map(toIntOrNull);
+    off += curveSourceDutyKeys.length;
+    const selectedSource = values[off];
+
+    const curveSourcesToReturn = curveSources.map((s, i) => ({
+      ...s,
+      duty: curveSourceDuties[i],
+    }));
 
     return NextResponse.json({
       pump,
@@ -102,10 +131,12 @@ export async function GET() {
       coolantFlowLpm,
       pumpChannels: PUMP_CHANNELS,
       fanChannels: FAN_CHANNELS,
-      // Channels the fan curve / manual sliders actually control; the rest are fixed
-      // (e.g. CH10 RPi fan @100%) and shown read-only with a "fixed" tag.
       wiredPumpChannels: wiredPump,
       wiredFanChannels: wiredFan,
+      curve: {
+        sources: curveSourcesToReturn,
+        selected: selectedSource || null,
+      },
       comm_status: "ok",
     });
   } catch (err) {

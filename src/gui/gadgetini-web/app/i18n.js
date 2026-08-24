@@ -110,13 +110,17 @@ const STRINGS = {
 
     // === Fan curve ===
     fan_curve_desc:
-      "Below idle temp: idle PWM. Above warning temp: max PWM. Linear interpolation between.",
+      "Each source computes its own duty curve. The fan uses the highest duty from all sources. Below idle temp: idle PWM. Above warning temp: max PWM. Linear interpolation between.",
     idle_group: "Idle",
     warning_group: "Warning",
     idle_temp: "Idle Temp (°C)",
     warning_temp: "Warning Temp (°C)",
     idle_pwm: "Idle PWM (%)",
     max_pwm: "Max PWM (%)",
+
+    // === Curve breakdown ===
+    curve_breakdown_title: "Active Source Breakdown",
+    curve_selected_badge: "Selected",
 
     // === Manual PWM ===
     manual_pwm_title: "Manual PWM Control",
@@ -220,13 +224,17 @@ const STRINGS = {
 
     // === Fan curve ===
     fan_curve_desc:
-      "기본 온도 이하: 기본 PWM 으로 idle. 경고 온도 이상: 최대 PWM 도달. 그 사이는 선형 보간.",
+      "각 온도 소스는 독립적인 duty 곡선을 계산합니다. 팬은 모든 소스 중 가장 높은 PWM 을 사용합니다. 기본 온도 이하: 기본 PWM. 경고 온도 이상: 최대 PWM. 그 사이는 선형 보간.",
     idle_group: "기본",
     warning_group: "경고",
     idle_temp: "기본 온도 (°C)",
     warning_temp: "경고 온도 (°C)",
     idle_pwm: "기본 PWM (%)",
     max_pwm: "최대 PWM (%)",
+
+    // === Curve breakdown ===
+    curve_breakdown_title: "활성 소스 현황",
+    curve_selected_badge: "선정됨",
 
     // === Manual PWM ===
     manual_pwm_title: "수동 PWM 제어",

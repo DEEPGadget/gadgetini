@@ -1,8 +1,9 @@
-"""Control-board cooling policy — fan-duty control + config hot-reload.
+"""Control-board cooling policy — multi-source fan-duty control + config hot-reload.
 
-Fan duty is a linear interpolation of outlet1 temperature between (min_temp, min_duty)
-and (max_temp, max_duty). Pump duty is fixed (no flow sensor). There is no state
-machine: the 12V supply being mainboard-gated is the hardware interlock.
+Fan duty is computed from multiple temperature sources (coolant, chassis, etc.), each
+with its own linear interpolation between (min_temp, min_duty) and (max_temp, max_duty).
+The final duty is the maximum across all sources. Pump duty is fixed (no flow sensor).
+There is no state machine: the 12V supply being mainboard-gated is the hardware interlock.
 
 Hot-reload: on a pcb_config.yaml mtime change, fan_curve / pump duty / DOUT are applied
 at runtime (web UI edit -> REST API -> file write -> picked up next cycle).
@@ -40,59 +41,85 @@ def _contiguous_runs(channels):
     return runs
 
 
-class FanCurveController:
-    """Linear interpolation between (min_temp, min_duty) and (max_temp, max_duty)."""
+class _CurveSource:
+    """Single temperature source for fan curve (min/max temp/duty, linear interpolation)."""
 
-    def __init__(self, fan_curve_cfg, fan_pwm_chs):
-        cfg = fan_curve_cfg or {}
-        self.min_temp = float(cfg.get('min_temp', 25))
-        self.max_temp = float(cfg.get('max_temp', 60))
-        self.min_duty = int(cfg.get('min_duty', 80))
-        self.max_duty = int(cfg.get('max_duty', 1000))
+    def __init__(self, src_cfg):
+        self.key = src_cfg.get('key', 'unknown')
+        self.label = src_cfg.get('label', self.key)
+        self.redis_key = src_cfg.get('redis_key', '')
+        self.min_temp = float(src_cfg.get('min_temp', 25))
+        self.max_temp = float(src_cfg.get('max_temp', 60))
+        self.min_duty = int(src_cfg.get('min_duty', 80))
+        self.max_duty = int(src_cfg.get('max_duty', 1000))
         if self.max_temp <= self.min_temp:
             self.max_temp = self.min_temp + 1.0
-        self.fan_chs = list(fan_pwm_chs or [])
-        # Consecutive channels are written in one FC16 transaction (atomic).
-        self._runs = _contiguous_runs(self.fan_chs)
-        self._last_written = None
 
-    def _compute_duty(self, temp_c):
-        if temp_c <= self.min_temp:
-            return self.min_duty
-        if temp_c >= self.max_temp:
-            return self.max_duty
-        frac = (temp_c - self.min_temp) / (self.max_temp - self.min_temp)
-        return int(round(self.min_duty + frac * (self.max_duty - self.min_duty)))
-
-    def update(self, pcb, rd):
-        """Read outlet1 -> compute duty -> write to all configured fan channels.
-
-        The Web UI reads duty back via PCBDriver.poll (register readback), so this
-        only writes the channels; it does not publish to Redis itself.
-        """
-        if not self.fan_chs:
-            return
-        v = rd.get(K.COOLANT_TEMP_OUTLET1)
+    def compute(self, rd):
+        """Read temp from Redis, compute duty, return (duty, temp_c)."""
+        v = rd.get(self.redis_key)
         temp_c = None
         if v is not None:
             try:
                 temp_c = float(v)
             except (TypeError, ValueError):
                 temp_c = None
+
         if temp_c is None:
-            # No outlet temp (NTC unwired / read failed) — fall back to idle (min_duty).
-            # Never leave duty at 0 because 0 PWM = fan runs at 100% (no control signal).
-            log.warning("no %s — fan duty -> min_duty (idle baseline %d)", K.COOLANT_TEMP_OUTLET1, self.min_duty)
             duty = self.min_duty
+            log.debug("%s: no %s — duty -> min_duty (idle baseline %d)", self.key, self.redis_key, self.min_duty)
         else:
-            duty = self._compute_duty(temp_c)
+            if temp_c <= self.min_temp:
+                duty = self.min_duty
+            elif temp_c >= self.max_temp:
+                duty = self.max_duty
+            else:
+                frac = (temp_c - self.min_temp) / (self.max_temp - self.min_temp)
+                duty = int(round(self.min_duty + frac * (self.max_duty - self.min_duty)))
+
+        return duty, temp_c
+
+
+class FanCurveController:
+    """Multi-source fan curve: max(duty) across all sources, per-source linear interpolation."""
+
+    def __init__(self, fan_curve_cfg, fan_pwm_chs):
+        cfg = fan_curve_cfg or {}
+        self.sources = [_CurveSource(s) for s in cfg.get('sources', [])]
+        self.fan_chs = list(fan_pwm_chs or [])
+        # Consecutive channels are written in one FC16 transaction (atomic).
+        self._runs = _contiguous_runs(self.fan_chs)
+        self._last_written = None
+        self._last_winner = None
+
+    def update(self, pcb, rd):
+        """Compute duty from all sources, take max, write to fan channels, publish to Redis.
+
+        Per-source duty values are published to Redis for UI breakdown; the selected
+        (winning) source key is published to PWM_CURVE_SELECTED_SOURCE.
+        The Web UI reads duty back via PCBDriver.poll (register readback), so we also
+        publish per-source computed duties separately.
+        """
+        if not self.fan_chs or not self.sources:
+            return
+
+        results = []
+        for src in self.sources:
+            duty, temp_c = src.compute(rd)
+            results.append((src, duty, temp_c))
+
+        if not results:
+            return
+
+        winner_src, duty, winner_temp = max(results, key=lambda r: r[1])
 
         # deadband, but always emit once when reaching the min/max clamp
         if self._last_written is not None and abs(duty - self._last_written) < _WRITE_DEADBAND:
-            if duty in (self.min_duty, self.max_duty) and self._last_written != duty:
+            if duty in (winner_src.min_duty, winner_src.max_duty) and self._last_written != duty:
                 pass
             else:
                 return
+
         for first_ch, run in self._runs:
             base_hr = pcb_driver.hr_pwm_duty(first_ch)
             if len(run) == 1:
@@ -103,7 +130,16 @@ class FanCurveController:
                 log.warning("fan duty write failed: CH %s (HR %d) duty=%d", run, base_hr, duty)
 
         self._last_written = duty
-        log.debug("outlet=%s C -> duty=%d -> CH %s", temp_c, duty, self.fan_chs)
+        self._last_winner = winner_src.key
+
+        pipe = rd.pipeline()
+        for src, src_duty, _ in results:
+            pipe.set(K.pwm_curve_source_duty(src.key), src_duty)
+        pipe.set(K.PWM_CURVE_SELECTED_SOURCE, winner_src.key)
+        pipe.execute()
+
+        log.debug("fan duty: max(%s) = %d (winner: %s) -> CH %s",
+                  ', '.join(f"{src.key}={d}" for src, d, _ in results), duty, winner_src.key, self.fan_chs)
 
 
 def _fan_chs(cfg):
