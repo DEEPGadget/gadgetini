@@ -34,7 +34,7 @@ function Toggle({ value, onChange }) {
 function SectionHeader({ label, colorClass }) {
   return (
     <div className={`px-4 py-2.5 ${colorClass}`}>
-      <span className="text-xs font-bold uppercase tracking-widest text-white/90">
+      <span className="text-base font-bold uppercase tracking-wider text-white/90">
         {label}
       </span>
     </div>
@@ -53,10 +53,31 @@ function GridCard({ label, stateKey, displayMode, setDisplayMode, activeClass })
       }`}
     >
       <span className="text-base font-bold leading-tight sm:text-base">{label}</span>
-      <span className="text-sm font-bold opacity-75 sm:text-sm">
+      <span className="text-sm font-bold text-gray-500 sm:text-sm">
         {isOn ? "● ON" : "○ OFF"}
       </span>
     </button>
+  );
+}
+
+function MiniField({ label, value, onChange, disabled, dotClass }) {
+  return (
+    <label className="flex flex-col gap-0.5">
+      <span className="flex items-center gap-1 text-xs sm:text-sm text-gray-500 font-bold uppercase tracking-wider">
+        <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
+        {label}
+      </span>
+      <input
+        type="number"
+        step="1"
+        min={0}
+        max={100}
+        disabled={disabled}
+        value={value}
+        onChange={onChange}
+        className="w-full border border-gray-200 rounded-md px-1.5 py-1 text-xs sm:text-sm font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+      />
+    </label>
   );
 }
 
@@ -297,6 +318,18 @@ export default function Settings() {
       .finally(() => setFanCurveLoading(false));
   }, []);
 
+  const updateSource = (key, field, value) => {
+    setFanCurve((p) => ({
+      ...p,
+      sources: p.sources.map((s) =>
+        s.key === key ? { ...s, [field]: value } : s
+      ),
+    }));
+  };
+
+  const clampDuty = (value) => {
+    return Math.max(0, Math.min(1000, Number(value) * 10));
+  };
 
   const handleFanCurveSave = async () => {
     setFanCurveSaving(true);
@@ -474,11 +507,11 @@ export default function Settings() {
 
               {/* Current IP */}
               <div>
-                <p className="text-xs text-gray-400 mb-1">{t("current_ip")}</p>
-                <p className="text-base font-bold text-gray-900">{currentIP}</p>
+                <p className="text-xs sm:text-sm text-gray-400 mb-1">{t("current_ip")}</p>
+                <p className="text-base font-semibold text-gray-800">{currentIP}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ethActive ? "bg-green-400" : "bg-red-400"}`} />
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs sm:text-sm text-gray-400">
                     {ethActive ? t("eth0_active") : t("eth0_inactive")}
                   </span>
                 </div>
@@ -486,13 +519,13 @@ export default function Settings() {
 
               {/* Server Select */}
               <div>
-                <p className="text-xs text-gray-400 mb-2">{t("server")}</p>
+                <p className="text-xs sm:text-sm text-gray-400 mb-2">{t("server")}</p>
                 <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                   {SERVERS.map(({ label, value }) => (
                     <button
                       key={value}
                       onClick={() => handleServerChange(value)}
-                      className={`flex-1 py-1.5 text-xs rounded-md font-bold uppercase tracking-wider transition-all ${
+                      className={`flex-1 py-1.5 text-xs sm:text-sm rounded-md font-bold uppercase tracking-wider transition-all ${
                         serverName === value
                           ? "bg-slate-800 text-white shadow"
                           : "text-gray-500 hover:text-gray-700"
@@ -522,13 +555,13 @@ export default function Settings() {
 
               {/* Network Mode */}
               <div>
-                <p className="text-sm text-gray-500 mb-2 font-semibold">{t("network_mode")}</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-2 font-bold">{t("network_mode")}</p>
                 <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                   {["dhcp", "static"].map((mode) => (
                     <button
                       key={mode}
                       onClick={() => setIPMode(mode)}
-                      className={`flex-1 py-1.5 text-sm sm:text-sm rounded-md font-bold uppercase tracking-wider transition-all ${
+                      className={`flex-1 py-1.5 text-xs sm:text-sm rounded-md font-bold uppercase tracking-wider transition-all ${
                         IPMode === mode
                           ? "bg-slate-800 text-white shadow"
                           : "text-gray-500 hover:text-gray-700"
@@ -585,7 +618,7 @@ export default function Settings() {
             RIGHT MAIN — LCD Control
         ══════════════════════════════════════ */}
         <div className="flex-1 min-w-0 space-y-3">
-          <p className="text-sm font-bold uppercase tracking-widest text-gray-500 px-1">
+          <p className="text-base font-bold uppercase tracking-wider text-gray-700 px-1">
             {t("section_lcd_control")}
           </p>
 
@@ -596,8 +629,8 @@ export default function Settings() {
               {/* Display master */}
               <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                 <div>
-                  <p className="text-base font-bold text-gray-800 sm:text-base">{t("display")}</p>
-                  <p className="text-sm text-gray-500 sm:text-sm">{t("display_master")}</p>
+                  <p className="text-base font-bold text-gray-800">{t("display")}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">{t("display_master")}</p>
                 </div>
                 <Toggle
                   value={displayMode.display}
@@ -609,7 +642,7 @@ export default function Settings() {
 
               {/* Orientation */}
               <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
-                <p className="text-base font-bold text-gray-800 sm:text-base">{t("orientation")}</p>
+                <p className="text-base font-bold text-gray-800">{t("orientation")}</p>
                 <div className="flex gap-1 bg-white rounded-lg p-1 shadow-sm border border-gray-100">
                   {[
                     { label: t("vertical"), value: "vertical", Icon: ArrowUpIcon },
@@ -636,8 +669,8 @@ export default function Settings() {
               {/* Rotation */}
               <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 bg-gray-50 rounded-xl p-3">
                 <div>
-                  <p className="text-base font-bold text-gray-800 sm:text-base">{t("rotation")}</p>
-                  <p className="text-sm text-gray-500 sm:text-sm">{t("rotation_desc")}</p>
+                  <p className="text-base font-bold text-gray-800">{t("rotation")}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">{t("rotation_desc")}</p>
                 </div>
                 <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 shadow-sm border border-gray-100">
                   <input
@@ -787,7 +820,7 @@ export default function Settings() {
           {/* ══════════════════════════════════════
               Control Board
           ══════════════════════════════════════ */}
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1 pt-3">
+          <p className="text-base font-bold uppercase tracking-wider text-gray-700 px-1 pt-3">
             {t("section_control_board")}
           </p>
 
@@ -814,7 +847,7 @@ export default function Settings() {
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-400 uppercase tracking-wider font-semibold">{t("mode")}</span>
+                <span className="text-xs sm:text-sm text-gray-600 uppercase tracking-wider font-bold">{t("mode")}</span>
                 <label className="flex items-center gap-1.5 text-base cursor-pointer">
                   <input
                     type="radio"
@@ -880,7 +913,7 @@ export default function Settings() {
                   {cbPwm.pump.map((duty, i) => (
                     <div key={`pump-${i}`} className="flex items-center justify-between text-xs sm:text-base gap-2">
                       <span className="text-gray-700 font-mono font-bold">CH{i + 1}</span>
-                      <span className="font-mono text-sm sm:text-base font-bold">
+                      <span className="font-mono text-sm sm:text-base font-semibold">
                         {duty === null ? (
                           <span className="text-gray-300">—</span>
                         ) : (
@@ -920,7 +953,7 @@ export default function Settings() {
                   {cbPwm.fan.map((duty, i) => (
                     <div key={`fan-${i}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-3 text-xs sm:text-base">
                       <span className="text-gray-700 font-mono font-bold">CH{i + 5}</span>
-                      <span className="font-mono text-right text-sm sm:text-base font-bold">
+                      <span className="font-mono text-right text-sm sm:text-base font-semibold">
                         {duty === null ? (
                           <span className="text-gray-300">—</span>
                         ) : (
@@ -932,7 +965,7 @@ export default function Settings() {
                           </>
                         )}
                       </span>
-                      <span className="font-mono text-right text-gray-600 font-bold text-xs sm:text-base min-w-[4rem] sm:min-w-[5.5rem]">
+                      <span className="font-mono text-right text-gray-600 font-semibold text-xs sm:text-sm min-w-[4rem] sm:min-w-[5.5rem]">
                         {cbPwm.fanRpm[i] === null || cbPwm.fanRpm[i] === undefined ? (
                           <span className="text-gray-300">—</span>
                         ) : (
@@ -961,7 +994,7 @@ export default function Settings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-3 sm:mb-4">
                   {/* Pump Channel Selection */}
                   <div className="border border-gray-200 rounded-lg p-2 sm:p-3 bg-gray-50">
-                    <h5 className="text-xs sm:text-lg font-bold text-gray-700 uppercase tracking-wider mb-2 sm:mb-3">
+                    <h5 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider mb-2 sm:mb-3">
                       {t("pumps_label")}
                     </h5>
                     <div className="space-y-1 sm:space-y-2">
@@ -991,13 +1024,13 @@ export default function Settings() {
                             />
                             <span className="flex-1 text-gray-700 font-mono font-bold">CH{i + 1}</span>
                             <span className="text-gray-600 font-semibold hidden sm:inline">Current:</span>
-                            <span className="font-mono text-gray-800 min-w-10 sm:min-w-14 text-right font-bold">
+                            <span className="font-mono text-gray-800 min-w-10 sm:min-w-14 text-right font-semibold">
                               {dutyPct}%
                             </span>
                             {previewDuty !== null && (
                               <>
                                 <span className="text-gray-400">→</span>
-                                <span className="font-mono text-emerald-600 min-w-10 sm:min-w-14 text-right font-bold">
+                                <span className="font-mono text-emerald-600 min-w-10 sm:min-w-14 text-right font-semibold">
                                   {previewDuty}%
                                 </span>
                               </>
@@ -1010,7 +1043,7 @@ export default function Settings() {
 
                   {/* Fan Channel Selection */}
                   <div className="border border-gray-200 rounded-lg p-2 sm:p-3 bg-gray-50">
-                    <h5 className="text-xs sm:text-lg font-bold text-gray-700 uppercase tracking-wider mb-2 sm:mb-3">
+                    <h5 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider mb-2 sm:mb-3">
                       {t("fans_label")}
                     </h5>
                     <div className="space-y-1 sm:space-y-2">
@@ -1040,13 +1073,13 @@ export default function Settings() {
                             />
                             <span className="flex-1 text-gray-700 font-mono font-bold">CH{i + 5}</span>
                             <span className="text-gray-600 font-semibold hidden sm:inline">Current:</span>
-                            <span className="font-mono text-gray-800 min-w-10 sm:min-w-14 text-right font-bold">
+                            <span className="font-mono text-gray-800 min-w-10 sm:min-w-14 text-right font-semibold">
                               {dutyPct}%
                             </span>
                             {previewDuty !== null && (
                               <>
                                 <span className="text-gray-400">→</span>
-                                <span className="font-mono text-emerald-600 min-w-10 sm:min-w-14 text-right font-bold">
+                                <span className="font-mono text-emerald-600 min-w-10 sm:min-w-14 text-right font-semibold">
                                   {previewDuty}%
                                 </span>
                               </>
@@ -1061,7 +1094,7 @@ export default function Settings() {
                 {/* Value Input Section */}
                 <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 sm:p-4 mb-3 sm:mb-4">
                   <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
-                    <span className="font-bold text-xs sm:text-base">
+                    <span className="font-bold text-xs sm:text-sm">
                       {selectedChannels.size === 0 ? "Select channels to modify" : `${selectedChannels.size} channel(s) selected`}
                     </span>
                   </p>
@@ -1075,10 +1108,10 @@ export default function Settings() {
                         setInputValue(e.target.value);
                       }}
                       disabled={!cbStatus.pcb_connected || selectedChannels.size === 0}
-                      className="flex-1 border border-emerald-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-base font-mono font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-100 disabled:text-gray-400"
+                      className="flex-1 border border-emerald-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-mono font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-100 disabled:text-gray-400"
                       placeholder="0-100"
                     />
-                    <span className="text-xs sm:text-base font-bold text-emerald-700">%</span>
+                    <span className="text-xs sm:text-sm font-bold text-emerald-700">%</span>
                   </div>
                 </div>
 
@@ -1102,206 +1135,112 @@ export default function Settings() {
             </div>
           )}
 
-          {/* === Curve Breakdown (show only in auto mode) === */}
-          {cbStatus.mode === "auto" && cbPwm.curve && cbPwm.curve.sources.length > 0 && (
-            <div className="rounded-2xl overflow-hidden shadow-sm">
-              <SectionHeader label={t("curve_breakdown_title")} colorClass="bg-emerald-500" />
-              <div className="bg-emerald-50/60 p-3 sm:p-4">
-                <div className="space-y-1.5 sm:space-y-2">
-                  {cbPwm.curve.sources.map((src) => (
-                    <div
-                      key={src.key}
-                      className={`flex items-center justify-between rounded-lg p-2 sm:p-3 ${
-                        src.key === cbPwm.curve.selected
-                          ? "bg-white border border-emerald-300"
-                          : "bg-white/50 border border-gray-200"
-                      }`}
-                    >
-                      <span className="text-xs sm:text-base font-semibold text-gray-800">{src.label}</span>
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span className="font-mono text-sm sm:text-base font-bold text-gray-800">
-                          {src.duty !== null ? `${(src.duty / 10).toFixed(1)}%` : "—"}
-                        </span>
-                        {src.key === cbPwm.curve.selected && (
-                          <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500 text-white">
-                            {t("curve_selected_badge")}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* === Fan Curve editor (show only in auto mode) === */}
+          {/* === Merged Fan Curve Panel (settings + live breakdown) === */}
           {cbStatus.mode === "auto" && (
             <div className="rounded-2xl overflow-hidden shadow-sm">
               <SectionHeader label={t("fan_curve_title")} colorClass="bg-emerald-500" />
-            <div className="bg-white p-3 sm:p-4">
-              {fanCurveLoading ? (
-                <p className="text-xs sm:text-sm text-gray-400">{t("loading")}</p>
-              ) : (
-                <>
-                  <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 font-semibold">{t("fan_curve_desc")}</p>
-                  {fanCurve.sources && fanCurve.sources.length > 0 ? (
-                    fanCurve.sources.map((source) => (
-                      <div key={source.key} className="mb-4 last:mb-0">
-                        <h4 className="text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-3 uppercase tracking-wider">
-                          {source.label}
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                          {/* Idle pair */}
-                          <div className="border border-gray-200 rounded-lg p-2 sm:p-3 bg-gray-50">
-                            <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
-                              <h5 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
-                                {t("idle_group")}
-                              </h5>
+              <div className="bg-white p-3 sm:p-4">
+                {fanCurveLoading ? (
+                  <p className="text-xs sm:text-sm text-gray-400">{t("loading")}</p>
+                ) : (
+                  <>
+                    <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 font-semibold">{t("fan_curve_desc")}</p>
+                    <div className="space-y-2 sm:space-y-3">
+                      {fanCurve.sources?.map((source) => {
+                        const live = cbPwm.curve?.sources?.find((s) => s.key === source.key);
+                        const isSelected = source.key === cbPwm.curve?.selected;
+                        return (
+                          <div
+                            key={source.key}
+                            className={`rounded-xl border overflow-hidden ${
+                              isSelected ? "border-emerald-300 ring-1 ring-emerald-200" : "border-gray-200"
+                            }`}
+                          >
+                            <div
+                              className={`flex items-center justify-between px-3 py-1.5 ${
+                                isSelected ? "bg-emerald-50" : "bg-gray-50"
+                              }`}
+                            >
+                              <span className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
+                                {source.label}
+                              </span>
+                              {isSelected && (
+                                <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500 text-white">
+                                  {t("curve_selected_badge")}
+                                </span>
+                              )}
                             </div>
-                            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                              <label className="flex flex-col gap-0.5 sm:gap-1">
-                                <span className="text-xs sm:text-sm text-gray-600 font-bold uppercase">
-                                  {t("idle_temp")}
+                            <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+                              {/* Settings half */}
+                              <div className="flex-1 p-2 sm:p-3">
+                                <div className="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider mb-1.5">
+                                  {t("settings_label")}
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
+                                  <MiniField
+                                    label={t("idle_temp_short")}
+                                    dotClass="bg-emerald-400"
+                                    value={source.min_temp}
+                                    disabled={!cbStatus.active}
+                                    onChange={(e) => updateSource(source.key, "min_temp", Number(e.target.value))}
+                                  />
+                                  <MiniField
+                                    label={t("idle_pwm_short")}
+                                    dotClass="bg-emerald-400"
+                                    value={Math.round(source.min_duty / 10)}
+                                    disabled={!cbStatus.active}
+                                    onChange={(e) => updateSource(source.key, "min_duty", clampDuty(e.target.value))}
+                                  />
+                                  <MiniField
+                                    label={t("warning_temp_short")}
+                                    dotClass="bg-rose-400"
+                                    value={source.max_temp}
+                                    disabled={!cbStatus.active}
+                                    onChange={(e) => updateSource(source.key, "max_temp", Number(e.target.value))}
+                                  />
+                                  <MiniField
+                                    label={t("max_pwm_short")}
+                                    dotClass="bg-rose-400"
+                                    value={Math.round(source.max_duty / 10)}
+                                    disabled={!cbStatus.active}
+                                    onChange={(e) => updateSource(source.key, "max_duty", clampDuty(e.target.value))}
+                                  />
+                                </div>
+                              </div>
+                              {/* Live half */}
+                              <div className="w-full sm:w-32 flex flex-row sm:flex-col items-center justify-between sm:justify-center gap-2 sm:gap-1 p-2 sm:p-3 bg-gray-50/60">
+                                <span className="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">
+                                  {t("live_pwm_label")}
                                 </span>
-                                <input
-                                  type="number"
-                                  step="1"
-                                  min={0}
-                                  max={100}
-                                  disabled={!cbStatus.active}
-                                  value={source.min_temp}
-                                  onChange={(e) =>
-                                    setFanCurve((p) => ({
-                                      ...p,
-                                      sources: p.sources.map((s) =>
-                                        s.key === source.key
-                                          ? { ...s, min_temp: Number(e.target.value) }
-                                          : s
-                                      ),
-                                    }))
-                                  }
-                                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs sm:text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
-                                />
-                              </label>
-                              <label className="flex flex-col gap-0.5 sm:gap-1">
-                                <span className="text-xs sm:text-sm text-gray-600 font-bold uppercase">
-                                  {t("idle_pwm")}
+                                <span className="font-mono text-base sm:text-base font-semibold text-gray-800">
+                                  {live?.duty != null ? `${(live.duty / 10).toFixed(1)}%` : "—"}
                                 </span>
-                                <input
-                                  type="number"
-                                  step="1"
-                                  min={0}
-                                  max={100}
-                                  disabled={!cbStatus.active}
-                                  value={Math.round(source.min_duty / 10)}
-                                  onChange={(e) =>
-                                    setFanCurve((p) => ({
-                                      ...p,
-                                      sources: p.sources.map((s) =>
-                                        s.key === source.key
-                                          ? {
-                                              ...s,
-                                              min_duty: Math.max(0, Math.min(1000, Number(e.target.value) * 10)),
-                                            }
-                                          : s
-                                      ),
-                                    }))
-                                  }
-                                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs sm:text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
-                                />
-                              </label>
-                            </div>
-                          </div>
-                          {/* Warning pair */}
-                          <div className="border border-gray-200 rounded-lg p-2 sm:p-3 bg-gray-50">
-                            <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                              <span className="inline-block w-2 h-2 rounded-full bg-rose-400" />
-                              <h5 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
-                                {t("warning_group")}
-                              </h5>
-                            </div>
-                            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                              <label className="flex flex-col gap-0.5 sm:gap-1">
-                                <span className="text-xs sm:text-sm text-gray-600 font-bold uppercase">
-                                  {t("warning_temp")}
-                                </span>
-                                <input
-                                  type="number"
-                                  step="1"
-                                  min={0}
-                                  max={100}
-                                  disabled={!cbStatus.active}
-                                  value={source.max_temp}
-                                  onChange={(e) =>
-                                    setFanCurve((p) => ({
-                                      ...p,
-                                      sources: p.sources.map((s) =>
-                                        s.key === source.key
-                                          ? { ...s, max_temp: Number(e.target.value) }
-                                          : s
-                                      ),
-                                    }))
-                                  }
-                                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs sm:text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
-                                />
-                              </label>
-                              <label className="flex flex-col gap-0.5 sm:gap-1">
-                                <span className="text-xs sm:text-sm text-gray-600 font-bold uppercase">
-                                  {t("max_pwm")}
-                                </span>
-                                <input
-                                  type="number"
-                                  step="1"
-                                  min={0}
-                                  max={100}
-                                  disabled={!cbStatus.active}
-                                  value={Math.round(source.max_duty / 10)}
-                                  onChange={(e) =>
-                                    setFanCurve((p) => ({
-                                      ...p,
-                                      sources: p.sources.map((s) =>
-                                        s.key === source.key
-                                          ? {
-                                              ...s,
-                                              max_duty: Math.max(0, Math.min(1000, Number(e.target.value) * 10)),
-                                            }
-                                          : s
-                                      ),
-                                    }))
-                                  }
-                                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs sm:text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
-                                />
-                              </label>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs sm:text-sm text-gray-500">{t("loading")}</p>
-                  )}
-                  <div className="flex justify-end items-center pt-3 border-t border-gray-100">
-                    <button
-                      disabled={!cbStatus.active || fanCurveSaving}
-                      onClick={handleFanCurveSave}
-                      title={!cbStatus.active ? t("service_inactive_tooltip") : ""}
-                      className="inline-flex items-center justify-center h-8 sm:h-10 px-4 sm:px-6 bg-emerald-700 text-white text-xs sm:text-base font-bold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {fanCurveSaving ? (
-                        <LoadingSpinner color={"white"} />
-                      ) : (
-                        <>
-                          <CheckIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1.5 sm:mr-2" />
-                          {t("save")}
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-end items-center pt-3 mt-3 border-t border-gray-100">
+                      <button
+                        disabled={!cbStatus.active || fanCurveSaving}
+                        onClick={handleFanCurveSave}
+                        title={!cbStatus.active ? t("service_inactive_tooltip") : ""}
+                        className="inline-flex items-center justify-center h-8 sm:h-10 px-4 sm:px-6 bg-emerald-700 text-white text-xs sm:text-base font-bold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {fanCurveSaving ? (
+                          <LoadingSpinner color={"white"} />
+                        ) : (
+                          <>
+                            <CheckIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1.5 sm:mr-2" />
+                            {t("save")}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>

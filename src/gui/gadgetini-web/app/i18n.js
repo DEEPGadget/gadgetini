@@ -117,9 +117,12 @@ const STRINGS = {
     warning_temp: "Warning Temp (°C)",
     idle_pwm: "Idle PWM (%)",
     max_pwm: "Max PWM (%)",
-
-    // === Curve breakdown ===
-    curve_breakdown_title: "Active Source Breakdown",
+    settings_label: "Settings",
+    live_pwm_label: "Live",
+    idle_temp_short: "Idle °C",
+    idle_pwm_short: "Idle %",
+    warning_temp_short: "Warn °C",
+    max_pwm_short: "Max %",
     curve_selected_badge: "Selected",
 
     // === Manual PWM ===
@@ -231,9 +234,12 @@ const STRINGS = {
     warning_temp: "경고 온도 (°C)",
     idle_pwm: "기본 PWM (%)",
     max_pwm: "최대 PWM (%)",
-
-    // === Curve breakdown ===
-    curve_breakdown_title: "활성 소스 현황",
+    settings_label: "설정값",
+    live_pwm_label: "실시간",
+    idle_temp_short: "기본°C",
+    idle_pwm_short: "기본%",
+    warning_temp_short: "경고°C",
+    max_pwm_short: "최대%",
     curve_selected_badge: "선정됨",
 
     // === Manual PWM ===
