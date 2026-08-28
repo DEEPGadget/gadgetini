@@ -41,9 +41,13 @@ def pwm_duty_pump(idx):
 def pwm_duty_fan(idx):
     return f'pwm_duty_fan_{idx}'
 
+# Control mode: 'auto' = duty from the fan curve in pcb_config.yaml,
+# 'manual' = duty from the manual_pwm_target_* keys below.
+CONTROL_MODE = 'control_mode'
+
 # Manual PWM target (intended duty per channel, user-controlled in manual mode)
 # 0-based index; same physical-channel convention as pwm_duty_*.
-# Written by web UI (manual mode) or mode switch, read by data_crawler._apply_manual_pwm.
+# Written by web UI (manual mode) or mode switch, read by pcb_control.apply_manual_pwm.
 def manual_pwm_target_pump(idx):
     return f'manual_pwm_target_pump_{idx}'
 

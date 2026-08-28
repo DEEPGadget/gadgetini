@@ -5,6 +5,20 @@ with its own linear interpolation between (min_temp, min_duty) and (max_temp, ma
 The final duty is the maximum across all sources. Pump duty is fixed (no flow sensor).
 There is no state machine: the 12V supply being mainboard-gated is the hardware interlock.
 
+Where the anchors come from (pcb_config.yaml, mirrored by DEFAULT_SOURCES in the web
+UI's app/api/control/fan-curve/route.js — keep the two in step):
+
+  min_temp  ambient, 27 C — the ASHRAE recommended upper bound for a data centre's
+            controlled envelope (18~27 C). While the room holds its setpoint the fans
+            stay on the min_duty idle floor (80 = 8%).
+  max_temp  that metric's Critical threshold from src/gui/grafana/common/threshold.md
+            (coolant outlet >65 C, chassis >50 C), where duty reaches max_duty
+            (1000 = 100%). Only the span between the two anchors is interpolated.
+
+Idle is anchored to ambient rather than to the Normal ceiling deliberately: anchoring
+min_temp at Normal (coolant 60 C, chassis 40 C) would leave the whole Normal band with
+no ramp at all, so the fans would still be idling as the metric entered Warning.
+
 Hot-reload: on a pcb_config.yaml mtime change, fan_curve / pump duty / DOUT are applied
 at runtime (web UI edit -> REST API -> file write -> picked up next cycle).
 """
@@ -48,6 +62,9 @@ class _CurveSource:
         self.key = src_cfg.get('key', 'unknown')
         self.label = src_cfg.get('label', self.key)
         self.redis_key = src_cfg.get('redis_key', '')
+        # Anchors are per-source and always come from pcb_config.yaml (see the module
+        # docstring for how they map onto threshold.md); the literals below are only a
+        # fallback for a malformed source entry, not the policy.
         self.min_temp = float(src_cfg.get('min_temp', 25))
         self.max_temp = float(src_cfg.get('max_temp', 60))
         self.min_duty = int(src_cfg.get('min_duty', 80))
@@ -142,6 +159,54 @@ class FanCurveController:
                   ', '.join(f"{src.key}={d}" for src, d, _ in results), duty, winner_src.key, self.fan_chs)
 
 
+def apply_manual_pwm(pcb, rd, cfg):
+    """Apply manual PWM targets from Redis (channel write) — no temperature feedback.
+
+    Reads manual_pwm_target_pump_* / manual_pwm_target_fan_* from Redis, applies pump
+    clamping (min_duty/max_duty) to protect hardware, writes to PCB registers.
+    """
+    try:
+        wiring = (cfg.get('wiring') or {}).get('pwm') or {}
+        pump_chs = wiring.get('pump_ch') or []
+        fan_chs = wiring.get('fan_ch') or []
+        pump_cfg = cfg.get('pump', {}) or {}
+        pump_min_duty = int(pump_cfg.get('min_duty', 0))
+        pump_max_duty = int(pump_cfg.get('max_duty', 1000))
+
+        # Pump channels: apply clamping (same protection as apply_initial_state)
+        for ch in pump_chs:
+            idx = ch - 1
+            target_str = rd.get(K.manual_pwm_target_pump(idx))
+            if target_str is None:
+                continue
+            try:
+                duty = int(target_str)
+            except (ValueError, TypeError):
+                log.warning("manual_pwm_target_pump_%d invalid: %s", idx, target_str)
+                continue
+            # Clamp pump duty to safe voltage range (6-12VDC)
+            clamped = 0 if duty <= 0 else max(pump_min_duty, min(pump_max_duty, duty))
+            pcb.write_register(pcb_driver.hr_pwm_duty(ch), clamped)
+
+        # Fan channels: no clamping (fans safe at any duty)
+        for ch in fan_chs:
+            idx = ch - 5
+            target_str = rd.get(K.manual_pwm_target_fan(idx))
+            if target_str is None:
+                continue
+            try:
+                duty = int(target_str)
+            except (ValueError, TypeError):
+                log.warning("manual_pwm_target_fan_%d invalid: %s", idx, target_str)
+                continue
+            if 0 <= duty <= 1000:
+                pcb.write_register(pcb_driver.hr_pwm_duty(ch), duty)
+
+        log.debug("manual PWM applied from Redis targets")
+    except Exception:
+        log.exception("manual PWM apply failed")
+
+
 def _fan_chs(cfg):
     return (cfg.get('wiring', {}).get('pwm') or {}).get('fan_ch') or []
 
@@ -197,6 +262,5 @@ class ConfigReloader:
             self.last_mtime = m
             log.info("pcb_config.yaml reloaded (mtime change)")
         except Exception:
-            log.exception("config reload failed; keeping previous cfg")
-            self.last_mtime = m   # don't retry the same broken file every cycle
+            log.exception("config reload failed; keeping previous cfg — will retry next cycle")
         return self.controller

@@ -1,34 +1,85 @@
-"""Simulate control board sensor data by writing to Redis."""
+"""Simulate control board sensor data by writing to Redis.
+
+Sensors are faked; the PWM control path is NOT. Duty is produced by the production
+pcb_control.FanCurveController / ConfigReloader running against the simulated
+temperatures, with only the Modbus transport replaced (_SimPCB). So a fan-curve or
+pump-duty edit in pcb_config.yaml — e.g. from the web UI — moves simulated PWM
+exactly as it would move real hardware, hot-reload included.
+"""
 
 import redis
 import time
 import random
+import yaml
 from typing import Dict, Any
 
 # Import Redis keys from the project
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+import pcb_control
+import pcb_driver
 from redis_keys import (
     COOLANT_TEMP_INLET1, COOLANT_TEMP_INLET2,
     COOLANT_TEMP_OUTLET1, COOLANT_TEMP_OUTLET2,
     COOLANT_FLOW_LPM, COOLANT_LEAK, COOLANT_LEVEL,
     AIR_TEMP, AIR_HUMIT, CHASSIS_STABIL,
     fan_rpm, pwm_duty_pump, pwm_duty_fan,
-    pwm_curve_source_duty, PWM_CURVE_SELECTED_SOURCE,
-    COMM_STATUS
+    CONTROL_MODE, COMM_STATUS
 )
 
 STEP_FRACTION = 0.12  # per-tick step as a fraction of the variation range
+
+PCB_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pcb_config.yaml')
+
+
+class _SimPCB(pcb_driver.PCBDriver):
+    """PCBDriver with register writes redirected to Redis instead of Modbus.
+
+    Everything above the transport — pump clamping, apply_initial_state, the fan
+    curve — is the real implementation, so the simulator cannot drift from the
+    hardware behaviour it stands in for. Writes land on the same pwm_duty_* keys
+    PCBDriver.poll() would publish from register readback.
+    """
+
+    def __init__(self, cfg, rd):
+        super().__init__(cfg)
+        self.rd = rd
+
+    def _store_duty(self, ch, value):
+        duty = max(0, min(1000, int(value)))
+        if 1 <= ch <= 4:
+            self.rd.set(pwm_duty_pump(ch - 1), str(duty))
+        elif 5 <= ch <= 12:
+            self.rd.set(pwm_duty_fan(ch - 5), str(duty))
+
+    def write_register(self, address, value):
+        ch = address - pcb_driver.HR_PWM_DUTY_BASE + 1
+        if 1 <= ch <= 12:                 # PWM duty; freq/DOUT registers are no-ops
+            self._store_duty(ch, value)
+        return True
+
+    def write_registers(self, address, values):
+        for offset, value in enumerate(values):
+            self.write_register(address + offset, value)
+        return True
 
 
 class FakeSimulator:
     """Generate and write fake sensor data to Redis."""
 
-    def __init__(self, redis_host='localhost', redis_port=6379):
+    def __init__(self, redis_host='localhost', redis_port=6379, config_path=PCB_CONFIG_PATH):
         self.redis = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
         self.step = 0
         self._walk_state = {}
+
+        with open(config_path) as f:
+            cfg = yaml.safe_load(f)
+        self.pcb = _SimPCB(cfg, self.redis)
+        self.reloader = pcb_control.ConfigReloader(config_path, cfg)
+        # Boot state: pump duty + DOUT from initial_pwm_duty, same as a real connect.
+        self.pcb.apply_initial_state()
+        self.redis.set(CONTROL_MODE, 'auto')
 
     def apply_scenario(self, scenario: Dict[str, Any], interval: float = 2.0):
         """
@@ -112,37 +163,14 @@ class FakeSimulator:
         # Communication status
         self.redis.set(COMM_STATUS, scenario.get("comm_status", "ok"))
 
-        # Fan curve sources: independent walk per source, take the max (mirrors FanCurveController.update)
-        curve_duty_range = variation.get("curve_duty_range", 3)
-        walked_duties = {}
-        for source in scenario.get("pwm_curve_sources", []):
-            walked_duty = self._walk(
-                f"curve_{source['key']}",
-                source["duty"],
-                curve_duty_range,
-                0,
-                100
-            )
-            walked_duties[source["key"]] = walked_duty
-            # Write per-source duty (scale: 0-100 → 0-1000 in 0.1% units)
-            self.redis.set(
-                pwm_curve_source_duty(source["key"]),
-                str(int(round(walked_duty * 10)))
-            )
-
-        # Determine winning source (max duty)
-        selected_key, fan_duty_pct = max(walked_duties.items(), key=lambda kv: kv[1])
-        self.redis.set(PWM_CURVE_SELECTED_SOURCE, selected_key)
-
-        # Fan channels: all get the SAME duty (uniform, from curve's selected source)
-        fan_duty_1000 = max(0, min(1000, int(round(fan_duty_pct * 10))))
-        for i in range(8):  # CH5-12, 8 channels
-            self.redis.set(pwm_duty_fan(i), str(fan_duty_1000))
-
-        # Pump channels: constant, uniform, no jitter (static in real system)
-        pump_duty_1000 = max(0, min(1000, int(scenario["pump_duty"] * 10)))
-        for i in range(4):  # CH1-4, 4 channels
-            self.redis.set(pwm_duty_pump(i), str(pump_duty_1000))
+        # PWM: production control path against the temps just written above, so duty
+        # follows pcb_config.yaml. maybe_reload picks up a web-UI curve edit within
+        # one frame; pump duty comes from initial_pwm_duty via apply_initial_state.
+        controller = self.reloader.maybe_reload(self.pcb)
+        if (self.redis.get(CONTROL_MODE) or 'auto') == 'manual':
+            pcb_control.apply_manual_pwm(self.pcb, self.redis, self.reloader.cfg)
+        else:
+            controller.update(self.pcb, self.redis)
 
         # Fan RPM: independent walk per channel (tach readback, not computed)
         rpm_range = variation.get("rpm_range", 100)

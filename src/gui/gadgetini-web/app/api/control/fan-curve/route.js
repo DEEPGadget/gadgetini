@@ -14,9 +14,15 @@ const CONFIG_PATH =
   process.env.CONTROL_BOARD_CONFIG ||
   "/home/gadgetini/gadgetini/src/exporter/pcb_config.yaml";
 
+// Curve anchors: min_temp = 27C, the ASHRAE recommended upper bound for a data
+// centre's controlled envelope (18~27C) — while the room holds its setpoint the
+// fans sit at the 8% idle floor. max_temp = the Critical threshold from
+// src/gui/grafana/common/threshold.md (coolant outlet >65C, chassis >50C), where
+// the fans reach 100%. Idle is anchored to ambient, not to the Normal ceiling:
+// anchoring at Normal would leave the whole Normal band with no ramp at all.
 const DEFAULT_SOURCES = [
-  { key: "coolant", label: "Coolant Outlet Temp", redis_key: "coolant_temp_outlet1", min_temp: 25, max_temp: 60, min_duty: 80, max_duty: 1000 },
-  { key: "chassis", label: "Chassis Temperature", redis_key: "air_temp", min_temp: 30, max_temp: 50, min_duty: 80, max_duty: 1000 },
+  { key: "coolant", label: "Coolant Outlet Temp", redis_key: "coolant_temp_outlet1", min_temp: 27, max_temp: 65, min_duty: 80, max_duty: 1000 },
+  { key: "chassis", label: "Chassis Temperature", redis_key: "air_temp", min_temp: 27, max_temp: 50, min_duty: 80, max_duty: 1000 },
 ];
 
 async function loadConfig() {

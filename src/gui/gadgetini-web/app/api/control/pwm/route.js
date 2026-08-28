@@ -58,7 +58,7 @@ async function loadConfig() {
 function extractCurveSources(doc) {
   const fc = doc.fan_curve || {};
   const sources = Array.isArray(fc.sources) ? fc.sources : [];
-  return sources.map(s => ({ key: s.key, label: s.label || s.key }));
+  return sources.map(s => ({ key: s.key, label: s.label || s.key, redis_key: s.redis_key || null }));
 }
 
 export async function GET() {
@@ -83,7 +83,7 @@ export async function GET() {
         wiredPumpChannels: wiredPump,
         wiredFanChannels: wiredFan,
         curve: {
-          sources: curveSources.map(s => ({ ...s, duty: null })),
+          sources: curveSources.map(s => ({ key: s.key, label: s.label, duty: null, current_temp: null })),
           selected: null,
         },
         comm_status: commStatus || "unknown",
@@ -96,12 +96,14 @@ export async function GET() {
     const fanDutyKeys = FAN_CHANNELS.map((_, i) => `pwm_duty_fan_${i}`);
     const fanRpmKeys = FAN_CHANNELS.map((_, i) => `fan_rpm_${i}`);
     const curveSourceDutyKeys = curveSources.map(s => `pwm_curve_duty_${s.key}`);
+    const curveTempKeysPresent = curveSources.map(s => s.redis_key).filter(Boolean);
     const allKeys = [
       ...pumpDutyKeys,
       ...fanDutyKeys,
       ...fanRpmKeys,
       "coolant_flow_lpm",
       ...curveSourceDutyKeys,
+      ...curveTempKeysPresent,
       "pwm_curve_selected_source",
     ];
     const values = await r.mget(...allKeys);
@@ -117,11 +119,16 @@ export async function GET() {
     off += 1;
     const curveSourceDuties = values.slice(off, off + curveSourceDutyKeys.length).map(toIntOrNull);
     off += curveSourceDutyKeys.length;
+    const curveTempValuesPresent = values.slice(off, off + curveTempKeysPresent.length).map(toFloatOrNull);
+    off += curveTempKeysPresent.length;
     const selectedSource = values[off];
 
+    let tempIdx = 0;
     const curveSourcesToReturn = curveSources.map((s, i) => ({
-      ...s,
+      key: s.key,
+      label: s.label,
       duty: curveSourceDuties[i],
+      current_temp: s.redis_key ? curveTempValuesPresent[tempIdx++] : null,
     }));
 
     return NextResponse.json({

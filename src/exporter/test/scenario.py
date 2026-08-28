@@ -1,4 +1,9 @@
-"""Predefined test scenarios for control board simulation."""
+"""Predefined test scenarios for control board simulation.
+
+Sensor inputs only. Fan and pump duty are deliberately absent: they are outputs,
+computed by the real fan curve in pcb_config.yaml from the temperatures below.
+Hardcoding them here would make the simulator ignore config edits.
+"""
 
 # Scenario: NORMAL operation
 SCENARIO_NORMAL = {
@@ -12,13 +17,8 @@ SCENARIO_NORMAL = {
     "coolant_level": 95,
     "air_temp": 22.0,
     "air_humidity": 45,
-    "pump_duty": 60,
     "fan_rpm": [1800, 1800, 1750, 1750, 1700, 1700, 1800, 1750],
     "chassis_stability": 2,
-    "pwm_curve_sources": [
-        {"key": "coolant", "label": "Coolant Outlet Temp", "duty": 50},
-        {"key": "chassis", "label": "Chassis Temperature", "duty": 45},
-    ],
     "comm_status": "ok",
     "pcb_connected": True,
     "variation": {
@@ -26,7 +26,6 @@ SCENARIO_NORMAL = {
         "flow_range": 0.3,
         "air_temp_range": 0.3,
         "rpm_range": 100,
-        "curve_duty_range": 3,
     }
 }
 
@@ -42,13 +41,8 @@ SCENARIO_WARNING = {
     "coolant_level": 90,
     "air_temp": 28.0,
     "air_humidity": 55,
-    "pump_duty": 75,
     "fan_rpm": [3000, 3000, 2950, 2950, 3050, 3050, 3000, 2950],
     "chassis_stability": 2,
-    "pwm_curve_sources": [
-        {"key": "coolant", "label": "Coolant Outlet Temp", "duty": 75},
-        {"key": "chassis", "label": "Chassis Temperature", "duty": 70},
-    ],
     "comm_status": "ok",
     "pcb_connected": True,
     "variation": {
@@ -56,7 +50,6 @@ SCENARIO_WARNING = {
         "flow_range": 0.4,
         "air_temp_range": 0.5,
         "rpm_range": 150,
-        "curve_duty_range": 4,
     }
 }
 
@@ -72,13 +65,8 @@ SCENARIO_CRITICAL = {
     "coolant_level": 75,
     "air_temp": 32.0,
     "air_humidity": 65,
-    "pump_duty": 95,
     "fan_rpm": [4500, 4500, 4400, 4400, 4600, 4600, 4500, 4400],
     "chassis_stability": 5,
-    "pwm_curve_sources": [
-        {"key": "coolant", "label": "Coolant Outlet Temp", "duty": 100},
-        {"key": "chassis", "label": "Chassis Temperature", "duty": 95},
-    ],
     "comm_status": "ok",
     "pcb_connected": True,
     "variation": {
@@ -86,7 +74,6 @@ SCENARIO_CRITICAL = {
         "flow_range": 0.5,
         "air_temp_range": 0.8,
         "rpm_range": 200,
-        "curve_duty_range": 5,
     }
 }
 

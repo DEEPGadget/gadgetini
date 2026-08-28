@@ -50,7 +50,7 @@
 - **크기**: `text-xs sm:text-sm`
 - **무게**: `font-bold` 또는 `font-semibold`
 - **자간**: `tracking-wider` 또는 기본값
-- **색상**: `text-gray-500` 또는 `text-gray-600`
+- **색상**: `text-gray-700` (진하게 유지, 가독성)
 - **예시**: "Idle Temp (°C)", "Current IP", "Max PWM (%)"
 
 **✅ 구현 예시:**
@@ -86,7 +86,7 @@
 - **용도**: 작은 설명, 부가 정보, 툴팁
 - **크기**: `text-xs sm:text-sm`
 - **무게**: 기본값 또는 `font-semibold`
-- **색상**: `text-gray-500` 또는 `text-gray-400`
+- **색상**: `text-gray-600` 또는 `text-gray-700` (진하게, 가독성)
 - **자간**: 기본값
 - **예시**: "eth0 not detected", "기본 온도 이하: 기본 PWM"
 
@@ -103,7 +103,7 @@
 - **용도**: 아주 작은 정보, 상태 배지, 아이콘 라벨
 - **크기**: `text-[10px] sm:text-xs` (매우 작음 필요 시) 또는 `text-xs`
 - **무게**: `font-bold` (배지/강조), 기본값 (일반)
-- **색상**: `text-gray-400` 또는 `text-gray-500`
+- **색상**: `text-gray-600` 또는 `text-gray-700` (진하게, 가독성)
 - **자간**: `tracking-wider` (배지), 기본값 (일반)
 - **예시**: "Settings", "Live", "SELECTED" 배지, "CH1", "Hz" 단위
 
@@ -178,9 +178,9 @@ className="text-base sm:text-base" // 단일 크기 (보통은 변경 불필요)
 |------|------|------|
 | 매우 강조 | `text-gray-900` 또는 `text-white` | 제목, 중요 값 |
 | 주요 | `text-gray-800` | 본문, 필드명 |
-| 보조 | `text-gray-700` | 부설명 |
-| 약한 | `text-gray-500` 또는 `text-gray-600` | 라벨, 도움말 |
-| 매우 약한 | `text-gray-400` | 메타 정보, 아이콘 |
+| 보조 | `text-gray-700` | 부설명, 라벨 |
+| 약한 | `text-gray-600` | 도움말, 설명 텍스트 |
+| 매우 약한 | 사용 제한 (가독성 위험) | 메타 정보는 gray-600 이상 |
 
 **❌ 잘못된 예시:**
 ```jsx
