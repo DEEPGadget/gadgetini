@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   ArrowUpIcon,
   ArrowRightIcon,
+  ArrowPathIcon,
   CheckIcon,
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/solid";
@@ -60,6 +61,32 @@ function GridCard({ label, stateKey, displayMode, setDisplayMode, activeClass })
   );
 }
 
+// A number input driven by a numeric prop would snap an emptied box straight back
+// to the committed value ("0"), so the next keystroke lands *after* it and you get
+// "03". This keeps the raw text while the field is being edited, pushes only
+// parseable values upstream, and re-syncs from the committed value on blur — so
+// clearing the box and typing a fresh number just works.
+function useNumericDraft(value, commit) {
+  const [draft, setDraft] = useState(null);
+  return {
+    value: draft ?? (value ?? "").toString(),
+    onChange: (e) => {
+      const raw = e.target.value;
+      setDraft(raw);
+      // Empty box, or a partial entry like "-" / "1e": nothing to commit yet.
+      if (raw === "") return;
+      const n = Number(raw);
+      if (Number.isFinite(n)) commit(n);
+    },
+    onBlur: () => setDraft(null),
+  };
+}
+
+function NumberInput({ value, onValueChange, ...rest }) {
+  const draftProps = useNumericDraft(value, onValueChange);
+  return <input type="number" {...rest} {...draftProps} />;
+}
+
 function MiniField({ label, value, onChange, disabled, dotClass }) {
   return (
     <label className="flex flex-col gap-0.5">
@@ -67,14 +94,13 @@ function MiniField({ label, value, onChange, disabled, dotClass }) {
         <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotClass}`} />
         {label}
       </span>
-      <input
-        type="number"
+      <NumberInput
         step="1"
         min={0}
         max={100}
         disabled={disabled}
         value={value}
-        onChange={onChange}
+        onValueChange={onChange}
         className="w-full border border-gray-200 rounded-md px-2 py-1 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-gray-50 disabled:text-gray-700"
       />
     </label>
@@ -160,6 +186,7 @@ export default function Settings() {
   });
   const [fanCurveLoading, setFanCurveLoading] = useState(true);
   const [fanCurveSaving, setFanCurveSaving] = useState(false);
+  const [fanCurveResetting, setFanCurveResetting] = useState(false);
   const [manualPwmSaving, setManualPwmSaving] = useState(false);
   const [selectedChannels, setSelectedChannels] = useState(new Set());
   const [inputValue, setInputValue] = useState("");
@@ -356,6 +383,30 @@ export default function Settings() {
       alert(`${t("save_failed")}: ${err?.message || err}`);
     } finally {
       setFanCurveSaving(false);
+    }
+  };
+
+  // Reset restores the standard settings from the read-only pcb_defaults.yaml and
+  // writes them straight into pcb_config.yaml — one confirm, no separate Save.
+  // The form is then re-synced from the response so it shows what was applied.
+  const handleFanCurveReset = async () => {
+    if (!window.confirm(t("reset_defaults_confirm"))) return;
+
+    setFanCurveResetting(true);
+    try {
+      const r = await fetch("/api/control/fan-curve/defaults", { method: "POST" });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        alert(`${t("reset_defaults_failed")}: ${d.error || r.status}`);
+        return;
+      }
+      if (Array.isArray(d.sources) && d.sources.length > 0) {
+        setFanCurve({ sources: d.sources });
+      }
+    } catch (err) {
+      alert(`${t("reset_defaults_failed")}: ${err?.message || err}`);
+    } finally {
+      setFanCurveResetting(false);
     }
   };
 
@@ -673,12 +724,11 @@ export default function Settings() {
                   <p className="text-xs sm:text-sm text-gray-600">{t("rotation_desc")}</p>
                 </div>
                 <div className="flex items-center gap-2 bg-white rounded-lg px-2 sm:px-3 py-1.5 shadow-sm border border-gray-100">
-                  <input
-                    type="number"
+                  <NumberInput
                     min={1}
                     value={displayMode.rotationTime}
-                    onChange={(e) => {
-                      const value = Math.floor(Number(e.target.value));
+                    onValueChange={(v) => {
+                      const value = Math.floor(v);
                       setDisplayMode((p) => ({
                         ...p,
                         rotationTime: value < 1 ? 1 : value,
@@ -709,13 +759,12 @@ export default function Settings() {
                     </p>
                   </div>
                   <div className="w-full flex items-center gap-2 bg-white rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 shadow-sm border border-gray-100">
-                    <input
-                      type="number"
+                    <NumberInput
                       min={min}
                       max={max}
                       value={displayMode[key]}
-                      onChange={(e) => {
-                        const value = Math.floor(Number(e.target.value));
+                      onValueChange={(v) => {
+                        const value = Math.floor(v);
                         setDisplayMode((p) => ({
                           ...p,
                           [key]: Math.max(min, Math.min(max, value)),
@@ -1161,37 +1210,52 @@ export default function Settings() {
                                 dotClass="bg-emerald-400"
                                 value={source.min_temp}
                                 disabled={!cbStatus.active}
-                                onChange={(e) => updateSource(source.key, "min_temp", Number(e.target.value))}
+                                onChange={(v) => updateSource(source.key, "min_temp", v)}
                               />
                               <MiniField
                                 label={t("idle_pwm_short")}
                                 dotClass="bg-emerald-400"
                                 value={Math.round(source.min_duty / 10)}
                                 disabled={!cbStatus.active}
-                                onChange={(e) => updateSource(source.key, "min_duty", clampDuty(e.target.value))}
+                                onChange={(v) => updateSource(source.key, "min_duty", clampDuty(v))}
                               />
                               <MiniField
                                 label={t("warning_temp_short")}
                                 dotClass="bg-rose-400"
                                 value={source.max_temp}
                                 disabled={!cbStatus.active}
-                                onChange={(e) => updateSource(source.key, "max_temp", Number(e.target.value))}
+                                onChange={(v) => updateSource(source.key, "max_temp", v)}
                               />
                               <MiniField
                                 label={t("max_pwm_short")}
                                 dotClass="bg-rose-400"
                                 value={Math.round(source.max_duty / 10)}
                                 disabled={!cbStatus.active}
-                                onChange={(e) => updateSource(source.key, "max_duty", clampDuty(e.target.value))}
+                                onChange={(v) => updateSource(source.key, "max_duty", clampDuty(v))}
                               />
                             </div>
                           </div>
                         );
                       })}
                     </div>
-                    <div className="flex justify-end items-center pt-2 mt-3 border-t border-gray-100">
+                    <div className="flex justify-end items-center gap-2 pt-2 mt-3 border-t border-gray-100">
                       <button
-                        disabled={!cbStatus.active || fanCurveSaving}
+                        disabled={!cbStatus.active || fanCurveSaving || fanCurveResetting}
+                        onClick={handleFanCurveReset}
+                        title={!cbStatus.active ? t("service_inactive_tooltip") : ""}
+                        className="inline-flex items-center justify-center h-8 px-4 sm:px-5 bg-white text-gray-700 text-xs font-bold rounded-xl border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {fanCurveResetting ? (
+                          <LoadingSpinner color={"black"} />
+                        ) : (
+                          <>
+                            <ArrowPathIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1.5 sm:mr-2" />
+                            {t("reset_defaults")}
+                          </>
+                        )}
+                      </button>
+                      <button
+                        disabled={!cbStatus.active || fanCurveSaving || fanCurveResetting}
                         onClick={handleFanCurveSave}
                         title={!cbStatus.active ? t("service_inactive_tooltip") : ""}
                         className="inline-flex items-center justify-center h-8 px-4 sm:px-5 bg-emerald-700 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"

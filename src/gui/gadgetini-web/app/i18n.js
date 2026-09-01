@@ -122,6 +122,10 @@ const STRINGS = {
     idle_pwm_short: "Idle %",
     warning_temp_short: "Warn °C",
     max_pwm_short: "Max %",
+    reset_defaults: "Reset",
+    reset_defaults_confirm:
+      "Are you sure you want to reset the fan curve to the standard settings? This is applied immediately.",
+    reset_defaults_failed: "Failed to reset",
 
     // === Manual PWM ===
     manual_pwm_title: "Manual PWM Control",
@@ -237,6 +241,10 @@ const STRINGS = {
     idle_pwm_short: "기본%",
     warning_temp_short: "경고°C",
     max_pwm_short: "최대%",
+    reset_defaults: "초기화",
+    reset_defaults_confirm:
+      "팬 곡선을 표준 설정으로 되돌릴까요? 확인을 누르면 바로 적용됩니다.",
+    reset_defaults_failed: "초기화 실패",
 
     // === Manual PWM ===
     manual_pwm_title: "수동 PWM 제어",
