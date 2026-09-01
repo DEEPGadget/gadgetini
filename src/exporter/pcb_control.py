@@ -5,19 +5,37 @@ with its own linear interpolation between (min_temp, min_duty) and (max_temp, ma
 The final duty is the maximum across all sources. Pump duty is fixed (no flow sensor).
 There is no state machine: the 12V supply being mainboard-gated is the hardware interlock.
 
-Where the anchors come from (pcb_config.yaml, mirrored by DEFAULT_SOURCES in the web
-UI's app/api/control/fan-curve/route.js — keep the two in step):
+Where the anchors come from (pcb_config.yaml; the standard/factory values live in
+src/exporter/pcb_defaults.yaml, which the web UI's Reset button restores from — keep
+the two in step):
 
-  min_temp  ambient, 27 C — the ASHRAE recommended upper bound for a data centre's
-            controlled envelope (18~27 C). While the room holds its setpoint the fans
-            stay on the min_duty idle floor (80 = 8%).
-  max_temp  that metric's Critical threshold from src/gui/grafana/common/threshold.md
-            (coolant outlet >65 C, chassis >50 C), where duty reaches max_duty
-            (1000 = 100%). Only the span between the two anchors is interpolated.
+  max_temp  the limit of the most heat-sensitive part in that metric's path, cross-checked
+            against src/gui/grafana/common/threshold.md. Duty reaches max_duty (1000 = 100%)
+            here:
+              chassis 50 C  the DHT11 air sensor's own operating range is 0~50 C. Above it
+                            the reading is out of spec, so duty must already be at max
+                            before the measurement itself stops being trustworthy. Matches
+                            threshold.md Critical >50 C. The air sensor is auto-detected
+                            (HDC302x -> AHT20 -> DHT11, see dlc_sensors.py); 50 C anchors on
+                            DHT11, the narrowest-range part supported, so the curve stays
+                            valid on units that fall through to it.
+              coolant 65 C  the PMP500 pump's allowable coolant temperature is 60~75 C.
+                            65 C is the conservative end of that band and matches
+                            threshold.md Critical >65 C.
+            The SoCs in the box (AI processor 75 C, CPU 85 C, NIC 105 C junction) tolerate
+            more than either of these, so they are not the binding constraint.
+  min_temp  where the fan leaves the min_duty idle floor (80 = 8%) and starts ramping;
+            27 C for both sources. Only the span between the two anchors is interpolated.
+            This one is an operating-policy choice, NOT a part limit — datasheets give
+            ceilings, not floors, so no part spec fixes it. See the caveat below.
 
-Idle is anchored to ambient rather than to the Normal ceiling deliberately: anchoring
-min_temp at Normal (coolant 60 C, chassis 40 C) would leave the whole Normal band with
-no ramp at all, so the fans would still be idling as the metric entered Warning.
+Caveat on min_temp (unresolved): unlike max_temp, 27 C has no datasheet behind it. Picking it
+trades idle quiet against ramp headroom: set it too low and the source never rests on the 8%
+floor, but anchoring it at the threshold.md Normal ceiling (chassis 40 C, coolant 60 C) would
+leave the whole Normal band with no ramp at all, so the fans would still be idling as the
+metric entered Warning. It cannot be settled from the bench as things stand — no air or
+coolant sensor is physically attached, so every value in Redis is simulator output, not a
+measurement. Decide it from the thermal design, or from a unit with real sensors fitted.
 
 Hot-reload: on a pcb_config.yaml mtime change, fan_curve / pump duty / DOUT are applied
 at runtime (web UI edit -> REST API -> file write -> picked up next cycle).

@@ -1,0 +1,50 @@
+# ============================================================================
+# Standard (factory) control settings — READ-ONLY reference.
+#
+# This file is NEVER written by the web UI or by data_crawler; it is the source
+# of the "Restore standard settings" button in the Fan Curve (Auto) panel.
+# The button loads these values into the form, and the operator saves them into
+# pcb_config.yaml through the normal PUT /api/control/fan-curve path.
+#
+# Keep it chmod 444. To change what "standard" means, edit it deliberately:
+#   sudo chmod 644 pcb_defaults.yaml && $EDITOR pcb_defaults.yaml && sudo chmod 444 pcb_defaults.yaml
+#
+# Only keys that mirror pcb_config.yaml are meaningful here. Anything else is
+# ignored by the API.
+# ============================================================================
+
+fan_curve:
+  # duty unit is 0.1% (0~1000). Full rationale lives in the pcb_control.py module
+  # docstring; the short version:
+  #
+  # max_temp = the limit of the most heat-sensitive part in that metric's path,
+  #   cross-checked against src/gui/grafana/common/threshold.md.
+  #     chassis 50C  — DHT11 air sensor operating range is 0~50C, so past it the
+  #                    reading is out of spec. Anchored on DHT11 rather than on
+  #                    HDC302x/AHT20 because it is the narrowest-range air sensor
+  #                    dlc_sensors.py can fall through to.
+  #     coolant 65C  — PMP500 allowable coolant temperature is 60~75C; 65C is the
+  #                    conservative end of that band.
+  #   The SoCs (AI processor 75C, CPU 85C, NIC 105C junction) tolerate more, so they
+  #   are not the binding constraint.
+  #
+  # min_temp = where the fan leaves the 8% idle floor and starts ramping. Unlike
+  #   max_temp this has NO datasheet behind it — part specs give ceilings, not floors.
+  #   27C is a policy choice carried over from earlier configs and is still unsettled;
+  #   it cannot be validated on the bench as things stand, since no air or coolant
+  #   sensor is physically attached and every Redis value is simulator output.
+  sources:
+    - key: coolant
+      label: Coolant Outlet Temp
+      redis_key: coolant_temp_outlet1
+      min_temp: 27
+      max_temp: 65
+      min_duty: 80
+      max_duty: 1000
+    - key: chassis
+      label: Chassis Temperature
+      redis_key: air_temp
+      min_temp: 27
+      max_temp: 50
+      min_duty: 80
+      max_duty: 1000
