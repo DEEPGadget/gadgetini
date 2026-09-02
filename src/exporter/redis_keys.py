@@ -41,14 +41,24 @@ def pwm_duty_pump(idx):
 def pwm_duty_fan(idx):
     return f'pwm_duty_fan_{idx}'
 
+# Control mode: 'auto' = duty from the fan curve in pcb_config.yaml,
+# 'manual' = duty from the manual_pwm_target_* keys below.
+CONTROL_MODE = 'control_mode'
+
 # Manual PWM target (intended duty per channel, user-controlled in manual mode)
 # 0-based index; same physical-channel convention as pwm_duty_*.
-# Written by web UI (manual mode) or mode switch, read by data_crawler._apply_manual_pwm.
+# Written by web UI (manual mode) or mode switch, read by pcb_control.apply_manual_pwm.
 def manual_pwm_target_pump(idx):
     return f'manual_pwm_target_pump_{idx}'
 
 def manual_pwm_target_fan(idx):
     return f'manual_pwm_target_fan_{idx}'
+
+# Fan curve multi-source (per-source duty and winning source key)
+def pwm_curve_source_duty(key):
+    return f'pwm_curve_duty_{key}'
+
+PWM_CURVE_SELECTED_SOURCE = 'pwm_curve_selected_source'
 
 # Comm status (PCB path only — from health check / poll results).
 COMM_STATUS               = 'comm_status'

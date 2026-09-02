@@ -1,60 +1,33 @@
-// GET  /api/control/fan-curve  → returns current fan_curve from config.yaml
-// PUT  /api/control/fan-curve  → writes new fan_curve into config.yaml (atomic rename)
+// GET  /api/control/fan-curve  → returns current fan_curve.sources from config.yaml
+// PUT  /api/control/fan-curve  → writes new fan_curve.sources into config.yaml (atomic rename)
 //
-// Schema: linear interpolation between (min_temp, min_duty) and (max_temp, max_duty).
+// Schema: array of sources, each with its own linear curve (min_temp, max_temp, min_duty, max_duty).
 // duty unit is 0.1% (0~1000). control_board picks up the change via mtime polling within the next cycle (~1s).
+// Sources are config-file-defined (key, label, redis_key are immutable via API);
+// only min_temp/max_temp/min_duty/max_duty are user-editable.
+//
+// The standard/factory values live in the read-only src/exporter/pcb_defaults.yaml —
+// see ./defaults/route.js for the Reset path.
 import { NextResponse } from "next/server";
-import { promises as fs } from "node:fs";
-import path from "node:path";
-import yaml from "js-yaml";
-
-const CONFIG_PATH =
-  process.env.CONTROL_BOARD_CONFIG ||
-  "/home/gadgetini/gadgetini/src/exporter/pcb_config.yaml";
-
-const DEFAULTS = { min_temp: 25, max_temp: 60, min_duty: 100, max_duty: 1000 };
-
-async function loadConfig() {
-  const raw = await fs.readFile(CONFIG_PATH, "utf8");
-  const doc = yaml.load(raw) || {};
-  return { raw, doc };
-}
-
-function num(v, fallback) {
-  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
-}
+import { getFanCurveDefaults } from "../../../utils/control/getFanCurveDefaults";
+import { applyCurveSources, loadConfig, validateSources } from "../../../utils/control/fanCurveConfig";
 
 export async function GET() {
   try {
-    const { doc } = await loadConfig();
+    const doc = await loadConfig();
     const fc = doc.fan_curve || {};
-    return NextResponse.json({
-      min_temp: num(fc.min_temp, DEFAULTS.min_temp),
-      max_temp: num(fc.max_temp, DEFAULTS.max_temp),
-      min_duty: num(fc.min_duty, DEFAULTS.min_duty),
-      max_duty: num(fc.max_duty, DEFAULTS.max_duty),
-    });
+    if (Array.isArray(fc.sources) && fc.sources.length > 0) {
+      return NextResponse.json({ sources: fc.sources });
+    }
+    // config.yaml has no curve configured yet — fall back to the standard settings.
+    const { sources } = await getFanCurveDefaults();
+    return NextResponse.json({ sources });
   } catch (err) {
     return NextResponse.json(
       { error: err?.message || "Failed to read config.yaml" },
       { status: 500 }
     );
   }
-}
-
-function validate(body) {
-  if (!body || typeof body !== "object") return "body must be an object";
-  const { min_temp, max_temp, min_duty, max_duty } = body;
-  for (const [k, v] of Object.entries({ min_temp, max_temp, min_duty, max_duty })) {
-    if (typeof v !== "number" || !Number.isFinite(v)) return `${k} must be a finite number`;
-  }
-  if (min_temp < 0 || min_temp > 100) return "min_temp must be in [0, 100]";
-  if (max_temp < 0 || max_temp > 100) return "max_temp must be in [0, 100]";
-  if (min_temp >= max_temp) return "min_temp must be < max_temp";
-  if (min_duty < 0 || min_duty > 1000) return "min_duty must be in [0, 1000]";
-  if (max_duty < 0 || max_duty > 1000) return "max_duty must be in [0, 1000]";
-  if (min_duty >= max_duty) return "min_duty must be < max_duty";
-  return null;
 }
 
 export async function PUT(req) {
@@ -65,26 +38,14 @@ export async function PUT(req) {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
   }
 
-  const err = validate(body);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "body must be an object" }, { status: 400 });
+  }
+  const err = validateSources(body.sources);
   if (err) return NextResponse.json({ error: err }, { status: 400 });
 
   try {
-    const { doc } = await loadConfig();
-    doc.fan_curve = {
-      min_temp: body.min_temp,
-      max_temp: body.max_temp,
-      min_duty: body.min_duty,
-      max_duty: body.max_duty,
-    };
-
-    const out = yaml.dump(doc, { lineWidth: 120, noRefs: true });
-    // Atomic write: tmp file in same dir, then rename — partial reads from
-    // control_board mtime watcher are avoided.
-    const dir = path.dirname(CONFIG_PATH);
-    const tmp = path.join(dir, `.config.yaml.${process.pid}.tmp`);
-    await fs.writeFile(tmp, out, "utf8");
-    await fs.rename(tmp, CONFIG_PATH);
-
+    await applyCurveSources(body.sources);
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json(
