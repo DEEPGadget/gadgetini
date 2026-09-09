@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import fcntl
 import json
 import os
 import re
+import struct
 import subprocess
 import time
 from typing import Dict, List
@@ -229,6 +231,54 @@ def parse_cpu_power_from_sensors(sensors_data):
     return result
 
 
+# AMD HSMP (Host System Management Port) — third-tier source for boards that
+# expose CPU power through neither the BMC nor hwmon: Threadripper PRO / EPYC
+# platforms such as the ASUS Pro WS WRX90E-SAGE SE have no POWER_CPU* entry in
+# the SDR and no power*_input under k10temp. Needs the amd_hsmp module loaded
+# (/dev/hsmp); absent that, the probe is a single os.path.exists() and returns.
+HSMP_DEV = "/dev/hsmp"
+# struct hsmp_message: u32 msg_id, u16 num_args, u16 response_sz,
+#                      u32 args[8], u16 sock_ind, 2 bytes tail padding = 44 B
+HSMP_MSG_FMT = "=IHH8IH2x"
+HSMP_IOCTL = 0xC02CF800  # _IOWR(0xF8, 0, struct hsmp_message)
+HSMP_GET_SOCKET_POWER = 4
+
+
+def read_hsmp_socket_power_mw(sock_ind: int) -> int:
+    """Current socket power in mW. Raises OSError(ENODEV) for absent sockets."""
+    buf = bytearray(
+        struct.pack(HSMP_MSG_FMT, HSMP_GET_SOCKET_POWER, 0, 1, *([0] * 8), sock_ind)
+    )
+
+    fd = os.open(HSMP_DEV, os.O_RDWR)
+    try:
+        fcntl.ioctl(fd, HSMP_IOCTL, buf, True)
+    finally:
+        os.close(fd)
+
+    # The reply is written back into args[0].
+    return struct.unpack(HSMP_MSG_FMT, bytes(buf))[3]
+
+
+def parse_cpu_power_from_hsmp(socket_count: int = 2):
+    result = {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
+
+    if not os.path.exists(HSMP_DEV):
+        return result
+
+    for idx in range(min(socket_count, 2)):
+        try:
+            mw = read_hsmp_socket_power_mw(idx)
+        except Exception:
+            # ENODEV on a single-socket board when probing socket 1; the key
+            # stays None rather than reporting a phantom second socket.
+            continue
+        if mw:
+            result[f"cpu_curr_pwr_{idx}"] = round(mw / 1000.0, 1)
+
+    return result
+
+
 # Latched so the "no CPU power source" warning is logged on state change only:
 # this runs ~1x/sec and both probes fail silently by design.
 _cpu_power_unavailable = False
@@ -252,12 +302,19 @@ def get_cpu_power_telemetry(sensors_data):
         except Exception:
             result = {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
 
+    if all(v is None for v in result.values()):
+        try:
+            result = parse_cpu_power_from_hsmp()
+        except Exception:
+            result = {"cpu_curr_pwr_0": None, "cpu_curr_pwr_1": None}
+
     unavailable = all(v is None for v in result.values())
     if unavailable != _cpu_power_unavailable:
         if unavailable:
             print(
                 "[WARN] CPU power unavailable: no POWER_CPU/POWER_CPU1/POWER_CPU2 "
-                "IPMI sensor and no hwmon power*_input reading",
+                "IPMI sensor, no hwmon power*_input reading, and no HSMP "
+                "(/dev/hsmp) response",
                 flush=True,
             )
         else:
