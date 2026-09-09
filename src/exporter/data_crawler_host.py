@@ -277,14 +277,24 @@ def get_nic_link_status() -> List[Dict[str, int]]:
 
 
 def get_ib_nic_asic_temp(mst_dev: str = "/dev/mst/mt4129_pciconf0"):
-    p = subprocess.run(
-        ["sudo", "mget_temp", "-d", mst_dev],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        timeout=3,
-        check=False,
-    )
+    # No mst device means no Mellanox card, so skip the probe entirely. On such
+    # hosts `sudo mget_temp` can still outlast its timeout, and the resulting
+    # TimeoutExpired escapes write_metrics_once() before pipe.execute() runs --
+    # discarding that cycle's GPU, CPU, NVMe and memory metrics along with it.
+    if not os.path.exists(mst_dev):
+        return None
+
+    try:
+        p = subprocess.run(
+            ["sudo", "-n", "mget_temp", "-d", mst_dev],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=3,
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
 
     if p.returncode != 0:
         return None
