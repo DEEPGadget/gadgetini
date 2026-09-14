@@ -174,8 +174,8 @@ export default function Settings() {
     fan: [null, null, null, null, null, null, null, null],
     fanRpm: [null, null, null, null, null, null, null, null],
     coolantFlowLpm: null,
-    curvePump: [], // pump channels the controller/manual drives (rest are fixed)
-    curveFan: [], // fan channels the curve/manual drives (rest are fixed, e.g. CH10)
+    curvePump: [], // pump channels the controller/manual drives 
+    curveFan: [], // fan channels the curve/manual drives 
     curve: {
       sources: [],
       selected: null,

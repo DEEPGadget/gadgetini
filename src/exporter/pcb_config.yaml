@@ -28,7 +28,7 @@ initial_pwm_duty:
     ch7: 0
     ch8: 0
     ch9: 0
-    ch10: 1000
+    ch10: 0
     ch11: 0
     ch12: 0
 initial_dout_bitmask: 0
