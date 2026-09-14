@@ -38,7 +38,7 @@ function evalInlet(v){if(v===undefined)return'normal';if(v>45||v<18)return'criti
 function evalOutlet(v){if(v===undefined)return'normal';if(v>65||v<18)return'critical';if(v>60||v<22)return'warning';return'normal';}
 function evalDelta(v){if(v===undefined)return'normal';if(v>20)return'critical';if(v>15)return'warning';return'normal';}
 function evalFlow(v){if(v===undefined)return'normal';if(v<3)return'critical';if(v<5)return'warning';return'normal';}
-function evalChasT(v){if(v===undefined)return'normal';if(v>50)return'critical';if(v>40)return'warning';return'normal';}
+function evalChasT(v){if(v===undefined)return'normal';if(v>40)return'critical';if(v>35)return'warning';return'normal';}
 function evalChasH(v){if(v===undefined)return'normal';if(v>80)return'critical';if(v>60)return'warning';return'normal';}
 function evalGpuT(v){if(v===undefined)return'normal';if(v>90)return'critical';if(v>75)return'warning';return'normal';}
 function evalCpuT(v){if(v===undefined)return'normal';if(v>95)return'critical';if(v>85)return'warning';return'normal';}

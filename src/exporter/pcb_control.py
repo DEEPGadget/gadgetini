@@ -12,13 +12,9 @@ the two in step):
   max_temp  the limit of the most heat-sensitive part in that metric's path, cross-checked
             against src/gui/grafana/common/threshold.md. Duty reaches max_duty (1000 = 100%)
             here:
-              chassis 50 C  the DHT11 air sensor's own operating range is 0~50 C. Above it
-                            the reading is out of spec, so duty must already be at max
-                            before the measurement itself stops being trustworthy. Matches
-                            threshold.md Critical >50 C. The air sensor is auto-detected
-                            (HDC302x -> AHT20 -> DHT11, see dlc_sensors.py); 50 C anchors on
-                            DHT11, the narrowest-range part supported, so the curve stays
-                            valid on units that fall through to it.
+              chassis 40 C  the mainboard is the most heat-sensitive part on the air path;
+                            its non-operating range starts at 40 C, so duty must already be
+                            at max by then.
               coolant 65 C  the PMP500 pump's allowable coolant temperature is 60~75 C.
                             65 C is the conservative end of that band and matches
                             threshold.md Critical >65 C.
@@ -31,7 +27,7 @@ the two in step):
 
 Caveat on min_temp (unresolved): unlike max_temp, 27 C has no datasheet behind it. Picking it
 trades idle quiet against ramp headroom: set it too low and the source never rests on the 8%
-floor, but anchoring it at the threshold.md Normal ceiling (chassis 40 C, coolant 60 C) would
+floor, but anchoring it at the threshold.md Normal ceiling (chassis 35 C, coolant 60 C) would
 leave the whole Normal band with no ramp at all, so the fans would still be idling as the
 metric entered Warning. It cannot be settled from the bench as things stand — no air or
 coolant sensor is physically attached, so every value in Redis is simulator output, not a

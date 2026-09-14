@@ -14,7 +14,7 @@ const DEFAULTS_PATH =
 // Last-resort fallback; keep in sync with pcb_defaults.yaml.
 const BUILTIN_SOURCES = [
   { key: "coolant", label: "Coolant Outlet Temp", redis_key: "coolant_temp_outlet1", min_temp: 27, max_temp: 65, min_duty: 80, max_duty: 1000 },
-  { key: "chassis", label: "Chassis Temperature", redis_key: "air_temp", min_temp: 27, max_temp: 60, min_duty: 80, max_duty: 1000 },
+  { key: "chassis", label: "Chassis Temperature", redis_key: "air_temp", min_temp: 27, max_temp: 40, min_duty: 80, max_duty: 1000 },
 ];
 
 function isUsableSource(s) {

@@ -179,7 +179,7 @@
               "model": {
                 "conditions": [
                   {
-                    "evaluator": { "params": [50], "type": "gt" },
+                    "evaluator": { "params": [40], "type": "gt" },
                     "operator": { "type": "and" },
                     "query": { "params": ["A"] },
                     "reducer": { "params": [], "type": "last" },
@@ -196,7 +196,7 @@
           "execErrState": "Error",
           "for": "1m",
           "annotations": {
-            "summary": "Chassis temperature critical (>50°C)",
+            "summary": "Chassis temperature critical (>40°C)",
             "description": "air_temp: {{ $values.A }}"
           },
           "labels": { "severity": "critical", "server": "dg5W", "subsystem": "environment" },

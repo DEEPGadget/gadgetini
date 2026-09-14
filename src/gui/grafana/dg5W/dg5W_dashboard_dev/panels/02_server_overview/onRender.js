@@ -29,7 +29,7 @@ function fmt(v,u,d){return v!==undefined&&v!==null?v.toFixed(d!==undefined?d:1)+
 function el(id){return htmlNode.querySelector('#'+id);}
 function setV(id,text,cls){const e=el(id);if(!e)return;e.textContent=text;e.className='vl '+(cls||'normal');}
 function evalInlet(v){if(v===undefined)return'normal';if(v>45||v<18)return'critical';if(v>40||v<22)return'warning';return'normal';}
-function evalChasT(v){if(v===undefined)return'normal';if(v>50)return'critical';if(v>40)return'warning';return'normal';}
+function evalChasT(v){if(v===undefined)return'normal';if(v>40)return'critical';if(v>35)return'warning';return'normal';}
 function evalChasH(v){if(v===undefined)return'normal';if(v>80)return'critical';if(v>60)return'warning';return'normal';}
 function evalGpuT(v){if(v===undefined)return'normal';if(v>90)return'critical';if(v>75)return'warning';return'normal';}
 function evalCpuT(v){if(v===undefined)return'normal';if(v>95)return'critical';if(v>85)return'warning';return'normal';}

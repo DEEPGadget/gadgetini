@@ -19,10 +19,8 @@ fan_curve:
   #
   # max_temp = the limit of the most heat-sensitive part in that metric's path,
   #   cross-checked against src/gui/grafana/common/threshold.md.
-  #     chassis 50C  — DHT11 air sensor operating range is 0~50C, so past it the
-  #                    reading is out of spec. Anchored on DHT11 rather than on
-  #                    HDC302x/AHT20 because it is the narrowest-range air sensor
-  #                    dlc_sensors.py can fall through to.
+  #     chassis 40C  — mainboard is the most heat-sensitive part on the air path;
+  #                    its non-operating range starts at 40C.
   #     coolant 65C  — PMP500 allowable coolant temperature is 60~75C; 65C is the
   #                    conservative end of that band.
   #   The SoCs (AI processor 75C, CPU 85C, NIC 105C junction) tolerate more, so they
@@ -45,6 +43,6 @@ fan_curve:
       label: Chassis Temperature
       redis_key: air_temp
       min_temp: 27
-      max_temp: 60
+      max_temp: 40
       min_duty: 80
       max_duty: 1000

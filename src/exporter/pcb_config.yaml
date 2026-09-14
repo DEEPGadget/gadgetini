@@ -45,7 +45,7 @@ fan_curve:
       label: Chassis Temperature
       redis_key: air_temp
       min_temp: 27
-      max_temp: 60
+      max_temp: 40
       min_duty: 80
       max_duty: 1000
 comm:
