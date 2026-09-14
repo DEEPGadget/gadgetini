@@ -1,6 +1,6 @@
 [Unit]
 Description=dg5w external LCD display logo control daemon.
-After=network.target
+Before=display_pannel.service
 
 [Service]
 Type=oneshot

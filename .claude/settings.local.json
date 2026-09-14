@@ -39,7 +39,32 @@
       "Bash(git mv src/gui/grafana/import_alerts.py src/gui/grafana/common/import_alerts.py)",
       "Bash(git mv src/gui/grafana/threshold.md src/gui/grafana/common/threshold.md)",
       "Bash(git cherry-pick:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(grep -E \"\\\\.\\(md|txt|rst\\)$\")",
+      "Bash(claude mcp *)",
+      "Bash(env)",
+      "Bash(python3 -c ' *)",
+      "Read(//home/gadgetini/.config/**)",
+      "Read(//home/gadgetini/Library/Application Support/**)",
+      "Read(//home/gadgetini/**)",
+      "Bash(git -C /home/gadgetini/gadgetini status --short)",
+      "Bash(journalctl -b -o short-monotonic --no-pager -u redis-server -u data_crawler -u sensor_exporter -u gadgetini_ui -u display_pannel -u display_logo -u usb-gadget-up)",
+      "Bash(systemctl status *)",
+      "Bash(systemctl show *)",
+      "Bash(systemd-analyze verify *)",
+      "Bash(git -C /home/gadgetini/gadgetini diff -- src/configure/daemons/gadgetini/)",
+      "Bash(awk '/def update_display\\\\\\(/,/def draw_frame|def [a-z_]+\\\\\\(self[^\\)]*\\\\\\):$/{print NR\": \"$0}' display_manager.py)",
+      "Bash(grep -nA1 \"^loop:\" pcb_config.yaml)",
+      "Bash(redis-cli info *)",
+      "Bash(timeout 1 redis-cli monitor)",
+      "Bash(awk 'NR>1{addr=$3; sub\\(/\\\\]$/,\"\",addr\\); cmd=$4; gsub\\(/\"/,\"\",cmd\\); c[addr\" \"cmd]++} END{for\\(k in c\\) print c[k], k}')",
+      "Bash(timeout 2 redis-cli monitor)",
+      "Bash(awk 'NR>1{addr=$3; sub\\(/\\\\]$/,\"\",addr\\); cmd=$4; gsub\\(/\"/,\"\",cmd\\); c[addr\" \"cmd]++} END{for\\(k in c\\) printf \"%6.1f/s %s\\\\n\", c[k]/2, k}' /tmp/claude-1000/-home-gadgetini-gadgetini/2f329812-9d37-4046-baba-729d5c40462d/scratchpad/mon.txt)",
+      "Bash(grep -vE \"^\\\\s*$\")",
+      "Bash(git checkout *)",
+      "Bash(git rev-list *)",
+      "Bash(awk '{print \"vs origin/main ahead:\",$1,\"behind:\",$2}')",
+      "Bash(git branch *)"
     ]
   }
 }
