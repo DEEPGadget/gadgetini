@@ -164,7 +164,9 @@
       "Read(//etc/nginx/sites-enabled/**)",
       "Bash(npx eslint *)",
       "Bash(node --input-type=module -e ' *)",
-      "Bash(npx --yes acorn --ecma2022 --module app/api/server-select/route.js)"
+      "Bash(npx --yes acorn --ecma2022 --module app/api/server-select/route.js)",
+      "Bash(python3 -m py_compile src/exporter/machine_config.py src/exporter/sensor_exporter.py src/exporter/dlc_sensors.py src/display/profiles/__init__.py src/display/gadgetini_manager.py src/display/display_manager.py)",
+      "Bash(npx --yes acorn --ecma2022 --module src/gui/gadgetini-web/app/api/server-select/route.js)"
     ]
   }
 }

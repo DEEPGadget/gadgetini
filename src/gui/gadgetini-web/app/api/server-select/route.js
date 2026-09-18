@@ -10,18 +10,11 @@ const homeDir =
 
 const CONFIG_PATH = path.join(homeDir, "config.ini");
 
-// Canonical product names. config.ini is matched case-insensitively so units
-// still carrying the older lowercase `name=dg5w` resolve to the right button.
-const PRODUCTS = ["dg5W", "dg5R"];
-
-const canonicalProduct = (name) =>
-  PRODUCTS.find((p) => p.toLowerCase() === name.toLowerCase()) ?? name;
-
 export async function GET() {
   try {
     const config = await fs.promises.readFile(CONFIG_PATH, "utf-8");
     const match = config.match(/^name\s*=\s*(.*)/m);
-    const server = match ? canonicalProduct(match[1].trim()) : "dg5R";
+    const server = match ? match[1].trim() : "dg5R";
     return NextResponse.json({ server });
   } catch (error) {
     console.error("[server-select/GET]", error);

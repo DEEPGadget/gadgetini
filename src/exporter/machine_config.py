@@ -3,12 +3,7 @@ import configparser
 _cfg = configparser.ConfigParser()
 _cfg.read('/home/gadgetini/gadgetini/src/display/config.ini')
 
-# Canonical product names. config.ini is matched case-insensitively so units
-# still carrying the older lowercase `name=dg5w` keep resolving.
-PRODUCTS = ('dg5W', 'dg5R')
-
-_name = _cfg.get('PRODUCT', 'name', fallback='unknown').strip()
-MACHINE = next((p for p in PRODUCTS if p.lower() == _name.lower()), _name)
+MACHINE = _cfg.get('PRODUCT', 'name', fallback='unknown')
 GPU_COUNT = _cfg.getint('PRODUCT', 'gpu_count', fallback=8)
 CPU_COUNT = _cfg.getint('PRODUCT', 'cpu_count', fallback=2)
 
