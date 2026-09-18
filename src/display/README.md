@@ -95,10 +95,10 @@ src/display/
 │
 └── profiles/
     ├── __init__.py           load_product() — 동적 모듈 로딩
-    ├── dg5r.py               DG5R 제품 프로파일 (JSON 방식)
-    ├── dg5r.json             DG5R 센서/뷰어 정의 (JSON)
-    ├── dg5r_default.json     DG5R 기본 설정 백업
-    └── dg5w.py               DG5W 제품 프로파일 (Python 방식, 레거시)
+    ├── dg5R.py               dg5R 제품 프로파일 (JSON 방식)
+    ├── dg5R.json             dg5R 센서/뷰어 정의 (JSON)
+    ├── dg5R_default.json     dg5R 기본 설정 백업
+    └── dg5W.py               dg5W 제품 프로파일 (Python 방식, 레거시)
 ```
 
 ---
@@ -131,10 +131,10 @@ SensorData(
 ### 뷰어 등록 흐름
 
 ```
-config.ini [PRODUCT] name=dg5r
-    → profiles/__init__.py: load_product("dg5r")
-        → profiles/dg5r.py: create_sensors(), create_viewers()
-            → profile_loader.py: load_sensors(dg5r.json), load_viewers(dg5r.json)
+config.ini [PRODUCT] name=dg5R
+    → profiles/__init__.py: load_product("dg5R")
+        → profiles/dg5R.py: create_sensors(), create_viewers()
+            → profile_loader.py: load_sensors(dg5R.json), load_viewers(dg5R.json)
 ```
 
 JSON 프로파일(`.json`)을 사용하는 경우 `profile_loader.py`의 `VIEWER_CLASSES` 딕셔너리에 등록된 클래스만 사용할 수 있습니다.
@@ -270,7 +270,7 @@ DailyViewer(
 
 ### 4.2 뷰어 추가
 
-**방법 A — JSON 프로파일 수정 (권장: dg5r 계열)**
+**방법 A — JSON 프로파일 수정 (권장: dg5R 계열)**
 
 1. `profiles/<product>.json`의 `"viewers"` 배열에 항목 추가
 
@@ -296,7 +296,7 @@ my_viewer=on
 
 > **주의:** `"key"` 값이 `config.ini`의 키와 반드시 일치해야 합니다. 불일치 시 항상 활성화됩니다(fallback=True).
 
-**방법 B — Python 프로파일 수정 (dg5w 계열)**
+**방법 B — Python 프로파일 수정 (dg5W 계열)**
 
 `profiles/<product>.py`의 `create_viewers()`에 튜플 추가:
 
@@ -460,12 +460,12 @@ def create_fallback_viewers() -> list[tuple[str, Viewer]]:
 
 | 방식 | 예시 | 특징 |
 |------|------|------|
-| **Python 방식** | `dg5w.py` | 코드로 직접 정의. 커스텀 로직 자유롭게 작성 가능 |
-| **JSON 방식** | `dg5r.py` + `dg5r.json` | JSON 파일에서 선언적으로 정의. `profile_loader.py` 사용 |
+| **Python 방식** | `dg5W.py` | 코드로 직접 정의. 커스텀 로직 자유롭게 작성 가능 |
+| **JSON 방식** | `dg5R.py` + `dg5R.json` | JSON 파일에서 선언적으로 정의. `profile_loader.py` 사용 |
 
 ---
 
-### 5.2 JSON 프로파일 구조 (`dg5r.json` 형식)
+### 5.2 JSON 프로파일 구조 (`dg5R.json` 형식)
 
 ```json
 {
@@ -593,7 +593,7 @@ name=my_product
 
 **Python 방식:**
 
-`profiles/my_product.py`에 `create_sensors()`와 `create_viewers()`를 직접 Python 코드로 작성합니다. `dg5w.py`를 참고하세요.
+`profiles/my_product.py`에 `create_sensors()`와 `create_viewers()`를 직접 Python 코드로 작성합니다. `dg5W.py`를 참고하세요.
 
 ---
 
@@ -648,7 +648,7 @@ name=my_product
 
 ```ini
 [PRODUCT]
-name=dg5r              # 로드할 프로파일 (profiles/ 디렉토리 내 모듈명)
+name=dg5R              # 로드할 프로파일 (profiles/ 디렉토리 내 모듈명)
 version=gadgetini v0.36
 redis_host=localhost
 redis_port=6379

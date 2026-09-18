@@ -14,7 +14,7 @@ export async function GET() {
   try {
     const config = await fs.promises.readFile(CONFIG_PATH, "utf-8");
     const match = config.match(/^name\s*=\s*(.*)/m);
-    const server = match ? match[1].trim() : "dg5r";
+    const server = match ? match[1].trim() : "dg5R";
     return NextResponse.json({ server });
   } catch (error) {
     console.error("[server-select/GET]", error);

@@ -5,7 +5,7 @@ def load_product(product_name):
     """Load a product profile module by name.
 
     Args:
-        product_name: Product identifier (e.g. 'dg5w', 'dg5r')
+        product_name: Product identifier (e.g. 'dg5W', 'dg5R')
 
     Returns:
         Module with create_sensors(), create_viewers(),

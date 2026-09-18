@@ -12,7 +12,7 @@
 # Diagnostic helper key: comm_consecutive_failures(count) — SET by control_board.
 #
 # ===============================================================================
-# MACHINE: dg5r
+# MACHINE: dg5R
 # ===============================================================================
 #   Key                     Unit         Writer   Description
 # ===============================================================================
@@ -51,7 +51,7 @@
 # ===============================================================================
 #
 # ===============================================================================
-# MACHINE: dg5w
+# MACHINE: dg5W
 # ===============================================================================
 #   Key                     Unit         Writer   Description
 # ===============================================================================
@@ -147,8 +147,8 @@ class DLCCollector:
         if client.exists("coolant_delta_t2"):
             g.add_metric([srv, "cooling", "delta_t2", "°C", ""], get_float("coolant_delta_t2"))
 
-        # Chassis stability (dg5w only)
-        if MACHINE == 'dg5w':
+        # Chassis stability (dg5W only)
+        if MACHINE == 'dg5W':
             g.add_metric([srv, "chassis", "stability", "bool", ""], get_int("chassis_stabil"))
 
         # Coolant flow (control_board SETs an estimate based on pump duty)

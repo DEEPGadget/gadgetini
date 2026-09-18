@@ -24,7 +24,7 @@ function cls(st){return 'sv '+st;}
 function evalInlet(v){if(v===undefined)return'normal';if(v>45||v<18)return'critical';if(v>40||v<22)return'warning';return'normal';}
 function evalOutlet(v){if(v===undefined)return'normal';if(v>65||v<18)return'critical';if(v>60||v<22)return'warning';return'normal';}
 function evalDelta(v){if(v===undefined)return'normal';if(v>20)return'critical';if(v>15)return'warning';return'normal';}
-function evalChasT(v){if(v===undefined)return'normal';if(v>50)return'critical';if(v>40)return'warning';return'normal';}
+function evalChasT(v){if(v===undefined)return'normal';if(v>40)return'critical';if(v>35)return'warning';return'normal';}
 function evalChasH(v){if(v===undefined)return'normal';if(v>80)return'critical';if(v>60)return'warning';return'normal';}
 
 function setEl(id,text,status){

@@ -206,12 +206,7 @@ class PCBDriver:
         return clamped
 
     def apply_initial_state(self):
-        """Write non-flash-persisted state (PWM duty, DOUT) at boot/recovery.
-
-        ALL fan channels (5~12) are initialized to safe defaults. FanCurveController
-        will immediately overwrite with computed duty on first update. This ensures
-        no fan channel is left at 0 PWM (which = 100% fan speed due to no control signal).
-        """
+        """Write non-flash-persisted state (PWM duty, DOUT) at boot/recovery."""
         duty_cfg = self.cfg.get('initial_pwm_duty', {}) or {}
         pump = duty_cfg.get('pump') or {}
         fan = duty_cfg.get('fan') or {}
@@ -331,8 +326,7 @@ class PCBDriver:
 
         # PWM duty readback (HR 0~11): published as-is for EVERY physical channel,
         # independent of tach (duty and tach are separate). pump CH1~4 -> pwm_duty_pump_0~3,
-        # fan CH5~12 -> pwm_duty_fan_0~7. This includes fixed channels (e.g. CH10 RPi fan
-        # @100%) that the fan curve never touches, so the UI can show them too.
+        # fan CH5~12 -> pwm_duty_fan_0~7.
         duties = self.read_holding_registers(HR_PWM_DUTY_BASE, 12)
         if duties is None:
             return False

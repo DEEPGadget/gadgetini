@@ -184,9 +184,9 @@ def get_air_humit():
     return _read_n(_read_humid_once)
 
 
-# ── Gyro — MPU6050 (dg5w only). Both backends (moves to PCB on Rev_D). ──
+# ── Gyro — MPU6050 (dg5W only). Both backends (moves to PCB on Rev_D). ──
 _gyro_dev = None
-if MACHINE == 'dg5w':
+if MACHINE == 'dg5W':
     try:
         import mpu6050 as _gyro_mod
         _gyro_dev = _gyro_mod.mpu6050(0x68)
@@ -196,8 +196,8 @@ if MACHINE == 'dg5w':
 
 
 def get_chassis_stabil():
-    """1=stable, 0=unstable, None=non-dg5w (caller omits the key)."""
-    if MACHINE != 'dg5w':
+    """1=stable, 0=unstable, None=non-dg5W (caller omits the key)."""
+    if MACHINE != 'dg5W':
         return None
     if _gyro_dev is None:
         return 1
@@ -261,7 +261,7 @@ def update_env(rd):
 
 
 def update_chassis(rd):
-    """chassis_stabil -> Redis. dg5w only (None is skipped)."""
+    """chassis_stabil -> Redis. dg5W only (None is skipped)."""
     stabil = get_chassis_stabil()
     if stabil is not None:
         rd.set("chassis_stabil", stabil)

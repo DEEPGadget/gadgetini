@@ -62,8 +62,8 @@ src/display/
 │
 └── profiles/
     ├── __init__.py           # load_product() — 동적 모듈 로딩
-    ├── dg5r.py               # DG5R 제품 프로파일 (8 GPU, 2 CPU, 듀얼 쿨런트)
-    └── dg5w.py               # DG5W 제품 프로파일 (단순 구성)
+    ├── dg5R.py               # dg5R 제품 프로파일 (8 GPU, 2 CPU, 듀얼 쿨런트)
+    └── dg5W.py               # dg5W 제품 프로파일 (단순 구성)
 ```
 
 ---
@@ -235,7 +235,7 @@ SensorViewer(
 
 **그래프:** 단일 센서의 gradient fill + glow + main line. 값에 따른 파란↔빨간 색상 그라데이션.
 
-**사용 예 (dg5r.py):**
+**사용 예 (dg5R.py):**
 ```python
 ("memory", SensorViewer("MEM Info",
     sensor_key="mem_util",
@@ -283,7 +283,7 @@ MultiSensorViewer(
 
 **그래프:** 공유 스케일 멀티라인 (glow 3px + main line 2px). gradient fill 없음.
 
-**사용 예 (dg5r.py):**
+**사용 예 (dg5R.py):**
 ```python
 ("coolant", MultiSensorViewer("Coolant Overview",
     sensor_keys=["coolant_inlet1", "coolant_outlet1",
@@ -322,7 +322,7 @@ DualSensorViewer(
 
 각 패널은 독립적인 스케일로 정규화됩니다. 푸터는 좌측 패널에 IP, 우측 패널에 version을 나눠 표시합니다.
 
-**사용 예 (dg5r.py):**
+**사용 예 (dg5R.py):**
 ```python
 ("chassis", DualSensorViewer(panels=[
     {"title": "Air Temperature", "sensor_key": "chassis_temp"},
@@ -364,7 +364,7 @@ CoolantDetailViewer(
 └──────────────────────┘
 ```
 
-**사용 예 (dg5r.py):**
+**사용 예 (dg5R.py):**
 ```python
 ("coolant_detail", CoolantDetailViewer(loops=[
     {"title": "Loop 1",
@@ -414,7 +414,7 @@ TempUtilViewer(
 
 범례는 센서 ≤4개면 1행, 5~8개면 2행(4열)으로 표시됩니다.
 
-**사용 예 (dg5r.py):**
+**사용 예 (dg5R.py):**
 ```python
 ("gpu", TempUtilViewer(
     temp_title="GPU Temperature",
@@ -448,7 +448,7 @@ DailyViewer(
 
 **히스토리가 아직 없고 실시간 데이터만 있을 때:** 그래프 중앙에 현재 피크값 텍스트 + 가로 점선만 표시.
 
-**사용 예 (dg5r.py):**
+**사용 예 (dg5R.py):**
 ```python
 ("coolant_daily", DailyViewer("Coolant 24h",
     sensor_keys=["coolant_inlet1", "coolant_outlet1",
@@ -527,7 +527,7 @@ draw_aligned_text(
 
 ```ini
 [PRODUCT]
-name=dg5r              # 프로파일 이름 (profiles/ 폴더에서 동적 로드)
+name=dg5R              # 프로파일 이름 (profiles/ 폴더에서 동적 로드)
 version=gadgetini v0.35
 redis_host=localhost
 redis_port=6379
@@ -577,7 +577,7 @@ def create_fallback_viewers() -> list[tuple[str, Viewer]]:
     """센서 초기화 실패 시 표시할 안전 뷰어."""
 ```
 
-### DG5R 센서 목록
+### dg5R 센서 목록
 
 | 키 | 이름 | 단위 | Redis 소스 |
 |---|------|------|-----------|
@@ -597,7 +597,7 @@ def create_fallback_viewers() -> list[tuple[str, Viewer]]:
 | `mem_used` | Used Memory | GB | `used_mem` |
 | `mem_free` | Free Memory | GB | `avail_mem` |
 
-### DG5R 뷰어 목록
+### dg5R 뷰어 목록
 
 | config 키 | 뷰어 클래스 | 설명 |
 |----------|------------|------|

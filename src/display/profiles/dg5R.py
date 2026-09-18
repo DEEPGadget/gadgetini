@@ -1,7 +1,7 @@
 import os
 from profile_loader import load_sensors, load_viewers
 
-_JSON = os.path.join(os.path.dirname(__file__), 'dg5r.json')
+_JSON = os.path.join(os.path.dirname(__file__), 'dg5R.json')
 
 
 def create_sensors(redis, config=None):

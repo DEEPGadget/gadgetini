@@ -36,7 +36,7 @@ class DisplayManager:
         self.viewer_rotation_sec = self.config.getint('DISPLAY', 'rotation_sec', fallback=5)
         self.current_viewer = 0
 
-        product_name = self.config.get('PRODUCT', 'name', fallback='dg5w')
+        product_name = self.config.get('PRODUCT', 'name', fallback='dg5W')
         product = load_product(product_name)
 
         try:

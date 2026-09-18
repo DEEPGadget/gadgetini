@@ -1,14 +1,13 @@
 [Unit]
 Description=Run npm start for gadgetini web ui service:3001
-# data_crawler.service가 백엔드(PCB/legacy)를 자동 감지하므로 그 뒤에 기동하면
-# UI가 PCB 연결 상태를 정확히 표시할 수 있다.
-After=network.target data_crawler.service redis.service
+After=network.target redis.service
 
 [Service]
 Type=simple
 WorkingDirectory=/home/gadgetini/gadgetini/src/gui/gadgetini-web
 ExecStart=/usr/bin/npm start -- --port 3001
 Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

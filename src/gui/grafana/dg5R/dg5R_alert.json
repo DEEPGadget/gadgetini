@@ -8,7 +8,7 @@
       "interval": "1m",
       "rules": [
         {
-          "uid": "dg5r-coolant-inlet-crit",
+          "uid": "dg5R-coolant-inlet-crit",
           "title": "[dg5R] Coolant Inlet Temp Critical",
           "condition": "C",
           "data": [
@@ -60,7 +60,7 @@
           "isPaused": false
         },
         {
-          "uid": "dg5r-coolant-outlet-crit",
+          "uid": "dg5R-coolant-outlet-crit",
           "title": "[dg5R] Coolant Outlet Temp Critical",
           "condition": "C",
           "data": [
@@ -112,7 +112,7 @@
           "isPaused": false
         },
         {
-          "uid": "dg5r-coolant-deltat-crit",
+          "uid": "dg5R-coolant-deltat-crit",
           "title": "[dg5R] Coolant Delta T Critical",
           "condition": "C",
           "data": [
@@ -157,7 +157,7 @@
           "isPaused": false
         },
         {
-          "uid": "dg5r-coolant-level-warn",
+          "uid": "dg5R-coolant-level-warn",
           "title": "[dg5R] Coolant Level Warning",
           "condition": "C",
           "data": [
@@ -202,7 +202,7 @@
           "isPaused": false
         },
         {
-          "uid": "dg5r-coolant-leak-crit",
+          "uid": "dg5R-coolant-leak-crit",
           "title": "[dg5R] Coolant Leak Detected",
           "condition": "C",
           "data": [
@@ -255,7 +255,7 @@
       "interval": "1m",
       "rules": [
         {
-          "uid": "dg5r-chassis-temp-crit",
+          "uid": "dg5R-chassis-temp-crit",
           "title": "[dg5R] Chassis Temp Critical",
           "condition": "C",
           "data": [
@@ -276,7 +276,7 @@
               "model": {
                 "conditions": [
                   {
-                    "evaluator": { "params": [50], "type": "gt" },
+                    "evaluator": { "params": [40], "type": "gt" },
                     "operator": { "type": "and" },
                     "query": { "params": ["A"] },
                     "reducer": { "params": [], "type": "last" },
@@ -293,14 +293,14 @@
           "execErrState": "Error",
           "for": "1m",
           "annotations": {
-            "summary": "Chassis temperature critical (>50°C)",
+            "summary": "Chassis temperature critical (>40°C)",
             "description": "air_temp: {{ $values.A }}"
           },
           "labels": { "severity": "critical", "server": "dg5R", "subsystem": "environment" },
           "isPaused": false
         },
         {
-          "uid": "dg5r-chassis-humid-crit",
+          "uid": "dg5R-chassis-humid-crit",
           "title": "[dg5R] Chassis Humidity Critical",
           "condition": "C",
           "data": [
@@ -353,7 +353,7 @@
       "interval": "1m",
       "rules": [
         {
-          "uid": "dg5r-gpu-temp-crit",
+          "uid": "dg5R-gpu-temp-crit",
           "title": "[dg5R] AI Processor Temp Critical",
           "condition": "C",
           "data": [
@@ -398,7 +398,7 @@
           "isPaused": false
         },
         {
-          "uid": "dg5r-cpu-temp-crit",
+          "uid": "dg5R-cpu-temp-crit",
           "title": "[dg5R] CPU Temp Critical",
           "condition": "C",
           "data": [
@@ -443,7 +443,7 @@
           "isPaused": false
         },
         {
-          "uid": "dg5r-mem-avail-crit",
+          "uid": "dg5R-mem-avail-crit",
           "title": "[dg5R] Memory Available Critical",
           "condition": "C",
           "data": [
@@ -496,7 +496,7 @@
       "interval": "1m",
       "rules": [
         {
-          "uid": "dg5r-ib-temp-crit",
+          "uid": "dg5R-ib-temp-crit",
           "title": "[dg5R] IB NIC Temp Critical",
           "condition": "C",
           "data": [

@@ -494,7 +494,7 @@ class BaseScreen:
 class GadgetiniManager:
     def __init__(self):
         self.cfg = ConfigManager()
-        self.current_product = self.cfg.get('PRODUCT', 'name', fallback='dg5r')
+        self.current_product = self.cfg.get('PRODUCT', 'name', fallback='dg5R')
         self.profile = ProfileData(self.current_product, PROFILES_DIR)
 
     @property
@@ -681,7 +681,7 @@ class ProductSelectScreen(BaseScreen):
         name = self._input_field(win, h // 2, 2, w - 4, label="New product name: ")
         if not name or not name.strip():
             return self
-        name = name.strip().lower()
+        name = name.strip()
         existing = self.manager.list_products()
         if name in existing:
             self._show_message(win, f"Product '{name}' already exists!", curses.color_pair(5))
