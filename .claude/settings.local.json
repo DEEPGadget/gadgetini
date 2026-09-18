@@ -166,7 +166,25 @@
       "Bash(node --input-type=module -e ' *)",
       "Bash(npx --yes acorn --ecma2022 --module app/api/server-select/route.js)",
       "Bash(python3 -m py_compile src/exporter/machine_config.py src/exporter/sensor_exporter.py src/exporter/dlc_sensors.py src/display/profiles/__init__.py src/display/gadgetini_manager.py src/display/display_manager.py)",
-      "Bash(npx --yes acorn --ecma2022 --module src/gui/gadgetini-web/app/api/server-select/route.js)"
+      "Bash(npx --yes acorn --ecma2022 --module src/gui/gadgetini-web/app/api/server-select/route.js)",
+      "Bash(awk '{print $1, $3, $4}')",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} -> %{redirect_url}\\\\n\" http://localhost/dashboard)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} -> %{redirect_url}\\\\n\" http://localhost/)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3001/)",
+      "Bash(sudo journalctl -u display_pannel.service --since \"2 min ago\" --no-pager -n 15)",
+      "Bash(sudo journalctl -u data_crawler.service --since \"2 min ago\" --no-pager -n 10)",
+      "Bash(sudo journalctl -u sensor_exporter.service --since \"2 min ago\" --no-pager -n 8)",
+      "Bash(sudo journalctl -u data_crawler.service --since \"90 sec ago\" --no-pager -n 20)",
+      "Read(//dev/**)",
+      "Bash(sudo journalctl -u data_crawler.service _PID=1348986 --no-pager -n 25)",
+      "Bash(sudo journalctl -u data_crawler.service --since \"3 days ago\" --no-pager)",
+      "Bash(lsusb)",
+      "Bash(redis-cli dbsize *)",
+      "Bash(redis-cli mget *)",
+      "Bash(pkill -f \"journalctl -u data_crawler\")",
+      "Bash(python3 -m py_compile src/display/leak_alert_viewer.py)",
+      "Bash(sudo systemctl restart display_pannel.service)",
+      "Bash(sudo journalctl -u display_pannel.service --since \"30 sec ago\" --no-pager)"
     ]
   }
 }
