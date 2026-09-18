@@ -121,7 +121,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\"}",
           "instant": true,
           "legendFormat": "{{metric}}",
           "refId": "A"
@@ -259,7 +259,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"cooling|environment|chassis\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=~\"cooling|environment|chassis\"}",
           "instant": true,
           "legendFormat": "{{metric}}",
           "refId": "A"
@@ -349,7 +349,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"network\", metric=\"link_status\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=\"network\", metric=\"link_status\"}",
           "instant": true,
           "legendFormat": "{{extra}}",
           "refId": "A"
@@ -360,7 +360,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"ib\", metric=\"temperature\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=\"ib\", metric=\"temperature\"}",
           "instant": true,
           "legendFormat": "IB temp",
           "refId": "B"
@@ -450,7 +450,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"cpu.*|gpu.*|memory\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=~\"cpu.*|gpu.*|memory\"}",
           "instant": true,
           "legendFormat": "{{metric}}",
           "refId": "A"
@@ -569,7 +569,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"cooling\", metric=\"inlet1_temp\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=\"cooling\", metric=\"inlet1_temp\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "A"
@@ -720,7 +720,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"environment\", metric=\"air_temp\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=\"environment\", metric=\"air_temp\"}",
           "legendFormat": "{{metric}}",
           "range": true,
           "refId": "A"
@@ -731,7 +731,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"environment\", metric=\"air_humidity\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=\"environment\", metric=\"air_humidity\"}",
           "legendFormat": "Air humidity",
           "range": true,
           "refId": "B"
@@ -837,7 +837,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"memory\", metric=\"available\"} / ignoring(metric, unit) dlc_system_sensor{server=\"dg5w\", component=\"memory\", metric=\"total\"} * 100",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=\"memory\", metric=\"available\"} / ignoring(metric, unit) dlc_system_sensor{server=\"dg5W\", component=\"memory\", metric=\"total\"} * 100",
           "legendFormat": "Available %",
           "range": true,
           "refId": "A"
@@ -943,7 +943,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"gpu.\", metric=\"temperature\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=~\"gpu.\", metric=\"temperature\"}",
           "legendFormat": "{{component}}",
           "range": true,
           "refId": "A"
@@ -1049,7 +1049,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"gpu.\", metric=\"power_current\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=~\"gpu.\", metric=\"power_current\"}",
           "legendFormat": "{{component}}",
           "range": true,
           "refId": "A"
@@ -1155,7 +1155,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"cpu[0-9]\", metric=\"temperature\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=~\"cpu[0-9]\", metric=\"temperature\"}",
           "legendFormat": "{{component}}",
           "range": true,
           "refId": "A"
@@ -1261,7 +1261,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=~\"cpu[0-9]\", metric=\"power\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=~\"cpu[0-9]\", metric=\"power\"}",
           "legendFormat": "{{component}}",
           "range": true,
           "refId": "A"
@@ -1367,7 +1367,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "dlc_system_sensor{server=\"dg5w\", component=\"storage\", metric=\"nvme_temperature\"}",
+          "expr": "dlc_system_sensor{server=\"dg5W\", component=\"storage\", metric=\"nvme_temperature\"}",
           "legendFormat": "{{extra}}",
           "range": true,
           "refId": "A"

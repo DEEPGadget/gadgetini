@@ -108,15 +108,15 @@ function MiniField({ label, value, onChange, disabled, dotClass }) {
 }
 
 const SERVERS = [
-  { label: "dg5R", value: "dg5r" },
-  { label: "dg5W", value: "dg5w" },
+  { label: "dg5R", value: "dg5R" },
+  { label: "dg5W", value: "dg5W" },
 ];
 
 export default function Settings() {
   const { t } = useLocale();
   const [currentIP, setCurrentIP] = useState("localhost");
   const [ethActive, setEthActive] = useState(false);
-  const [serverName, setServerName] = useState("dg5r");
+  const [serverName, setServerName] = useState("dg5R");
   const [displayMode, setDisplayMode] = useState({
     orientation: "vertical",
     display: true,

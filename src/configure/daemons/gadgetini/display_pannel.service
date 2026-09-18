@@ -1,5 +1,5 @@
 [Unit]
-Description=dg5w external LCD display pannel control daemon.
+Description=dg5W external LCD display pannel control daemon.
 After=data_crawler.service display_logo.service
 Wants=networking.service
 [Service]

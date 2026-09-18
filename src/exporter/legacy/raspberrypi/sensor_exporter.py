@@ -39,7 +39,7 @@ class DLC_sensor_Collector(object):
             "DeepGadget DLC server sensors & telemetry",
             labels=["server", "component", "metric", "unit", "extra"],
         )
-        srv = "dg5w"
+        srv = "dg5W"
         # Cooling — leak (1=leak) / level (1=OK) / inlet temp (NTC on ADC ch4)
         gauge_metric.add_metric([srv, "cooling", "leak_detected", "bool", ""], self.coolant_leak_detection())
         gauge_metric.add_metric([srv, "cooling", "level_full",    "bool", ""], self.coolant_level_detection())

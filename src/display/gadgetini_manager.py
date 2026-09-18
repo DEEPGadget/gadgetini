@@ -494,7 +494,11 @@ class BaseScreen:
 class GadgetiniManager:
     def __init__(self):
         self.cfg = ConfigManager()
-        self.current_product = self.cfg.get('PRODUCT', 'name', fallback='dg5r')
+        name = self.cfg.get('PRODUCT', 'name', fallback='dg5R').strip()
+        # config.ini may still carry the older lowercase name — match the
+        # profile files case-insensitively so it resolves to dg5W / dg5R.
+        self.current_product = next(
+            (p for p in self.list_products() if p.lower() == name.lower()), name)
         self.profile = ProfileData(self.current_product, PROFILES_DIR)
 
     @property

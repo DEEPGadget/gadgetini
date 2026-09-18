@@ -7,7 +7,7 @@ sudo vim /etc/systemd/system/display_pannel.service
 ```
 ```
 [Unit]
-Description=dg5w external LCD display pannel control daemon.
+Description=dg5W external LCD display pannel control daemon.
 After=display_logo.service
 Requires=networking.service
 [Service]

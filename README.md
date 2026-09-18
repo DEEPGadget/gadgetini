@@ -1,6 +1,6 @@
 # gadgetini
 
-gadgetini is a server monitoring system specialized for Direct Liquid Cooling (DLC) systems in [DeepGadget](https://deepgadget.com/) servers (dg5w / dg5r). It collects DLC sensor data on a Raspberry Pi 4 B+, drives a physical TFT status display, runs a fan/pump controller via a custom RS485 control board (PCB), and exposes Prometheus metrics + a Next.js configuration web UI.
+gadgetini is a server monitoring system specialized for Direct Liquid Cooling (DLC) systems in [DeepGadget](https://deepgadget.com/) servers (dg5W / dg5R). It collects DLC sensor data on a Raspberry Pi 4 B+, drives a physical TFT status display, runs a fan/pump controller via a custom RS485 control board (PCB), and exposes Prometheus metrics + a Next.js configuration web UI.
 
 ![manycore_logo_black (3)](https://github.com/user-attachments/assets/2e65773a-b1cc-46ee-8831-7d3d95a5b798)
 
@@ -88,7 +88,7 @@ There is no `pcb_bootstrap` / `pcb_watcher` / `control_board` service and no sys
 - **PCB control board** (Gen3 hw): isolated RS485 Modbus RTU, 12 PWM channels (TIM1 1 kHz pump × 4, TIM2 25 kHz fan × 4, TIM8 25 kHz fan × 4), pulse tach inputs, ADC, DIN/AIN
 - **Display**: Adafruit 1.9" 320×170 ST7789 TFT
 - **Cooling sensors** (via PCB): 10k NTC × up to 4 (inlet1/outlet1/inlet2/outlet2), liquid leak (AIN), liquid level (DIN), waterflow (estimated from pump duty)
-- **Environment sensors** (Pi-attached, both hw generations): DHT11 or HDC302x (auto-detect, RPi I²C/GPIO), MPU6050 gyro for chassis stability (dg5w only)
+- **Environment sensors** (Pi-attached, both hw generations): DHT11 or HDC302x (auto-detect, RPi I²C/GPIO), MPU6050 gyro for chassis stability (dg5W only)
 - **Legacy ADC** (Gen1~2 hw only): Waveshare High-Precision AD/DA (ADS1256, SPI)
 
 ## Services
@@ -122,7 +122,7 @@ Flat naming, consumed by `sensor_exporter`:
 | `fan_rpm_{i}` | RPM | Pulse tach × 30 (0-based index) |
 | `pwm_duty_pump_{i}` / `pwm_duty_fan_{i}` | 0–1000 | PWM duty readback (0-based index) |
 | `air_temp` / `air_humit` | °C / %RH | DHT11 or HDC302x (Pi I²C/GPIO) |
-| `chassis_stabil` | 0/1 | MPU6050 (dg5w only) |
+| `chassis_stabil` | 0/1 | MPU6050 (dg5W only) |
 | `comm_status` | ok/timeout/disconnected | PCB Modbus health |
 | `comm_consecutive_failures` | count | Rolling failure counter |
 | `host_stat` | 0/1 | Host TTL key presence (USB gadget link) |
