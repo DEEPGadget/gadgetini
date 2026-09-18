@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 6,
+  "id": null,
   "links": [],
   "panels": [
     {
@@ -149,19 +149,17 @@
         "groupBy": [],
         "groupMode": "default",
         "maxItems": 20,
-        "showInactiveAlerts": false,
         "sortOrder": 1,
         "stateFilter": {
           "error": true,
           "firing": true,
           "noData": false,
           "normal": false,
-          "pending": true,
-          "recovering": true
+          "pending": true
         },
         "viewMode": "list"
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "11.2.2",
       "title": "Active Alerts",
       "type": "alertlist"
     },
@@ -561,7 +559,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "11.2.2",
       "targets": [
         {
           "datasource": {
@@ -712,7 +710,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "11.2.2",
       "targets": [
         {
           "datasource": {
@@ -829,7 +827,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "11.2.2",
       "targets": [
         {
           "datasource": {
@@ -935,7 +933,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "11.2.2",
       "targets": [
         {
           "datasource": {
@@ -1041,7 +1039,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "11.2.2",
       "targets": [
         {
           "datasource": {
@@ -1147,7 +1145,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "11.2.2",
       "targets": [
         {
           "datasource": {
@@ -1253,7 +1251,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "11.2.2",
       "targets": [
         {
           "datasource": {
@@ -1359,7 +1357,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "11.2.2",
       "targets": [
         {
           "datasource": {
@@ -1377,9 +1375,8 @@
       "type": "timeseries"
     }
   ],
-  "preload": false,
   "refresh": "10s",
-  "schemaVersion": 41,
+  "schemaVersion": 39,
   "tags": [
     "dg5W",
     "DLC"
