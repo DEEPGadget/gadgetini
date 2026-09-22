@@ -94,6 +94,52 @@ export function applySmtp(text, values) {
   return lines.join("\n");
 }
 
+// Package-shipped copy of the default grafana.ini (world-readable). Its [smtp] lines are
+// what a fresh install has, so a reset writes them back verbatim.
+const SAMPLE_INI = "/usr/share/grafana/conf/sample.ini";
+// Grafana 11.2 [smtp] defaults, used only if sample.ini cannot be read.
+const FALLBACK_DEFAULT_LINES = {
+  enabled: ";enabled = false",
+  host: ";host = localhost:25",
+  user: ";user =",
+  password: ";password =",
+  from_address: ";from_address = admin@grafana.localhost",
+  from_name: ";from_name = Grafana",
+  startTLS_policy: ";startTLS_policy = NoStartTLS",
+};
+
+export async function readDefaultSmtpLines() {
+  const out = { ...FALLBACK_DEFAULT_LINES };
+  try {
+    const lines = (await fs.promises.readFile(SAMPLE_INI, "utf-8")).split("\n");
+    const sec = findSmtpSection(lines);
+    if (sec) {
+      for (const key of SMTP_KEYS) {
+        const line = lines.slice(sec.start, sec.end).find((l) => keyRe(key, true).test(l));
+        if (line !== undefined) out[key] = line.trimEnd();
+      }
+    }
+  } catch {
+    // keep the fallback lines
+  }
+  return out;
+}
+
+// Put every active SMTP_KEYS line in [smtp] back to its commented default, so the section
+// reads exactly as after installation (Grafana then uses its built-in defaults).
+export function resetSmtp(text, defaultLines) {
+  const lines = text.split("\n");
+  const sec = findSmtpSection(lines);
+  if (!sec) return text;
+  for (const key of SMTP_KEYS) {
+    const re = keyRe(key, false);
+    for (let i = sec.start; i < sec.end; i++) {
+      if (re.test(lines[i])) lines[i] = defaultLines[key];
+    }
+  }
+  return lines.join("\n");
+}
+
 export async function readGrafanaIni() {
   return fs.promises.readFile(GRAFANA_INI, "utf-8");
 }

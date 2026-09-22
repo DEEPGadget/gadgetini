@@ -146,7 +146,7 @@ const STRINGS = {
     smtp_save_confirm: "Grafana will restart to apply the settings. Proceed?",
     smtp_saved: "Email settings saved. Grafana restarted.",
     smtp_clear: "Clear",
-    smtp_clear_confirm: "Disable email alerts and delete the stored account/password? Grafana will restart.",
+    smtp_clear_confirm: "Reset email settings to the Grafana defaults (email alerts off, stored account/password deleted)? Grafana will restart.",
 
     save: "Save",
     save_failed: "Failed to save",
@@ -282,7 +282,7 @@ const STRINGS = {
     smtp_save_confirm: "설정 적용을 위해 Grafana 가 재시작됩니다. 계속할까요?",
     smtp_saved: "이메일 설정이 저장되었습니다. Grafana 가 재시작되었습니다.",
     smtp_clear: "삭제",
-    smtp_clear_confirm: "이메일 알림을 끄고 저장된 계정/비밀번호를 삭제할까요? Grafana 가 재시작됩니다.",
+    smtp_clear_confirm: "이메일 설정을 Grafana 기본값으로 되돌릴까요? (알림 꺼짐, 저장된 계정/비밀번호 삭제) Grafana 가 재시작됩니다.",
 
     save: "저장",
     save_failed: "저장 실패",

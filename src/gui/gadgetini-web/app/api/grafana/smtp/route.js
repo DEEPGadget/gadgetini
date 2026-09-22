@@ -1,6 +1,7 @@
 // GET    /api/grafana/smtp → current [smtp] settings of grafana.ini (password is never returned)
 // PUT    /api/grafana/smtp → validate, write [smtp], restart grafana-server (rollback on failure)
-// DELETE /api/grafana/smtp → disable email and wipe the stored user/password
+// DELETE /api/grafana/smtp → reset [smtp] to the installation defaults (commented lines from
+//                             the packaged sample.ini); wipes the stored user/password
 //
 // Password handling: an empty password in PUT means "keep the stored one", but only while
 // host and user are unchanged — otherwise the stored credential could be redirected to a
@@ -11,7 +12,9 @@ import { promisify } from "node:util";
 import {
   applySmtp,
   parseSmtp,
+  readDefaultSmtpLines,
   readGrafanaIni,
+  resetSmtp,
   restoreGrafanaIniBackup,
   validateSmtp,
   writeGrafanaIni,
@@ -137,7 +140,7 @@ export async function DELETE() {
   return withLock(async () => {
     try {
       const text = await readGrafanaIni();
-      await applyAndRestart(applySmtp(text, { enabled: "false", user: "", password: "" }));
+      await applyAndRestart(resetSmtp(text, await readDefaultSmtpLines()));
       return NextResponse.json({ ok: true });
     } catch (e) {
       console.error("[grafana/smtp DELETE]", e);
