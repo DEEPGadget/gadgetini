@@ -212,7 +212,7 @@ export default function DisplayConfigModal({
                       <div className="bg-blue-50/60 p-3 grid grid-cols-3 gap-2">
                         {[
                           { label: "CPU", key: "cpu" },
-                          { label: "GPU", key: "gpu" },
+                          { label: "AI Processor", key: "gpu" },
                           { label: "Memory", key: "memory" },
                         ].map(({ label, key }) => (
                           <GridCard
@@ -258,7 +258,7 @@ export default function DisplayConfigModal({
                       <div className="bg-violet-50/60 p-3 grid grid-cols-3 gap-2">
                         {[
                           { label: "CPU Daily", key: "cpu_daily" },
-                          { label: "GPU Daily", key: "gpu_daily" },
+                          { label: "AI Processor Daily", key: "gpu_daily" },
                           { label: "Coolant Daily", key: "coolant_daily" },
                         ].map(({ label, key }) => (
                           <GridCard

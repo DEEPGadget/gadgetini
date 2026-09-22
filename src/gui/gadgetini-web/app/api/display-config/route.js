@@ -50,6 +50,7 @@ export async function GET() {
       leak: getConfigValue("leak") === "on",
       rotationTime: parseInt(getConfigValue("rotation_sec") || "5", 10),
       gpuCount: parseInt(getConfigValue("gpu_count") || "8", 10),
+      npuCount: parseInt(getConfigValue("npu_count") || "0", 10),
       cpuCount: parseInt(getConfigValue("cpu_count") || "2", 10),
       nvmeCount: parseInt(getConfigValue("nvme_count") || "2", 10),
     };
@@ -95,6 +96,14 @@ export async function POST(request) {
         .replace(/^gpu_count\s*=\s*.*/m, `gpu_count=${displayMode.gpuCount}`)
         .replace(/^cpu_count\s*=\s*.*/m, `cpu_count=${displayMode.cpuCount}`)
         .replace(/^nvme_count\s*=\s*.*/m, `nvme_count=${displayMode.nvmeCount}`);
+
+      // npu_count is newer than the other keys: units deployed before NPU
+      // support have no such line, so insert it after gpu_count if missing.
+      if (Number.isInteger(displayMode.npuCount)) {
+        config = /^npu_count\s*=/m.test(config)
+          ? config.replace(/^npu_count\s*=\s*.*/m, `npu_count=${displayMode.npuCount}`)
+          : config.replace(/^(gpu_count\s*=.*)$/m, `$1\nnpu_count=${displayMode.npuCount}`);
+      }
 
       await fs.promises.writeFile(configPath, config, "utf-8");
     };
