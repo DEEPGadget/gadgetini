@@ -4,9 +4,10 @@ Import alert JSON files into Grafana via the Ruler API (non-provisioning, editab
 
 Usage:
   python3 import_alerts.py [files...]          # default: dg5R_alert.json dg5W_alert.json
-  python3 import_alerts.py dg5R_alert.json     # single file
+  python3 import_alerts.py dg5R/dg5R_alert.json  # single file (path relative to src/gui/grafana/)
   python3 import_alerts.py --delete-only       # delete all rules (no reimport)
-  python3 import_alerts.py --delete            # delete then reimport
+  python3 import_alerts.py --delete            # delete every rule in the folder once, then reimport
+                                               # (rules are recreated from the files; existing UIDs don't matter)
   python3 import_alerts.py [--host HOST] [--user USER] [--password PASS]
   python3 import_alerts.py [--host HOST] --token <API_TOKEN>
   python3 import_alerts.py --check-perms       # check current user permissions
@@ -112,11 +113,16 @@ def delete_folder_rules(host, auth, folder_uid):
     """Delete all alert rule groups in a folder."""
     existing = api(host, auth, "GET",
                    f"/api/ruler/grafana/api/v1/rules/{folder_uid}") or {}
-    if not isinstance(existing, dict) or not existing:
+    # Response shape: {"<folder title>": [{"name": "<group>", "rules": [...]}, ...]}
+    group_names = [g["name"]
+                   for grp_list in (existing.values() if isinstance(existing, dict) else [])
+                   if isinstance(grp_list, list)
+                   for g in grp_list]
+    if not group_names:
         print("  No rules found.")
         return
     deleted = 0
-    for group_name in list(existing.keys()):
+    for group_name in group_names:
         print(f"  DELETE group '{group_name}' ... ", end="", flush=True)
         result = api(host, auth, "DELETE",
                      f"/api/ruler/grafana/api/v1/rules/{folder_uid}/{group_name}")
@@ -261,8 +267,24 @@ def main():
             print("ERROR: Prometheus datasource not found. Specify it manually with --datasource-uid.")
             sys.exit(1)
 
+    # --delete wipes each target folder once, up front. Doing it per file would delete the
+    # rules the previous file just imported whenever the files share a folder (dg5R + dg5W
+    # both live in "DeepGadget").
+    if args.delete:
+        folder_titles = []
+        for file_path in files:
+            with open(file_path, encoding="utf-8") as f:
+                title = json.load(f)["groups"][0]["folder"]
+            if title not in folder_titles:
+                folder_titles.append(title)
+        for title in folder_titles:
+            folder_uid = get_folder_uid(host, auth, title)
+            if folder_uid:
+                print(f"\n=== DELETE all rules in folder '{title}' (uid={folder_uid}) ===")
+                delete_folder_rules(host, auth, folder_uid)
+
     for file_path in files:
-        import_file(file_path, host, auth, dst_uid, delete=args.delete)
+        import_file(file_path, host, auth, dst_uid)
 
 if __name__ == "__main__":
     main()

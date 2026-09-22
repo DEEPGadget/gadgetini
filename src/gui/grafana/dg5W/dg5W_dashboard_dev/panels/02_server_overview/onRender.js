@@ -49,9 +49,9 @@ s=evalChasT(ct);sts.push(s);setV('v-ctemp',fmt(ct,'\u00b0C'),s);
 s=evalChasH(ch);sts.push(s);setV('v-chumid',fmt(ch,'%'),s);
 const gpuTs=[],gpuPs=[],gpuMs=[];
 Object.keys(m).forEach(k=>{
-  if(k.match(/^gpu\d+_temperature$/))gpuTs.push(m[k]);
-  if(k.match(/^gpu\d+_power_current$/))gpuPs.push(m[k]);
-  if(k.match(/^gpu\d+_memory_available$/))gpuMs.push(m[k]);
+  if(k.match(/^(?:gpu|npu)\d+_temperature$/))gpuTs.push(m[k]);
+  if(k.match(/^(?:gpu|npu)\d+_power_current$/))gpuPs.push(m[k]);
+  if(k.match(/^(?:gpu|npu)\d+_memory_available$/))gpuMs.push(m[k]);
 });
 function avg(a){return a.length?a.reduce((s,v)=>s+v,0)/a.length:undefined;}
 const gaT=avg(gpuTs),gaP=avg(gpuPs),gaM=avg(gpuMs);

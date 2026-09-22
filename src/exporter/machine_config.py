@@ -5,6 +5,7 @@ _cfg.read('/home/gadgetini/gadgetini/src/display/config.ini')
 
 MACHINE = _cfg.get('PRODUCT', 'name', fallback='unknown')
 GPU_COUNT = _cfg.getint('PRODUCT', 'gpu_count', fallback=8)
+NPU_COUNT = _cfg.getint('PRODUCT', 'npu_count', fallback=0)
 CPU_COUNT = _cfg.getint('PRODUCT', 'cpu_count', fallback=2)
 
 # Legacy ADS1256 channel map (Gen1~2, ADS1256 direct).

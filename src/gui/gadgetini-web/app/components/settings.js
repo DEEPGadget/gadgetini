@@ -9,6 +9,7 @@ import {
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/solid";
 import LoadingSpinner from "../utils/LoadingSpinner";
+import EmailAlertCard from "./EmailAlertCard";
 import { getDisplayConfig } from "../utils/display/getDisplayConfig";
 import { useLocale } from "../i18n";
 
@@ -136,6 +137,7 @@ export default function Settings() {
     leak: true,
     rotationTime: 7,
     gpuCount: 8,
+    npuCount: 0,
     cpuCount: 2,
     nvmeCount: 2,
   });
@@ -663,6 +665,10 @@ export default function Settings() {
               </button>
             </div>
           </div>
+
+          <div className="mt-3 sm:mt-4">
+            <EmailAlertCard />
+          </div>
         </div>
 
         {/* ══════════════════════════════════════
@@ -745,17 +751,17 @@ export default function Settings() {
           {/* === Hardware Count === */}
           <div className="rounded-2xl overflow-hidden shadow-sm">
             <SectionHeader label={t("section_hardware_count")} colorClass="bg-gray-600" />
-            <div className="bg-white p-2 sm:p-3 lg:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+            <div className="bg-white p-2 sm:p-3 lg:p-4 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
               {[
                 { label: t("gpu_count"), key: "gpuCount", min: 0, max: 10 },
+                { label: t("npu_count"), key: "npuCount", min: 0, max: 10 },
                 { label: t("cpu_count"), key: "cpuCount", min: 1, max: 4 },
-                { label: "NVMe", key: "nvmeCount", min: 0, max: 32 },
               ].map(({ label, key, min, max }) => (
                 <div key={key} className="flex flex-col items-start gap-2 bg-gray-50 rounded-xl p-2 sm:p-3">
                   <div className="w-full">
                     <p className="text-sm font-bold text-gray-800">{label}</p>
                     <p className="text-xs text-gray-600">
-                      config.ini {key === "gpuCount" ? "gpu_count" : key === "cpuCount" ? "cpu_count" : "nvme_count"}
+                      config.ini {{ gpuCount: "gpu_count", npuCount: "npu_count", cpuCount: "cpu_count" }[key]}
                     </p>
                   </div>
                   <div className="w-full flex items-center gap-2 bg-white rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 shadow-sm border border-gray-100">

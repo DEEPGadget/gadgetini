@@ -38,6 +38,11 @@
 #   gpu_max_pwr_{0~7}       W            host     GPU power limit
 #   gpu_curr_mem_{0~7}      MiB          host     GPU VRAM used
 #   gpu_max_mem_{0~7}       MiB          host     GPU VRAM total
+#   npu_name_{0~7}          string       host     NPU arch (furiosa-smi)
+#   npu_temp_{0~7}          °C           host     NPU temperature
+#   npu_curr_pwr_{0~7}      W            host     NPU current power
+#   npu_curr_mem_{0~7}      MiB          host     NPU memory used
+#   npu_max_mem_{0~7}       MiB          host     NPU memory total
 #   cpu_usage               %            host     total CPU usage
 #   cpu_temp_{0~1}          °C           host     CPU package temp/socket
 #   cpu_curr_pwr_{0~1}      W            host     CPU power/socket (IPMI)
@@ -77,6 +82,11 @@
 #   gpu_max_pwr_{0~7}       W            host     GPU power limit
 #   gpu_curr_mem_{0~7}      MiB          host     GPU VRAM used
 #   gpu_max_mem_{0~7}       MiB          host     GPU VRAM total
+#   npu_name_{0~7}          string       host     NPU arch (furiosa-smi)
+#   npu_temp_{0~7}          °C           host     NPU temperature
+#   npu_curr_pwr_{0~7}      W            host     NPU current power
+#   npu_curr_mem_{0~7}      MiB          host     NPU memory used
+#   npu_max_mem_{0~7}       MiB          host     NPU memory total
 #   cpu_usage               %            host     total CPU usage
 #   cpu_temp_{0~1}          °C           host     CPU package temp/socket
 #   cpu_curr_pwr_{0~1}      W            host     CPU power/socket (IPMI)
@@ -94,7 +104,7 @@ import os
 from prometheus_client import start_http_server, CollectorRegistry
 from prometheus_client.core import GaugeMetricFamily
 import redis
-from machine_config import MACHINE, MACHINE_LABEL, COOLANT_CHANNELS, GPU_COUNT, CPU_COUNT
+from machine_config import MACHINE, MACHINE_LABEL, COOLANT_CHANNELS, GPU_COUNT, NPU_COUNT, CPU_COUNT
 
 REDIS_HOST = os.environ.get("GADGETINI_REDIS_HOST", "localhost")
 REDIS_PORT = int(os.environ.get("GADGETINI_REDIS_PORT", "6379"))
@@ -118,6 +128,31 @@ def get_int(key, default=0):
         return int(v) if v is not None else default
     except:
         return default
+
+
+def add_processor_metrics(g, srv, prefix, count):
+    """Export {prefix}_* host keys as component "{prefix}{i}" for i < count
+    (config.ini gpu_count / npu_count). An index whose temperature key is absent
+    (chip not present, or its TTL expired) is skipped rather than exported as 0;
+    power_limit / memory_* are emitted only when the host provides them."""
+    for i in range(count):
+        if not client.exists(f"{prefix}_temp_{i}"):
+            continue
+        name = (client.get(f"{prefix}_name_{i}") or f"{prefix.upper()}{i}").strip()
+        extra = (name.replace(" ", "_").replace("/", "-")
+                     .replace(",", "").replace("(", "").replace(")", ""))
+        comp = f"{prefix}{i}"
+        g.add_metric([srv, comp, "temperature",   "°C", extra], get_float(f"{prefix}_temp_{i}"))
+        g.add_metric([srv, comp, "power_current", "W",  extra], get_float(f"{prefix}_curr_pwr_{i}"))
+        if client.exists(f"{prefix}_max_pwr_{i}"):
+            g.add_metric([srv, comp, "power_limit", "W", extra], get_float(f"{prefix}_max_pwr_{i}"))
+        if client.exists(f"{prefix}_max_mem_{i}"):
+            mem_used  = get_float(f"{prefix}_curr_mem_{i}")
+            mem_total = get_float(f"{prefix}_max_mem_{i}")
+            mem_pct   = (mem_used / mem_total * 100) if mem_total > 0 else 0.0
+            g.add_metric([srv, comp, "memory_used",      "MiB", extra], mem_used)
+            g.add_metric([srv, comp, "memory_total",     "MiB", extra], mem_total)
+            g.add_metric([srv, comp, "memory_available", "%",   extra], mem_pct)
 
 
 class DLCCollector:
@@ -178,20 +213,9 @@ class DLCCollector:
         g.add_metric([srv, "environment", "air_temp",     "°C",  ""], get_float("air_temp"))
         g.add_metric([srv, "environment", "air_humidity", "%RH", ""], get_float("air_humit"))
 
-        # GPUs
-        for i in range(GPU_COUNT):
-            gpu_name = (client.get(f"gpu_name_{i}") or f"GPU{i}").strip()
-            extra = (gpu_name.replace(" ", "_").replace("/", "-")
-                             .replace(",", "").replace("(", "").replace(")", ""))
-            mem_used  = get_float(f"gpu_curr_mem_{i}")
-            mem_total = get_float(f"gpu_max_mem_{i}")
-            mem_pct   = (mem_used / mem_total * 100) if mem_total > 0 else 0.0
-            g.add_metric([srv, f"gpu{i}", "temperature",      "°C",  extra], get_float(f"gpu_temp_{i}"))
-            g.add_metric([srv, f"gpu{i}", "power_current",    "W",   extra], get_float(f"gpu_curr_pwr_{i}"))
-            g.add_metric([srv, f"gpu{i}", "power_limit",      "W",   extra], get_float(f"gpu_max_pwr_{i}"))
-            g.add_metric([srv, f"gpu{i}", "memory_used",      "MiB", extra], mem_used)
-            g.add_metric([srv, f"gpu{i}", "memory_total",     "MiB", extra], mem_total)
-            g.add_metric([srv, f"gpu{i}", "memory_available", "%",   extra], mem_pct)
+        # AI processors (GPU: nvidia-smi, NPU: furiosa-smi)
+        add_processor_metrics(g, srv, "gpu", GPU_COUNT)
+        add_processor_metrics(g, srv, "npu", NPU_COUNT)
 
         # CPU
         g.add_metric([srv, "cpu", "usage_total", "%", ""], get_float("cpu_usage"))

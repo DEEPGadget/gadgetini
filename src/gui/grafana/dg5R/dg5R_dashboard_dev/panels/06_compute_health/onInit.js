@@ -20,10 +20,10 @@ if(cpuMbar)cpuMbar.style.display=showCpu?'':'none';
 if(memMbar)memMbar.style.display=showMem?'':'none';
 var gpus={};
 Object.keys(m).forEach(function(k){var x;
-if(x=k.match(/^(gpu\d+)_temperature$/)){gpus[x[1]]=gpus[x[1]]||{};gpus[x[1]].temp=m[k];}
-if(x=k.match(/^(gpu\d+)_power_current$/)){gpus[x[1]]=gpus[x[1]]||{};gpus[x[1]].power=m[k];}
-if(x=k.match(/^(gpu\d+)_power_limit$/)){gpus[x[1]]=gpus[x[1]]||{};gpus[x[1]].maxPwr=m[k];}
-if(x=k.match(/^(gpu\d+)_memory_available$/)){gpus[x[1]]=gpus[x[1]]||{};gpus[x[1]].memU=m[k];}
+if(x=k.match(/^((?:gpu|npu)\d+)_temperature$/)){gpus[x[1]]=gpus[x[1]]||{};gpus[x[1]].temp=m[k];}
+if(x=k.match(/^((?:gpu|npu)\d+)_power_current$/)){gpus[x[1]]=gpus[x[1]]||{};gpus[x[1]].power=m[k];}
+if(x=k.match(/^((?:gpu|npu)\d+)_power_limit$/)){gpus[x[1]]=gpus[x[1]]||{};gpus[x[1]].maxPwr=m[k];}
+if(x=k.match(/^((?:gpu|npu)\d+)_memory_available$/)){gpus[x[1]]=gpus[x[1]]||{};gpus[x[1]].memU=m[k];}
 });
 var cpuD={};
 Object.keys(m).forEach(function(k){var x;

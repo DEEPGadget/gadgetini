@@ -171,6 +171,32 @@
       "label": "G{i}_P"
     },
     {
+      "key": "npu_temp_{i}",
+      "count": "npu_count",
+      "title": "NPU{i} Temp",
+      "unit": "°C",
+      "min": 10,
+      "max": 120,
+      "read_rate": 1,
+      "redis_key": "npu_temp_{i}",
+      "host_data": "1",
+      "icon": "0xf0510",
+      "label": "N{i}_T"
+    },
+    {
+      "key": "npu_power_{i}",
+      "count": "npu_count",
+      "title": "NPU{i} Power",
+      "unit": "W",
+      "min": 0,
+      "max": 1200,
+      "read_rate": 1,
+      "redis_key": "npu_curr_pwr_{i}",
+      "host_data": "1",
+      "icon": "0xf140b",
+      "label": "N{i}_P"
+    },
+    {
       "key": "cpu_temp_{i}",
       "count": "cpu_count",
       "title": "CPU{i} Temperature",
@@ -290,14 +316,28 @@
     {
       "key": "gpu",
       "type": "TempUtilViewer",
-      "expand": "gpu_count",
+      "expand_groups": [
+        {
+          "count": "gpu_count",
+          "params": {
+            "sensor_keys": "gpu_temp_{i}",
+            "labels": "G{i}",
+            "util_keys": "gpu_power_{i}"
+          }
+        },
+        {
+          "count": "npu_count",
+          "params": {
+            "sensor_keys": "npu_temp_{i}",
+            "labels": "N{i}",
+            "util_keys": "npu_power_{i}"
+          }
+        }
+      ],
       "params": {
-        "temp_title": "GPU Temperature",
-        "util_title": "GPU Power",
-        "sensor_keys": "gpu_temp_{i}",
-        "colors": "$GPU_COLORS",
-        "labels": "G{i}",
-        "util_keys": "gpu_power_{i}"
+        "temp_title": "AI Proc Temp",
+        "util_title": "AI Proc Power",
+        "colors": "$GPU_COLORS"
       }
     },
     {
@@ -340,12 +380,25 @@
     {
       "key": "gpu_daily",
       "type": "DailyViewer",
-      "expand": "gpu_count",
+      "expand_groups": [
+        {
+          "count": "gpu_count",
+          "params": {
+            "sensor_keys": "gpu_temp_{i}",
+            "labels": "G{i}"
+          }
+        },
+        {
+          "count": "npu_count",
+          "params": {
+            "sensor_keys": "npu_temp_{i}",
+            "labels": "N{i}"
+          }
+        }
+      ],
       "params": {
-        "title": "GPU Temp 24h",
-        "sensor_keys": "gpu_temp_{i}",
-        "colors": "$GPU_COLORS",
-        "labels": "G{i}"
+        "title": "AI Processor 24h",
+        "colors": "$GPU_COLORS"
       }
     },
     {

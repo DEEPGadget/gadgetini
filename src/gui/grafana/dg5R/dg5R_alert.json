@@ -166,7 +166,7 @@
               "relativeTimeRange": { "from": 20, "to": 0 },
               "datasourceUid": "fet9pt33egpogb",
               "model": {
-                "expr": "min_over_time(dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"coolant_level\"}[20s])",
+                "expr": "min_over_time(dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"level_full\"}[20s])",
                 "instant": true,
                 "refId": "A"
               }
@@ -211,7 +211,7 @@
               "relativeTimeRange": { "from": 20, "to": 0 },
               "datasourceUid": "fet9pt33egpogb",
               "model": {
-                "expr": "max_over_time(dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"leak_detected\"}[20s])",
+                "expr": "min_over_time(dlc_system_sensor{server=\"dg5R\", component=\"cooling\", metric=\"leak_detected\"}[20s])",
                 "instant": true,
                 "refId": "A"
               }
@@ -362,7 +362,7 @@
               "relativeTimeRange": { "from": 120, "to": 0 },
               "datasourceUid": "fet9pt33egpogb",
               "model": {
-                "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"gpu[0-9]\", metric=\"temperature\"}",
+                "expr": "dlc_system_sensor{server=\"dg5R\", component=~\"(gpu|npu)[0-9]+\", metric=\"temperature\"}",
                 "instant": true,
                 "refId": "A"
               }

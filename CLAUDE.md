@@ -111,6 +111,8 @@ sudo bash src/configure/usb-gadget-gadgetini.sh
 
 **Host Metrics (from data_crawler_host.py):**
 - `cpu_temp_0`, `gpu_temp_0..3`, `gpu_curr_pwr_*`, `mem_usage`, `mem_total`
+- `npu_name_*`, `npu_temp_*`, `npu_curr_pwr_*`, `npu_curr_mem_*`, `npu_max_mem_*` (FuriosaAI NPU via `furiosa-smi`; no `npu_max_pwr_*`)
+- `gpu_*` / `npu_*` keys carry a 60s TTL; exporter exports indexes `< config.ini gpu_count / npu_count` whose `*_temp_{i}` key exists, as components `gpu{i}` / `npu{i}` (Grafana: `component=~"(gpu|npu)[0-9]+"`)
 
 **System Status:**
 - `comm_status` ('ok' / 'timeout' / 'disconnected')

@@ -3,7 +3,7 @@ Coolant Temperature - Inlet 1/2 (°C)	22~40°C	41~45°C / 18~21°C (ASHRAE dew p
 Coolant Temperature - Outlet 1/2 (°C) [pg25 managed temp]	≤60°C	60~65°C / 18~21°C	>65°C / <18°C
 Coolant Delta Value 1/2 (°C)	≤15°C	15~20°C	>20°C
 Coolant Level	HIGH	MIDDLE	-
-Coolant Leakage	NORMAL	-	LEAKED
+Coolant Leakage	NORMAL	-	LEAKED (sustained 20s)
 Chassis Temperature (°C)	≤35°C	35~40°C	>40°C
 Chassis Humidity (%)	10~60%	60~80%	>80%
 Multi AI Processors - Temperature (°C)	≤75°C	75~90°C	>90°C
@@ -15,6 +15,12 @@ Available Memory (%)	≥20%	10–19%	<10%
 Network – Link Status	UP (green) / DOWN (red)	-	-
 Network - Infiniband NIC chipset temperature (°C)	≤105°C	105~115°C	>115°C
 Server - alive status	Online (green) / Offline (red)	-	-
+
+## Coolant leak alert
+
+Leak is judged LEAKED and alerted only when the leak threshold is held for 20s:
+every sample of `leak_detected` in the last 20s must be 1
+(`min_over_time(...leak_detected[20s]) > 0`, `for: 0s`).
 
 ## Where the temperature ceilings come from
 
