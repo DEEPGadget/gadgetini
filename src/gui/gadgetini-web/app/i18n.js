@@ -131,6 +131,22 @@ const STRINGS = {
     manual_pwm_title: "Manual PWM Control",
     manual_pwm_desc: "Set pump and fan PWM duty (0-100%)",
 
+    // === Email alert (Grafana SMTP) ===
+    section_email_alert: "Email Alert",
+    smtp_desc: "Mail server used by Grafana to send alert emails (grafana.ini [smtp]).",
+    smtp_enabled: "Email alert enabled",
+    smtp_host_hint: "Mail server address:port",
+    smtp_user_hint: "Mail server login account",
+    smtp_password_hint: "App password recommended",
+    smtp_password_keep: "Saved — leave empty to keep (re-enter if host/user changes)",
+    smtp_from_address_hint: "Sender address",
+    smtp_from_name_hint: "Sender name shown to recipients",
+    smtp_starttls_hint: "Transport encryption policy",
+    smtp_save_confirm: "Grafana will restart to apply the settings. Proceed?",
+    smtp_saved: "Email settings saved. Grafana restarted.",
+    smtp_clear: "Clear",
+    smtp_clear_confirm: "Disable email alerts and delete the stored account/password? Grafana will restart.",
+
     save: "Save",
     save_failed: "Failed to save",
     loading: "Loading...",
@@ -249,6 +265,22 @@ const STRINGS = {
     // === Manual PWM ===
     manual_pwm_title: "수동 PWM 제어",
     manual_pwm_desc: "펌프 및 팬 PWM duty 설정 (0-100%)",
+
+    // === Email alert (Grafana SMTP) ===
+    section_email_alert: "이메일 알림",
+    smtp_desc: "Grafana 가 알림 메일 발송에 사용할 메일 서버 설정입니다 (grafana.ini [smtp]).",
+    smtp_enabled: "이메일 알림 사용",
+    smtp_host_hint: "메일 서버 주소:포트",
+    smtp_user_hint: "메일 서버 로그인 계정",
+    smtp_password_hint: "앱 비밀번호 사용 권장",
+    smtp_password_keep: "저장됨 — 비워두면 유지 (host/user 변경 시 재입력 필요)",
+    smtp_from_address_hint: "발신 주소",
+    smtp_from_name_hint: "수신자에게 표시될 발신자 이름",
+    smtp_starttls_hint: "전송 구간 암호화 정책",
+    smtp_save_confirm: "설정 적용을 위해 Grafana 가 재시작됩니다. 계속할까요?",
+    smtp_saved: "이메일 설정이 저장되었습니다. Grafana 가 재시작되었습니다.",
+    smtp_clear: "삭제",
+    smtp_clear_confirm: "이메일 알림을 끄고 저장된 계정/비밀번호를 삭제할까요? Grafana 가 재시작됩니다.",
 
     save: "저장",
     save_failed: "저장 실패",

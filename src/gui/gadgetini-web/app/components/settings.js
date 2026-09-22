@@ -9,6 +9,7 @@ import {
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/solid";
 import LoadingSpinner from "../utils/LoadingSpinner";
+import EmailAlertCard from "./EmailAlertCard";
 import { getDisplayConfig } from "../utils/display/getDisplayConfig";
 import { useLocale } from "../i18n";
 
@@ -662,6 +663,10 @@ export default function Settings() {
                 <CheckIcon className="w-4 h-4 ml-2" />
               </button>
             </div>
+          </div>
+
+          <div className="mt-3 sm:mt-4">
+            <EmailAlertCard />
           </div>
         </div>
 
