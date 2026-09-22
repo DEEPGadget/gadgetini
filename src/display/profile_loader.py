@@ -142,12 +142,40 @@ def _resolve_colors(params, palettes):
     return resolved
 
 
+def _expand_viewer_groups(params, groups, config, palettes):
+    """Expand several count-driven groups into one viewer (e.g. GPUs + NPUs on the
+    same "AI Processor" screen). Each group's params hold the {i} patterns for its
+    own count key; the expanded lists are concatenated in group order. Shared
+    params are resolved once, and a $PALETTE there is cycled over the combined
+    count so colors stay aligned with sensor_keys even past the palette length."""
+    merged = {}
+    total = 0
+    for grp in groups:
+        count = config.getint('PRODUCT', grp['count'], fallback=0) if config else 0
+        total += count
+        for k, v in _expand_viewer_params(grp['params'], count, palettes).items():
+            merged.setdefault(k, []).extend(v if isinstance(v, list) else [v])
+
+    shared = {}
+    for k, v in params.items():
+        if isinstance(v, str) and v.startswith('$'):
+            palette = palettes[v[1:]]
+            shared[k] = [tuple(palette[j % len(palette)]) for j in range(total)]
+        else:
+            shared.update(_resolve_colors({k: v}, palettes))
+
+    shared.update(merged)
+    return shared
+
+
 def _create_viewer(entry, config, palettes):
     """Instantiate a viewer from its JSON entry."""
     cls = VIEWER_CLASSES[entry['type']]
     params = dict(entry['params'])
 
-    if 'expand' in entry:
+    if 'expand_groups' in entry:
+        params = _expand_viewer_groups(params, entry['expand_groups'], config, palettes)
+    elif 'expand' in entry:
         count = config.getint('PRODUCT', entry['expand'], fallback=0) if config else 0
         params = _expand_viewer_params(params, count, palettes)
     else:

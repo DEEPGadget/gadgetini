@@ -20,6 +20,9 @@ REDIS_DB = int(os.environ.get("GADGETINI_REDIS_DB", "0"))
 client = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 NVME_KEY_TTL_SEC = 60
+# gpu_*/npu_* keys expire so a removed chip or a stopped host shows up as an
+# absent key, which sensor_exporter skips instead of exporting stale values.
+CHIP_KEY_TTL_SEC = 60
 
 
 def get_sensors_json() -> dict:
@@ -94,18 +97,23 @@ def get_cpu_usage_percent(interval=0.5):
 
 
 def get_nvidia_gpu_telemetry():
-    p = subprocess.run(
-        [
-            "nvidia-smi",
-            "--query-gpu=name,temperature.gpu,power.draw,power.limit,memory.used,memory.total",
-            "--format=csv,noheader,nounits",
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        timeout=10,
-        check=False,
-    )
+    # A host may carry only NPUs: a missing nvidia-smi must not abort the whole
+    # write_metrics_once() cycle (FileNotFoundError used to escape from here).
+    try:
+        p = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=name,temperature.gpu,power.draw,power.limit,memory.used,memory.total",
+                "--format=csv,noheader,nounits",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return []
 
     if p.returncode != 0 or not p.stdout.strip():
         return []
@@ -117,6 +125,103 @@ def get_nvidia_gpu_telemetry():
             gpus_info.append(parts[:6])
 
     return gpus_info
+
+
+# FuriosaAI NPU (RNGD) via furiosa-smi. It has no machine-readable output mode,
+# so the box-drawn tables of `info` and `status` are parsed by header name:
+#   | Arch | Device | Firmware | Temp.   | Power    | PCI-BDF |
+#   | rngd | npu0   | ...      | 55.25°C | 144.00 W | ...     |
+# `status` spreads a device over several lines (one per core); only the line
+# whose Device cell is filled carries the Memory value ("0.00/47.50 GiB").
+def run_furiosa_smi(args) -> str:
+    try:
+        p = subprocess.run(
+            ["furiosa-smi", *args],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return ""
+
+    if p.returncode != 0:
+        return ""
+    return p.stdout
+
+
+def parse_smi_table(text: str) -> List[Dict[str, str]]:
+    header = None
+    rows = []
+
+    for raw_line in (text or "").splitlines():
+        line = raw_line.strip()
+        if not line.startswith("|"):
+            continue
+
+        cells = [c.strip() for c in line.strip("|").split("|")]
+
+        if header is None:
+            if "Device" in cells:
+                header = cells
+            continue
+
+        if len(cells) != len(header):
+            continue
+
+        row = dict(zip(header, cells))
+        if row.get("Device"):
+            rows.append(row)
+
+    return rows
+
+
+_NUM_RE = r"[-+]?[0-9]+(?:\.[0-9]+)?"
+_MEM_UNIT_TO_MIB = {"KiB": 1 / 1024, "MiB": 1, "GiB": 1024, "TiB": 1024 * 1024}
+
+
+def _first_number(text: str):
+    m = re.search(_NUM_RE, text or "")
+    return float(m.group(0)) if m else None
+
+
+def get_furiosa_npu_telemetry() -> Dict[int, dict]:
+    """{npu index: {name, temp, power[, mem_used, mem_total]}}; memory in MiB
+    to match nvidia-smi. Empty when furiosa-smi is absent or fails."""
+    npus = {}
+
+    for row in parse_smi_table(run_furiosa_smi(["info"])):
+        m = re.fullmatch(r"npu(\d+)", row.get("Device", ""))
+        if not m:
+            continue
+        temp = _first_number(row.get("Temp.", ""))
+        power = _first_number(row.get("Power", ""))
+        if temp is None:
+            continue
+        npus[int(m.group(1))] = {
+            "name": (row.get("Arch") or "npu").upper(),
+            "temp": round(temp, 1),
+            "power": round(power, 1) if power is not None else None,
+        }
+
+    if not npus:
+        return npus
+
+    for row in parse_smi_table(run_furiosa_smi(["status"])):
+        m = re.fullmatch(r"npu(\d+)", row.get("Device", ""))
+        if not m or int(m.group(1)) not in npus:
+            continue
+        mm = re.search(
+            rf"({_NUM_RE})\s*/\s*({_NUM_RE})\s*(KiB|MiB|GiB|TiB)", row.get("Memory", "")
+        )
+        if not mm:
+            continue
+        scale = _MEM_UNIT_TO_MIB[mm.group(3)]
+        npus[int(m.group(1))]["mem_used"] = round(float(mm.group(1)) * scale, 1)
+        npus[int(m.group(1))]["mem_total"] = round(float(mm.group(2)) * scale, 1)
+
+    return npus
 
 
 def parse_cpu_telemetry(sensors_data):
@@ -441,6 +546,7 @@ def write_metrics_once():
     sensors_text = get_sensors_text()
 
     curr_chipsinfo = get_nvidia_gpu_telemetry()
+    curr_npusinfo = get_furiosa_npu_telemetry()
     curr_cpusinfo = get_cpu_telemetry(sensors_data)
     curr_meminfo = get_memory_usage_mb()
     curr_ipmi_telemetry = get_cpu_power_telemetry(sensors_data)
@@ -465,12 +571,22 @@ def write_metrics_once():
 
     # GPU
     for idx, gpu in enumerate(curr_chipsinfo):
-        pipe.set(f"gpu_name_{idx}", str(gpu[0]))
-        pipe.set(f"gpu_temp_{idx}", str(gpu[1]))
-        pipe.set(f"gpu_curr_pwr_{idx}", str(gpu[2]))
-        pipe.set(f"gpu_max_pwr_{idx}", str(gpu[3]))
-        pipe.set(f"gpu_curr_mem_{idx}", str(gpu[4]))
-        pipe.set(f"gpu_max_mem_{idx}", str(gpu[5]))
+        pipe.set(f"gpu_name_{idx}", str(gpu[0]), ex=CHIP_KEY_TTL_SEC)
+        pipe.set(f"gpu_temp_{idx}", str(gpu[1]), ex=CHIP_KEY_TTL_SEC)
+        pipe.set(f"gpu_curr_pwr_{idx}", str(gpu[2]), ex=CHIP_KEY_TTL_SEC)
+        pipe.set(f"gpu_max_pwr_{idx}", str(gpu[3]), ex=CHIP_KEY_TTL_SEC)
+        pipe.set(f"gpu_curr_mem_{idx}", str(gpu[4]), ex=CHIP_KEY_TTL_SEC)
+        pipe.set(f"gpu_max_mem_{idx}", str(gpu[5]), ex=CHIP_KEY_TTL_SEC)
+
+    # NPU (furiosa-smi reports no power limit, so npu_max_pwr_* is never set)
+    for idx, npu in curr_npusinfo.items():
+        pipe.set(f"npu_name_{idx}", npu["name"], ex=CHIP_KEY_TTL_SEC)
+        pipe.set(f"npu_temp_{idx}", str(npu["temp"]), ex=CHIP_KEY_TTL_SEC)
+        if npu["power"] is not None:
+            pipe.set(f"npu_curr_pwr_{idx}", str(npu["power"]), ex=CHIP_KEY_TTL_SEC)
+        if "mem_total" in npu:
+            pipe.set(f"npu_curr_mem_{idx}", str(npu["mem_used"]), ex=CHIP_KEY_TTL_SEC)
+            pipe.set(f"npu_max_mem_{idx}", str(npu["mem_total"]), ex=CHIP_KEY_TTL_SEC)
 
     # Memory / CPU usage
     pipe.set("mem_total", curr_meminfo[0])

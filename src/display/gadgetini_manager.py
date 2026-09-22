@@ -517,8 +517,9 @@ class GadgetiniManager:
         for tmpl in self.profile.sensor_templates:
             sensor_keys.add(tmpl['key'])
         for v in self.profile.viewers:
-            if v.get('expand'):
-                count_key = v['expand']
+            count_keys = [v['expand']] if v.get('expand') else []
+            count_keys += [grp.get('count') for grp in v.get('expand_groups', [])]
+            for count_key in count_keys:
                 if self.cfg.getint('PRODUCT', count_key, fallback=-1) < 0:
                     errors.append(f"Viewer '{v['key']}': expand key '{count_key}' not in PRODUCT config")
         palette_names = set(self.profile.palettes.keys())
@@ -821,7 +822,9 @@ class ViewersScreen(BaseScreen):
     def _count_sensors(self, viewer):
         params = viewer.get('params', {})
         count = 0
-        for k, v in params.items():
+        group_items = [kv for grp in viewer.get('expand_groups', [])
+                       for kv in grp.get('params', {}).items()]
+        for k, v in list(params.items()) + group_items:
             if 'sensor_key' in k:
                 if isinstance(v, list):
                     count += len(v)
@@ -946,6 +949,8 @@ class ViewerEditScreen(BaseScreen):
         fields.append(("type", self.entry['type']))
         if 'expand' in self.entry:
             fields.append(("expand", self.entry['expand']))
+        if 'expand_groups' in self.entry:
+            fields.append(("expand_groups", self.entry['expand_groups']))
         for k, v in self.entry.get('params', {}).items():
             fields.append((f"params.{k}", v))
         return fields
@@ -1007,6 +1012,9 @@ class ViewerEditScreen(BaseScreen):
             self.entry['key'] = parsed
         elif key == 'expand':
             self.entry['expand'] = parsed
+        elif key == 'expand_groups':
+            if isinstance(parsed, list):
+                self.entry['expand_groups'] = parsed
         elif key.startswith('params.'):
             param_key = key[7:]
             self.entry['params'][param_key] = parsed
