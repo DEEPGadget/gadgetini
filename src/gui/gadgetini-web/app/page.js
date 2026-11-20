@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { CogIcon, PowerIcon } from "@heroicons/react/24/solid";
+import { CogIcon } from "@heroicons/react/24/solid";
 import Settings from "./components/settings";
 import { LocaleProvider, useLocale } from "./i18n";
 
@@ -35,28 +35,7 @@ function LocaleToggle() {
 function HomeInner() {
   const [selectedMenu, setSelectedMenu] = useState("settings");
   const [activeComponent] = useState(<Settings />);
-  const [rebooting, setRebooting] = useState(false);
   const { t } = useLocale();
-
-  const handleReboot = async () => {
-    if (!window.confirm(t("reboot_confirm"))) return;
-    try {
-      setRebooting(true);
-      const res = await fetch("/api/system/reboot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || `HTTP ${res.status}`);
-      }
-      alert(t("reboot_sent"));
-    } catch (e) {
-      alert(`${t("reboot_failed")}: ${e?.message || e}`);
-    } finally {
-      setRebooting(false);
-    }
-  };
 
   return (
     <div className="h-screen flex flex-col">
@@ -68,18 +47,6 @@ function HomeInner() {
 
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto pl-4">
           <LocaleToggle />
-          <button
-            onClick={handleReboot}
-            disabled={rebooting}
-            className={`inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-1 rounded-md text-xs sm:text-sm
-              ${rebooting ? "bg-gray-400" : "bg-red-500 hover:bg-red-600"}
-              text-white transition disabled:opacity-70 flex-1 sm:flex-none justify-center sm:justify-start`}
-            title="Reboot the system"
-          >
-            <PowerIcon className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" />
-            <span className="sm:hidden">{rebooting ? "..." : t("reboot")}</span>
-            <span className="hidden sm:inline">{rebooting ? t("rebooting") : t("reboot")}</span>
-          </button>
         </div>
       </header>
 

@@ -10,6 +10,7 @@ import {
 } from "@heroicons/react/24/solid";
 import LoadingSpinner from "../utils/LoadingSpinner";
 import EmailAlertCard from "./EmailAlertCard";
+import ServiceHealth from "./ServiceHealth";
 import { getDisplayConfig } from "../utils/display/getDisplayConfig";
 import { useLocale } from "../i18n";
 
@@ -569,6 +570,13 @@ export default function Settings() {
                   </span>
                 </div>
               </div>
+
+              <hr className="border-gray-100" />
+
+              {/* Core service health */}
+              <ServiceHealth />
+
+              <hr className="border-gray-100" />
 
               {/* Server Select */}
               <div>

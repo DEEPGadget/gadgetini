@@ -18,12 +18,24 @@ import {
 
 const STRINGS = {
   en: {
-    // === Header / Reboot ===
-    reboot: "Gadgetini Reboot",
-    rebooting: "Rebooting...",
-    reboot_confirm: "System will reboot. Proceed?",
-    reboot_sent: "Reboot command sent. The system may go down shortly.",
-    reboot_failed: "Failed to reboot",
+    // === Core service health ===
+    services_ok: "All services OK ({ok}/{total})",
+    services_attention: "{bad} of {total} need attention",
+    services_checking: "Checking services…",
+    services_unavailable: "Service status unavailable",
+    service_show_message: "Show error message",
+    service_no_message: "No error message in the journal",
+    service_detail_show: "Show detail",
+    service_detail_hide: "Hide detail",
+    service_detail_empty: "No journal output",
+    svc_data_crawler: "Sensor Collector",
+    svc_sensor_exporter: "Metrics Exporter",
+    svc_display_pannel: "TFT Display",
+    svc_usb_gadget: "Host USB Link",
+    svc_redis: "Redis",
+    svc_prometheus: "Prometheus",
+    svc_grafana: "Grafana",
+    svc_nginx: "Web Proxy",
 
     // === Sidebar ===
     settings: "Settings",
@@ -154,12 +166,24 @@ const STRINGS = {
     service_inactive_tooltip: "PCB is not connected",
   },
   ko: {
-    // === Header / Reboot ===
-    reboot: "Gadgetini 재부팅",
-    rebooting: "재부팅 중...",
-    reboot_confirm: "시스템이 재부팅됩니다. 계속할까요?",
-    reboot_sent: "재부팅 명령이 전송되었습니다. 곧 시스템이 종료됩니다.",
-    reboot_failed: "재부팅 실패",
+    // === Core service health ===
+    services_ok: "모든 서비스 정상 ({ok}/{total})",
+    services_attention: "{total}개 중 {bad}개 서비스 이상",
+    services_checking: "서비스 확인 중…",
+    services_unavailable: "서비스 상태를 읽을 수 없음",
+    service_show_message: "에러 메시지 보기",
+    service_no_message: "저널에 에러 메시지가 없습니다",
+    service_detail_show: "상세 보기",
+    service_detail_hide: "상세 접기",
+    service_detail_empty: "저널 출력이 없습니다",
+    svc_data_crawler: "센서 수집",
+    svc_sensor_exporter: "메트릭 익스포터",
+    svc_display_pannel: "TFT 디스플레이",
+    svc_usb_gadget: "호스트 USB 링크",
+    svc_redis: "Redis",
+    svc_prometheus: "Prometheus",
+    svc_grafana: "Grafana",
+    svc_nginx: "웹 프록시",
 
     // === Sidebar ===
     settings: "설정",
