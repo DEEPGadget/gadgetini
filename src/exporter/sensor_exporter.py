@@ -118,7 +118,7 @@ def get_float(key, default=0.0):
     try:
         v = client.get(key)
         return float(v) if v is not None else default
-    except:
+    except Exception:
         return default
 
 
@@ -126,7 +126,7 @@ def get_int(key, default=0):
     try:
         v = client.get(key)
         return int(v) if v is not None else default
-    except:
+    except Exception:
         return default
 
 
@@ -164,9 +164,12 @@ class DLCCollector:
         )
         srv = MACHINE_LABEL
 
-        # Cooling - leak & level
-        g.add_metric([srv, "cooling", "leak_detected", "bool", ""], get_int("coolant_leak"))
-        g.add_metric([srv, "cooling", "level_full",    "bool", ""], get_int("coolant_level"))
+        # Cooling - leak & level. Gated like everything else: an absent key would
+        # otherwise export level_full=0 (false alarm) and leak_detected=0 (false all-clear).
+        if client.exists("coolant_leak"):
+            g.add_metric([srv, "cooling", "leak_detected", "bool", ""], get_int("coolant_leak"))
+        if client.exists("coolant_level"):
+            g.add_metric([srv, "cooling", "level_full",    "bool", ""], get_int("coolant_level"))
 
         # Cooling temperatures: only expose channels whose Redis key is currently present.
         # data_crawler deletes the key when the NTC reads as disconnected, so older units
@@ -183,7 +186,7 @@ class DLCCollector:
             g.add_metric([srv, "cooling", "delta_t2", "°C", ""], get_float("coolant_delta_t2"))
 
         # Chassis stability (dg5W only)
-        if MACHINE == 'dg5W':
+        if MACHINE == 'dg5W' and client.exists("chassis_stabil"):
             g.add_metric([srv, "chassis", "stability", "bool", ""], get_int("chassis_stabil"))
 
         # Coolant flow (control_board SETs an estimate based on pump duty)
@@ -209,24 +212,28 @@ class DLCCollector:
             g.add_metric([srv, "control_board", "comm_consecutive_failures", "count", ""],
                          get_int("comm_consecutive_failures"))
 
-        # Environment
-        g.add_metric([srv, "environment", "air_temp",     "°C",  ""], get_float("air_temp"))
-        g.add_metric([srv, "environment", "air_humidity", "%RH", ""], get_float("air_humit"))
+        # Environment (Pi-attached; keys expire when the collector stops refreshing them)
+        if client.exists("air_temp"):
+            g.add_metric([srv, "environment", "air_temp",     "°C",  ""], get_float("air_temp"))
+        if client.exists("air_humit"):
+            g.add_metric([srv, "environment", "air_humidity", "%RH", ""], get_float("air_humit"))
 
         # AI processors (GPU: nvidia-smi, NPU: furiosa-smi)
         add_processor_metrics(g, srv, "gpu", GPU_COUNT)
         add_processor_metrics(g, srv, "npu", NPU_COUNT)
 
-        # CPU
-        g.add_metric([srv, "cpu", "usage_total", "%", ""], get_float("cpu_usage"))
+        # CPU / Memory — host keys carry a TTL (data_crawler_host.HOST_KEY_TTL_SEC), so an
+        # absent key means the host stopped reporting; never export that as 0.
+        if client.exists("cpu_usage"):
+            g.add_metric([srv, "cpu", "usage_total", "%", ""], get_float("cpu_usage"))
         for i in range(CPU_COUNT):
-            g.add_metric([srv, f"cpu{i}", "temperature", "°C", ""], get_float(f"cpu_temp_{i}"))
-            g.add_metric([srv, f"cpu{i}", "power",       "W",  ""], get_float(f"cpu_curr_pwr_{i}"))
-
-        # Memory
-        g.add_metric([srv, "memory", "total",     "GiB", ""], get_float("mem_total"))
-        g.add_metric([srv, "memory", "available", "GiB", ""], get_float("mem_available"))
-        g.add_metric([srv, "memory", "usage",     "GiB", ""], get_float("mem_usage"))
+            if client.exists(f"cpu_temp_{i}"):
+                g.add_metric([srv, f"cpu{i}", "temperature", "°C", ""], get_float(f"cpu_temp_{i}"))
+            if client.exists(f"cpu_curr_pwr_{i}"):
+                g.add_metric([srv, f"cpu{i}", "power",       "W",  ""], get_float(f"cpu_curr_pwr_{i}"))
+        for name in ("total", "available", "usage"):
+            if client.exists(f"mem_{name}"):
+                g.add_metric([srv, "memory", name, "GiB", ""], get_float(f"mem_{name}"))
 
         # Network
         seen_nics = set()
@@ -260,6 +267,10 @@ class DLCCollector:
         # Host
         host_online = 1 if client.exists("host_ttl") else get_int("host_stat")
         g.add_metric([srv, "system", "host_online", "1=yes", ""], host_online)
+
+        # Pi-side collector heartbeat (data_crawler writes collector_ttl every cycle)
+        g.add_metric([srv, "system", "collector_online", "1=yes", ""],
+                     1 if client.exists("collector_ttl") else 0)
 
         yield g
 

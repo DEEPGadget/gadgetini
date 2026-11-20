@@ -92,7 +92,8 @@ sudo bash src/configure/usb-gadget-gadgetini.sh
 - `src/exporter/legacy/serial_sender_v2.py` / `serial_receiver_v2.py` - Legacy async serial host link (superseded by USB gadget network)
 - `src/display/display_main.py` - Main display loop reading from Redis
 - `src/display/config.ini` - Display layout configuration
-- `src/gui/gadgetini-web/app/api/` - Next.js API routes for node health, system control
+- `src/gui/gadgetini-web/app/api/` - Next.js API routes for node health, PCB/fan control, display config
+- `src/gui/gadgetini-web/app/api/services/health/` - core systemd service status + journal tail for the System panel (read-only; no unit is ever started/stopped from the web UI)
 
 ## Redis Keys
 
@@ -117,6 +118,13 @@ sudo bash src/configure/usb-gadget-gadgetini.sh
 **System Status:**
 - `comm_status` ('ok' / 'timeout' / 'disconnected')
 - `comm_consecutive_failures` (PCB communication retry count)
+- `comm_last_error` (human-readable reason for the last PCB failure, e.g. `/dev/serial0: no Modbus response (slave 1); /dev/ttyUSB0: not present`)
+- `collector_ttl` (data_crawler heartbeat, both backends; presence = collector loop alive)
+
+**TTL policy (Redis = current-value bus, history lives in Prometheus):**
+- Every *sampled* key above is written with `ex=redis_keys.SAMPLE_TTL_SEC` (`max(5, 5×cycle)`), host keys with `HOST_KEY_TTL_SEC`/`CHIP_KEY_TTL_SEC` — a key that stops being refreshed disappears, and `sensor_exporter` gates every metric on `client.exists()`, so nothing stale is ever exported.
+- Only `control_mode` and `manual_pwm_target_*` have no TTL: they are commands the web UI writes once, not samples. `data_crawler` forces `control_mode=auto` at boot.
+- Redis on-disk persistence is disabled (`save ""`, see `src/configure/redis/setup-redis.sh`) so a reboot never restores old readings.
 
 ## Hardware Context
 

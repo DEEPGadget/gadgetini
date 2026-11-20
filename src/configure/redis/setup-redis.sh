@@ -24,6 +24,21 @@ fi
 echo "=== Disabling protected-mode ==="
 sudo sed -i 's/^protected-mode yes/protected-mode no/' "$REDIS_CONF"
 
+echo "=== Disabling on-disk persistence ==="
+# Redis holds *current* values only (history lives in Prometheus). With RDB
+# snapshots on, a reboot restores weeks-old sensor readings that the exporter
+# then re-exports as live data. Debian's redis.conf ships no active `save` line,
+# so Redis applies its built-in default (3600 1 300 100 60 10000) unless
+# `save ""` is set explicitly.
+sudo sed -i -E 's/^(save [0-9]+ [0-9]+.*)$/# \1/' "$REDIS_CONF"
+if grep -qE '^save ""' "$REDIS_CONF"; then
+    echo "  save: already disabled"
+else
+    echo 'save ""' | sudo tee -a "$REDIS_CONF" > /dev/null
+    echo "  save: disabled"
+fi
+sudo sed -i 's/^appendonly yes/appendonly no/' "$REDIS_CONF"
+
 echo "=== Installing sysctl drop-in ==="
 sudo tee "$SYSCTL_DROPIN" > /dev/null <<EOF
 net.ipv4.ip_nonlocal_bind=1

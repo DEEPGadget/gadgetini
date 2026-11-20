@@ -165,8 +165,8 @@ class FanCurveController:
 
         pipe = rd.pipeline()
         for src, src_duty, _ in results:
-            pipe.set(K.pwm_curve_source_duty(src.key), src_duty)
-        pipe.set(K.PWM_CURVE_SELECTED_SOURCE, winner_src.key)
+            pipe.set(K.pwm_curve_source_duty(src.key), src_duty, ex=K.SAMPLE_TTL_SEC)
+        pipe.set(K.PWM_CURVE_SELECTED_SOURCE, winner_src.key, ex=K.SAMPLE_TTL_SEC)
         pipe.execute()
 
         log.debug("fan duty: max(%s) = %d (winner: %s) -> CH %s",

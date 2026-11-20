@@ -9,11 +9,15 @@ of failing at import. _ADC_AVAILABLE also serves as the backend discriminator
 Env (air temp/humidity) and chassis are Pi-attached, so they run on both backends and
 keep working regardless of PCB/mainboard power.
 """
+import logging
 import math
 import sys
 import time
 
 from machine_config import MACHINE, COOLANT_CHANNELS
+import redis_keys as K
+
+log = logging.getLogger('dlc_sensors')
 
 try:
     import numpy as np
@@ -162,21 +166,44 @@ def _read_humid_once():
     return _temp_humid_dev.relative_humidity
 
 
+# Latched so the 1 Hz loop logs a transition once, not once per second
+# (same pattern as data_crawler_host's CPU-power warning).
+_temp_humid_failing = False
+_temp_humid_last_exc = None
+
+
 def _read_n(read_fn, n=5):
+    global _temp_humid_last_exc
     out = []
     for _ in range(n):
         try:
             v = read_fn()
             if v is not None:
                 out.append(v)
-        except Exception:
-            pass
+        except Exception as e:
+            # DHT11 raises RuntimeError on a bad checksum/timing; keep the text for the warning.
+            _temp_humid_last_exc = f"{type(e).__name__}: {e}"
     return _median(out)
+
+
+def _note_temp_humid(value):
+    """Warn once when a detected air sensor returns nothing; info once when it recovers."""
+    global _temp_humid_failing
+    if _temp_humid_dev is None:
+        return value
+    if value is None and not _temp_humid_failing:
+        _temp_humid_failing = True
+        log.warning("air temp/humidity sensor (%s) detected but not responding — key withheld (%s)",
+                    _temp_humid_kind, _temp_humid_last_exc or "no reading")
+    elif value is not None and _temp_humid_failing:
+        _temp_humid_failing = False
+        log.info("air temp/humidity sensor (%s) recovered", _temp_humid_kind)
+    return value
 
 
 def get_air_temp():
     """Celsius, fail-safe None."""
-    return _read_n(_read_temp_once)
+    return _note_temp_humid(_read_n(_read_temp_once))
 
 
 def get_air_humit():
@@ -229,12 +256,12 @@ def poll_coolant(rd):
         if temp is None:
             pipe.delete(key)
         else:
-            pipe.set(key, temp)
+            pipe.set(key, temp, ex=K.SAMPLE_TTL_SEC)
 
     def _delta_or_clear(in_name, out_name, key):
         i, o = temps.get(in_name), temps.get(out_name)
         if i is not None and o is not None:
-            pipe.set(key, round(o - i, 2))
+            pipe.set(key, round(o - i, 2), ex=K.SAMPLE_TTL_SEC)
         else:
             pipe.delete(key)
 
@@ -243,10 +270,10 @@ def poll_coolant(rd):
 
     leak = get_coolant_leak_detection(adc)
     if leak is not None:
-        pipe.set("coolant_leak", leak)
+        pipe.set("coolant_leak", leak, ex=K.SAMPLE_TTL_SEC)
     level = get_coolant_level_detection(adc)
     if level is not None:
-        pipe.set("coolant_level", level)
+        pipe.set("coolant_level", level, ex=K.SAMPLE_TTL_SEC)
     pipe.execute()
 
 
@@ -254,14 +281,14 @@ def update_env(rd):
     """air_temp, air_humit -> Redis. Both backends (Pi-attached, always-on)."""
     t = get_air_temp()
     if t is not None:
-        rd.set("air_temp", round(t, 1))
+        rd.set("air_temp", round(t, 1), ex=K.SAMPLE_TTL_SEC)
     h = get_air_humit()
     if h is not None:
-        rd.set("air_humit", round(h, 1))
+        rd.set("air_humit", round(h, 1), ex=K.SAMPLE_TTL_SEC)
 
 
 def update_chassis(rd):
     """chassis_stabil -> Redis. dg5W only (None is skipped)."""
     stabil = get_chassis_stabil()
     if stabil is not None:
-        rd.set("chassis_stabil", stabil)
+        rd.set("chassis_stabil", stabil, ex=K.SAMPLE_TTL_SEC)

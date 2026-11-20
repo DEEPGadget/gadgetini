@@ -23,6 +23,11 @@ NVME_KEY_TTL_SEC = 60
 # gpu_*/npu_* keys expire so a removed chip or a stopped host shows up as an
 # absent key, which sensor_exporter skips instead of exporting stale values.
 CHIP_KEY_TTL_SEC = 60
+# cpu_*/mem_*/nic_*/ib_* are written every ~1 s; 15 s of slack covers a slow
+# `sensors -j` / ipmitool call without making the keys flicker. Redis on the Pi
+# holds current values only (no RDB persistence), so a stopped host must leave
+# no readings behind — the exporter gates every one of these on key presence.
+HOST_KEY_TTL_SEC = 15
 
 
 def get_sensors_json() -> dict:
@@ -557,17 +562,17 @@ def write_metrics_once():
 
     # CPU temperature
     for idx, cpu in enumerate(curr_cpusinfo[1]):
-        pipe.set(f"cpu_temp_{idx}", str(cpu))
+        pipe.set(f"cpu_temp_{idx}", str(cpu), ex=HOST_KEY_TTL_SEC)
 
     # CPU power
     for key, value in curr_ipmi_telemetry.items():
         if value is not None:
-            pipe.set(str(key), str(value))
+            pipe.set(str(key), str(value), ex=HOST_KEY_TTL_SEC)
 
     # NIC link
     for nic in curr_link_status:
         key, val = next(iter(nic.items()))
-        pipe.set(f"nic_{key}_stat", str(val))
+        pipe.set(f"nic_{key}_stat", str(val), ex=HOST_KEY_TTL_SEC)
 
     # GPU
     for idx, gpu in enumerate(curr_chipsinfo):
@@ -589,15 +594,15 @@ def write_metrics_once():
             pipe.set(f"npu_max_mem_{idx}", str(npu["mem_total"]), ex=CHIP_KEY_TTL_SEC)
 
     # Memory / CPU usage
-    pipe.set("mem_total", curr_meminfo[0])
-    pipe.set("mem_usage", curr_meminfo[1])
-    pipe.set("mem_available", curr_meminfo[2])
-    pipe.set("cpu_usage", get_cpu_usage_percent())
+    pipe.set("mem_total", curr_meminfo[0], ex=HOST_KEY_TTL_SEC)
+    pipe.set("mem_usage", curr_meminfo[1], ex=HOST_KEY_TTL_SEC)
+    pipe.set("mem_available", curr_meminfo[2], ex=HOST_KEY_TTL_SEC)
+    pipe.set("cpu_usage", get_cpu_usage_percent(), ex=HOST_KEY_TTL_SEC)
 
     # IB NIC
     ib_temp = get_ib_nic_asic_temp()
     if ib_temp is not None:
-        pipe.set("ib_nic_temp", ib_temp)
+        pipe.set("ib_nic_temp", ib_temp, ex=HOST_KEY_TTL_SEC)
 
     # NVMe
     nvme_count = 0

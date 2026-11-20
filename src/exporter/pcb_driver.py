@@ -79,6 +79,7 @@ class PCBDriver:
         self.bauds = mb['baud'] if isinstance(mb['baud'], list) else [mb['baud']]
         self.slave = int(mb['slave'])
         self.cli = None          # locked ModbusSerialClient
+        self.last_error = None   # human-readable reason for the last failed probe/read
         self.port = None
         self.baud = None
 
@@ -98,32 +99,51 @@ class PCBDriver:
             stopbits=1, bytesize=8, timeout=_MODBUS_TIMEOUT, retries=0,
         )
 
-    def _probe(self, cli):
+    def _probe(self, cli, port=None):
         try:
             rr = cli.read_input_registers(IR_SYSTEM_TIMER, count=1, device_id=self.slave)
-            return rr is not None and not rr.isError()
-        except Exception:
+            if rr is None or rr.isError():
+                self.last_error = f"no Modbus response from slave {self.slave} on {port or self.port}"
+                return False
+            return True
+        except Exception as e:
+            self.last_error = f"{type(e).__name__}: {e}"
             return False
 
     def health_check(self):
         """True if alive. Locks baud/port on first response; cheap single read after."""
         if self.cli is not None:
-            return self._probe(self.cli)   # locked; PCB may be off -> fail fast
+            return self._probe(self.cli, self.port)   # locked; PCB may be off -> fail fast
 
+        # One reason per port, so "serial0: no response; ttyUSB0: not present" survives
+        # instead of only the last port's verdict.
+        reasons = []
         for port in self.ports:
+            if not os.path.exists(port):
+                # The most common bench/field failure: RS485 adapter unplugged.
+                reasons.append(f"{port}: not present")
+                continue
+            port_reason = None
             for baud in self.bauds:
                 cli = self._make_client(port, baud)
                 try:
-                    if cli.connect() and self._probe(cli):
+                    if not cli.connect():
+                        port_reason = "cannot open"
+                    elif self._probe(cli, port):
                         self.cli, self.port, self.baud = cli, port, int(baud)
+                        self.last_error = None
                         log.info("PCB locked on %s @ %d, slave %d", port, self.baud, self.slave)
                         return True
-                except Exception:
-                    pass
+                    else:
+                        port_reason = f"no Modbus response (slave {self.slave})"
+                except Exception as e:
+                    port_reason = f"{type(e).__name__}: {e}"
                 try:
                     cli.close()
                 except Exception:
                     pass
+            reasons.append(f"{port}: {port_reason or 'no response'}")
+        self.last_error = "; ".join(reasons) if reasons else "no serial port configured"
         return False
 
     def close(self):
@@ -140,9 +160,11 @@ class PCBDriver:
         try:
             rr = self.cli.read_input_registers(address, count=count, device_id=self.slave)
             if rr is None or rr.isError():
+                self.last_error = f"input register read failed @ {address} (+{count})"
                 return None
             return rr.registers
-        except Exception:
+        except Exception as e:
+            self.last_error = f"{type(e).__name__}: {e}"
             return None
 
     def read_holding_registers(self, address, count):
@@ -151,9 +173,11 @@ class PCBDriver:
         try:
             rr = self.cli.read_holding_registers(address, count=count, device_id=self.slave)
             if rr is None or rr.isError():
+                self.last_error = f"holding register read failed @ {address} (+{count})"
                 return None
             return rr.registers
-        except Exception:
+        except Exception as e:
+            self.last_error = f"{type(e).__name__}: {e}"
             return None
 
     def write_register(self, address, value):
@@ -222,8 +246,9 @@ class PCBDriver:
         """Run once on a PCB down->up transition: re-apply state + reset comm status."""
         self.apply_pwm_freq()
         self.apply_initial_state()
-        rd.set(K.COMM_STATUS, 'ok')
-        rd.set(K.COMM_CONSECUTIVE_FAILURES, 0)
+        rd.set(K.COMM_STATUS, 'ok', ex=K.SAMPLE_TTL_SEC)
+        rd.set(K.COMM_CONSECUTIVE_FAILURES, 0, ex=K.SAMPLE_TTL_SEC)
+        rd.delete(K.COMM_LAST_ERROR)
 
     def set_config(self, cfg):
         """Apply a hot-reloaded cfg (modbus section is not changed at runtime)."""
@@ -265,7 +290,7 @@ class PCBDriver:
                 # Sanity check: realistic coolant temperature range (-20 to 100 °C)
                 # If outside range, treat as sensor error (wiring reversed, ADC malfunction, etc.)
                 if -20 <= temp_c <= 100:
-                    pipe.set(rkey, temp_c)
+                    pipe.set(rkey, temp_c, ex=K.SAMPLE_TTL_SEC)
                     ntc_values[logical] = temp_c
                 else:
                     log.warning("NTC %s (CH%d) out of range: %.1f °C (expected -20~100) — sensor error",
@@ -286,7 +311,7 @@ class PCBDriver:
         if level_bit is not None:
             raw = 1 if (bits >> level_bit) & 1 else 0
             self._level_confirmed = self._debounce(self._level_history, raw, self._level_confirmed)
-            pipe.set(K.COOLANT_LEVEL, self._level_confirmed)
+            pipe.set(K.COOLANT_LEVEL, self._level_confirmed, ex=K.SAMPLE_TTL_SEC)
 
         # Leak: AIN voltage (IR 32~39, 0.01V), threshold + debounce
         ain_map = wiring.get('ain', {}) or {}
@@ -299,7 +324,7 @@ class PCBDriver:
             threshold_reg = int(float(ain_map.get('leak_threshold_v', 5.0)) * 100)
             raw = 1 if v_reg < threshold_reg else 0
             self._leak_confirmed = self._debounce(self._leak_history, raw, self._leak_confirmed)
-            pipe.set(K.COOLANT_LEAK, self._leak_confirmed)
+            pipe.set(K.COOLANT_LEAK, self._leak_confirmed, ex=K.SAMPLE_TTL_SEC)
 
         # Pulse freq (IR 13~24) -> sticky pump/fan connection detection
         pulses = self.read_input_registers(IR_PULSE_FREQ_BASE, 12)
@@ -320,7 +345,7 @@ class PCBDriver:
         for ch in range(5, 13):
             i = ch - 5
             if i in self._fan_connected:
-                pipe.set(K.fan_rpm(i), pulses[ch - 1] * 30)
+                pipe.set(K.fan_rpm(i), pulses[ch - 1] * 30, ex=K.SAMPLE_TTL_SEC)
             else:
                 pipe.delete(K.fan_rpm(i))
 
@@ -331,9 +356,9 @@ class PCBDriver:
         if duties is None:
             return False
         for ch in range(1, 5):
-            pipe.set(K.pwm_duty_pump(ch - 1), duties[ch - 1])
+            pipe.set(K.pwm_duty_pump(ch - 1), duties[ch - 1], ex=K.SAMPLE_TTL_SEC)
         for ch in range(5, 13):
-            pipe.set(K.pwm_duty_fan(ch - 5), duties[ch - 1])
+            pipe.set(K.pwm_duty_fan(ch - 5), duties[ch - 1], ex=K.SAMPLE_TTL_SEC)
 
         # Pump flow estimate (no flow sensor): from mean wired-pump commanded duty
         wired_pump_duties = [
@@ -345,7 +370,7 @@ class PCBDriver:
             avg_duty = sum(wired_pump_duties) / len(wired_pump_duties)
             max_lpm = float(pump_cfg.get('max_flow_lpm', 16))
             mult = float(pump_cfg.get('flow_multiplier', 1.0))
-            pipe.set(K.COOLANT_FLOW_LPM, round(max_lpm * (avg_duty / 1000.0) * mult, 2))
+            pipe.set(K.COOLANT_FLOW_LPM, round(max_lpm * (avg_duty / 1000.0) * mult, 2), ex=K.SAMPLE_TTL_SEC)
         else:
             pipe.delete(K.COOLANT_FLOW_LPM)
 
@@ -358,7 +383,7 @@ class PCBDriver:
         o = ntcs.get(out_logical)
         if i is not None and o is not None:
             delta = round(o - i, 2)
-            pipe.set(dest_key, delta)
+            pipe.set(dest_key, delta, ex=K.SAMPLE_TTL_SEC)
             # Auto-detect inlet/outlet reversal: if inlet > outlet consistently
             if o < i - 5.0:  # outlet is 5°C+ lower than inlet = likely reversed
                 log.warning("Inlet/outlet may be reversed: inlet=%.1f > outlet=%.1f (ΔT=%.1f)",

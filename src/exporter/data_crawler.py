@@ -43,12 +43,14 @@ def is_host_alive():
 
 
 def _update_comm_state(fails, timeout_n, disconnect_n):
+    # TTL'd like every other sample: if this loop stops, comm_status must vanish
+    # rather than keep advertising the last state (see redis_keys.SAMPLE_TTL_SEC).
     if fails == 0:
-        rd.set(K.COMM_STATUS, 'ok')
+        rd.set(K.COMM_STATUS, 'ok', ex=K.SAMPLE_TTL_SEC)
     elif fails >= disconnect_n:
-        rd.set(K.COMM_STATUS, 'disconnected')
+        rd.set(K.COMM_STATUS, 'disconnected', ex=K.SAMPLE_TTL_SEC)
     elif fails >= timeout_n:
-        rd.set(K.COMM_STATUS, 'timeout')
+        rd.set(K.COMM_STATUS, 'timeout', ex=K.SAMPLE_TTL_SEC)
 
 
 def _load_yaml(path):
@@ -79,8 +81,12 @@ def main():
         reloader = pcb_control.ConfigReloader(PCB_CONFIG_PATH, cfg)
         # Always boot into auto (fan-curve) mode — safe default. Manual is entered only
         # via the web UI, which captures the current PWM at switch time (no jump).
+        # Deliberately NO TTL: this is a command the UI writes once, not a sample.
         rd.set(K.CONTROL_MODE, 'auto')
         log.info("PCB collector @ %.2fs cadence (liveness via 1Hz health check), mode=auto", cycle_s)
+
+    ttl = K.set_sample_ttl(cycle_s)
+    log.info("sample keys expire after %ds without refresh", ttl)
 
     try:
         while True:
@@ -96,7 +102,8 @@ def main():
                     ok = False
                     try:
                         ok = driver.poll(rd)
-                    except Exception:
+                    except Exception as e:
+                        driver.last_error = f"{type(e).__name__}: {e}"
                         log.exception("driver.poll raised")
                     consecutive_fail = 0 if ok else consecutive_fail + 1
                     if ok:
@@ -114,8 +121,14 @@ def main():
                 else:
                     consecutive_fail += 1   # PCB down (mainboard off / cycling)
                 prev_alive = alive
-                rd.set(K.COMM_CONSECUTIVE_FAILURES, consecutive_fail)
+                rd.set(K.COMM_CONSECUTIVE_FAILURES, consecutive_fail, ex=K.SAMPLE_TTL_SEC)
                 _update_comm_state(consecutive_fail, timeout_n, disconnect_n)
+                # Surface *why* the PCB is unreachable. Until now the reason only existed
+                # in pymodbus's own log lines; the web UI reads this key.
+                if consecutive_fail:
+                    rd.set(K.COMM_LAST_ERROR, driver.last_error or 'no response', ex=K.SAMPLE_TTL_SEC)
+                else:
+                    rd.delete(K.COMM_LAST_ERROR)
             else:
                 try:
                     dlc_sensors.poll_coolant(rd)
@@ -129,7 +142,9 @@ def main():
             except Exception:
                 log.exception("env/chassis update failed")
 
-            rd.set(K.HOST_STAT, str(is_host_alive()))
+            rd.set(K.HOST_STAT, str(is_host_alive()), ex=K.SAMPLE_TTL_SEC)
+            # Collector heartbeat (both backends) — presence = this loop is running.
+            rd.set(K.COLLECTOR_TTL, int(time.time() * 1000), ex=K.SAMPLE_TTL_SEC)
 
             elapsed = time.monotonic() - t0
             time.sleep(max(0.0, cycle_s - elapsed))

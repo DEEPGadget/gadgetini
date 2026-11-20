@@ -63,4 +63,34 @@ PWM_CURVE_SELECTED_SOURCE = 'pwm_curve_selected_source'
 # Comm status (PCB path only — from health check / poll results).
 COMM_STATUS               = 'comm_status'
 COMM_CONSECUTIVE_FAILURES = 'comm_consecutive_failures'
-COMM_LAST_ERROR           = 'comm_last_error'
+COMM_LAST_ERROR           = 'comm_last_error'   # last PCB failure reason, human-readable
+
+# ── Liveness ───────────────────────────────────────────────────────────────
+# Redis is the *current-value* bus shared by the exporter, the display and the
+# web UI; history lives in Prometheus. Every sampled key is therefore written
+# with a TTL (`ex=SAMPLE_TTL_SEC`) so it disappears by itself when its writer
+# stops refreshing it. A crashed collector, an unplugged PCB, a dead sensor and
+# a lost serial port then all look the same to every reader: "no key" — the
+# exporter's exists() gates drop the metric instead of exporting a stale value.
+#
+# The only keys written WITHOUT a TTL are commands the web UI writes once and no
+# loop refreshes: CONTROL_MODE and manual_pwm_target_*. They do not need to
+# survive a restart either — data_crawler forces CONTROL_MODE back to 'auto' at
+# boot and the UI re-seeds the targets on every switch to manual.
+SAMPLE_TTL_SEC = 5          # default; data_crawler overrides from loop.cycle_seconds
+
+
+def set_sample_ttl(cycle_s):
+    """Five cycles of slack, never under 5 s, so one slow Modbus cycle does not
+    make keys flicker. Returns the value applied."""
+    import math
+    global SAMPLE_TTL_SEC
+    SAMPLE_TTL_SEC = max(5, int(math.ceil(float(cycle_s) * 5)))
+    return SAMPLE_TTL_SEC
+
+
+# Collector heartbeat — same idiom as the host's `host_ttl`: SET + EXPIRE every
+# cycle on both backends; key presence = the collector loop is alive. This is
+# the only liveness signal on the legacy (ADS1256) path, where COMM_STATUS is
+# never written.
+COLLECTOR_TTL = 'collector_ttl'
